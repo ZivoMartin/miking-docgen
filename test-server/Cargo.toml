@@ -1,0 +1,11 @@
+[package]
+name = "test-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+tower = "0.4"
+mime_guess = "2.0"
+pulldown-cmark = "0.10"
