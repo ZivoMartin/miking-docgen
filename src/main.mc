@@ -5,24 +5,13 @@
     
     
 
-include "token-readers.mc"
-         
+include "parser.mc"
+
+
 
 mexpr
     use TokenReader in
-    recursive
-    let parse = 
-        lam txt.
-        match txt with "" then
-            ()
-        else
-            let new = next txt in
-            display new.token;
-            print "\n";
-            parse new.stream
-    in
-    let txt = "\"test\"--hh
-/-hey-/okj sozks--test" in
-    parse txt;
-    print "\n"
+    let txt = "\"test\"/-hey-/okj let sozks in let --test \nlet in izejdu ino" in    
+    let result = parse txt in
+    displayTree result
 

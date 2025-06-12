@@ -2,22 +2,24 @@ lang TokenReaderInterface
   type NextResult = {token : Token, stream : String}
 
   syn Token =
+
+  sem lit /- Token -> String -/ =
     
   sem next /- : String -> NextTokenResult -/ =
 
-  sem display /- : Token -> () -/ =
+  sem display =
+    | t -> print (get t)
+     
 end
 
 lang WeakCommentTokenReader = TokenReaderInterface
     syn Token =
-      | WeakComment { comment: String }
+      | WeakComment { content: String, lit: String }
 
-    sem display =
-        | WeakComment { comment = content } ->
-            print "/-";
-            print content;
-            print "-/"
-        
+    
+    sem lit =
+        | WeakComment { content = content, lit = lit } -> lit
+
         
     sem next =
         | "/-" ++ str  ->
@@ -34,7 +36,10 @@ lang WeakCommentTokenReader = TokenReaderInterface
             in
             let extracted = extract str in
             {
-                token = WeakComment { comment = extracted.0 },
+                token = WeakComment {
+                    content = extracted.0,
+                    lit = concat (concat "/-" extracted.0) "-/"
+                },
                 stream = extracted.1
             }
             
@@ -44,14 +49,10 @@ end
 
 lang CommentTokenReader = TokenReaderInterface
     syn Token =
-      | Comment { comment: String }
+      | Comment { content: String, lit: String }
 
-    sem display =
-        | Comment { comment = content } ->
-            print "--";
-            print content;
-            print "\n"
-        
+    sem lit =
+        | Comment { content = content, lit = lit } -> lit        
         
     sem next =
         | "--" ++ str  ->
@@ -68,21 +69,20 @@ lang CommentTokenReader = TokenReaderInterface
             in
             let extracted = extract str in
             {
-                token = Comment { comment = extracted.0 },
+                token = Comment {
+                    content = extracted.0,
+                    lit = concat "--" extracted.0
+                },
                 stream = extracted.1
             }
-            
 end
 
 lang StrTokenReader = TokenReaderInterface
     syn Token =
       | Str { content: String }
 
-    sem display =
-        | Str { content = content } ->
-            print "\"";
-            print content;
-            print "\""
+    sem lit =
+        | Str { content = content } -> content
     
     sem next /- : String -> NextResult -/ =
         | "\"" ++ str  ->
@@ -90,7 +90,7 @@ lang StrTokenReader = TokenReaderInterface
             let extract =
             lam str.
                 match str with "\"" ++ xs then
-                    ("", xs)
+                    ("\"", xs)
                 else match str with [x] ++ xs then
                     let extracted = extract xs in
                     (cons x extracted.0, extracted.1)
@@ -98,7 +98,9 @@ lang StrTokenReader = TokenReaderInterface
             in
             let extracted =  extract str in
             {
-                token = Str { content = extracted.0 },
+                token = Str {
+                    content = cons '\"' extracted.0
+                },
                 stream = extracted.1
             }
 end
@@ -106,12 +108,10 @@ end
 
 lang WordTokenReader = TokenReaderInterface
     syn Token =
-      | Word { content: String, breaker: String }
+      | Word { content: String }
 
-    sem display =
-        | Word { content = content, breaker = breaker } ->
-            print content;
-            print breaker
+    sem lit =
+        | Word { content = content } -> content
     
     sem next /- : String -> NextResult -/ =
         | str  ->
@@ -119,22 +119,63 @@ lang WordTokenReader = TokenReaderInterface
             let extract =
             lam str.
                 match str with "--" ++ xs then
-                    ("", "", str)
+                    ("", str)
                 else match str with "\"" ++ xs then
-                    ("", "", str)
+                    ("", str)
                 else match str with " " ++ xs then
-                    ("", " ", xs)
+                    ("", str)
 
                 else match str with [x] ++ xs then
                     let extracted = extract xs in
-                    (cons x extracted.0, extracted.1, extracted.2)
-                else ("", "", "")
+                    (cons x extracted.0, extracted.1)
+                else ("", "")
             in
             let extracted =  extract str in
             {
-                token = Word { content = extracted.0, breaker = extracted.1 },
-                stream = extracted.2
+                token = Word { content = extracted.0 },
+                stream = extracted.1
             }
 end
+
+lang SeparatorTokenReader = TokenReaderInterface
+    syn Token =
+      | Separator { content: String }
+
+    sem lit =
+        | Separator { content = content } -> content
+    
+    sem next =
+        | [(' ' | '\t' | '\n' ) & c] ++ str  ->
+            recursive
+            let extract =
+            lam str.
+                match str with [(' ' | '\t' | '\n' ) & x] ++ xs then
+                   let extracted = extract xs in
+                   (cons x extracted.0, extracted.1)
+                else ("", str)
+            in
+            let extracted =  extract str in
+            {
+                token = Separator { content = cons c extracted.0 },
+                stream = extracted.1
+            }
+end
+    
+lang EofTokenReader = TokenReaderInterface
+    syn Token =
+      | Eof {}
+
+    sem lit =
+        | Eof {} -> ""
+    
+    sem next =
+        | ""  ->
+            {
+                token = Eof {},
+                stream = ""
+            }
+end
+    
+    
         
-lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader end
+lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader end
