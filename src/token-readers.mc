@@ -2,7 +2,7 @@ lang TokenReaderInterface
   type NextResult = {token : Token, stream : String}
 
   syn Token =
-
+    
   sem lit /- Token -> String -/ =
     
   sem next /- : String -> NextTokenResult -/ =
@@ -11,7 +11,7 @@ lang TokenReaderInterface
     | t -> print (get t)
      
 end
-
+    
 lang WeakCommentTokenReader = TokenReaderInterface
     syn Token =
       | WeakComment { content: String, lit: String }
@@ -123,6 +123,8 @@ lang WordTokenReader = TokenReaderInterface
                 else match str with "\"" ++ xs then
                     ("", str)
                 else match str with " " ++ xs then
+                    ("", str)
+                else match str with "\n" ++ xs then
                     ("", str)
 
                 else match str with [x] ++ xs then

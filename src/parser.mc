@@ -1,77 +1,174 @@
 include "token-readers.mc"
 include "string.mc"
-
-type DocTree
-con Node : { sons: [DocTree], v: String} -> DocTree
-con Leaf : use TokenReader in Token -> DocTree
-
+include "util.mc"
 
 lang BreakerChooserInterface
 
+    type Breaker = { breakers: [String], state: State }
+
+    
+    sem crash /- (State, String) -/ =
+        | (state, word) -> error
+                (concatAll ["You cannot have the word ", word, "during the", (toString state), "block."])
+
+        
     syn State =
         | Program {}
+        | TopLet {}
         | Let {}
+        | Lang {}
+        | TopType {}
+        | Type {}
 
-    sem change /- (State, String) -> State -/ =
-    sem choose /- (State, String) -> [String] -/ =
-    
+    sem toString =
+        | Program {} -> "Program"
+        | TopLet {} -> "TopLet"
+        | Let {} -> "Let"
+        | Lang {} -> "Lang"
+        | TopType {} -> "TopType"
+        | Type {} -> "Type"
+
+    -- Determine the new state and the breakers after having find a block opener
+    sem choose /- (State, String) -> Breaker -/ =
+    -- Determine if for a given breaker, the tokenisation should continue for the parent state
+    sem continue /- (State, String) -> Bool -/ =
+    -- Determine for a given context if the block become hard or no
+    sem isHard /- (State, String) -> Bool -/ =
+    -- Determine if the breaker should be part of the current block, or should be let in the stream
+    sem absorbIt /- (State, String) -> Bool -/ =
 end
 
--- TODO: let, lang, con, type, use
-    
+-- TODO: let, lang, con, type, use, sem, syn
+-- TODO: Suppporter les mots clés qui arrêtent plusieurs étages à la fois comme end
+
 lang ProgramBreakerChooser = BreakerChooserInterface
-    
-    sem change =
-        | (Program {}, "let") -> Let {}
-        | (Program {}, "lang") -> never
-        | (Program {}, "type") -> never
 
     sem choose =
-        | (Program {}, "let") -> ["lang", "let", "type"]
-        | (Program {}, "lang") -> ["end"]
-        | (Program {}, "type") -> ["let", "type", "lang"]
+        | (Program {}, "let") -> { breakers = ["lang", "in"], state = TopLet {} }
+        | (Program {}, "lang") -> { breakers = ["end"], state = Lang {} }
+        | (Program {}, "type") -> { breakers = ["let", "type", "lang"], state = TopType {} }
+        | (Program {}, word) -> crash (Program {}, word)
+
+    sem continue =
+        | (Program {}, "") -> true
+        | (Program {}, _) -> false
+    
 end
 
+lang TopLetBreakerChooser = BreakerChooserInterface
+    
+    sem choose =
+        | (TopLet {}, "let") -> { breakers = ["in", "lang"], state = Let {} }
+        | (TopLet {}, word) -> crash (TopLet {}, word)
+
+    sem continue =
+        | (TopLet {}, _) -> true
+
+    sem isHard =
+        | (TopLet {}, _) -> false
+
+    sem absorbIt =
+        | (TopLet {}, word) -> false
+
+end
+    
 lang LetBreakerChooser = BreakerChooserInterface
 
-    sem change = 
-        | (Let {}, "let") -> Let {}
-        | (Let {}, "type") -> never
-    
     sem choose =
-        | (Let {}, "let") -> ["in"]
-        | (Let {}, "type") -> ["in"]
+        | (Let {}, "let") -> { breakers = ["in", "lang"], state = Let {} }
+        | (Let {}, "type") -> error "todo: Support type in let blocks"
+        | (Let {}, word) -> crash (Let {}, word)
+
+    sem continue =
+        | (Let {}, "in") -> true
+        | (Let {}, "") -> false
+
+    sem isHard =
+        | (Let {}, _) -> true
+        | (Let {}, "in") -> error "Unreachable, we should not ask the state machine if finding a 'in' bound to a 'let' makes the block hard."
+    
+    sem absorbIt =
+        | (Let {}, "in") -> true
+        | (Let {}, word) -> false
+end
+    
+lang LangBreakerChooser = BreakerChooserInterface
+
+    sem choose =
+        | (Lang {}, word) -> crash (Lang {}, word)
+
+    sem absorbIt =
+        | (Lang {}, word) -> true
 end
 
+
+
+lang BreakerChooser = ProgramBreakerChooser + TopLetBreakerChooser + LetBreakerChooser + LangBreakerChooser end
+
+type DocTree
+con Node : use TokenReader in use BreakerChooser in { sons: [DocTree], token: Token, state: State} -> DocTree
+con Leaf : use TokenReader in use BreakerChooser in (Token, State) -> DocTree
+
     
-lang BreakerChooser = ProgramBreakerChooser + LetBreakerChooser end
+    
+let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam tree.
+  recursive let replicate = lam n. lam str.
+        if eqi n 0 then [] else cons str (replicate (subi n 1) str) in
+    
+  let indentString = lam n.
+    if eqi n 0 then "" else
+      concatAll (replicate n "  ")
+  in
+  recursive let displayTreeIndented = lam tree. lam depth.
+    match tree with Node { sons = sons, token = token, state = state } then
+         print (concatAll [indentString depth, "Node (", toString state, "): ", lit token, "\n"]);
+        iter (lam child. displayTreeIndented child (addi depth 1)) sons
+    else match tree with Leaf (token, state) then
+        match token with Separator {} then () else 
+            print (concatAll [indentString depth, "Leaf: ", lit token, "\n"])
+    else never
+  in
+  displayTreeIndented tree 0
 
-let displayTree : (DocTree -> ()) = use TokenReader in lam tree.
-    recursive
-    let displayTree = lam tree.
-        match tree with Node { sons = sons, v = v } then
-            print v;
-            print "\n--------------\n";
-            iter displayTree sons 
-        else match tree with Leaf token in
-            print (lit token);
-            print "\n--------------\n"
-    in displayTree tree
-          
-
-let parse = use TokenReader in use BreakerChooser in lam txt.
+let parse = use TokenReader in use BreakerChooser in lam stream.
  let headSnippets = ["let", "lang"] in
 
+ type Snippet = { tree: [DocTree], stream: [Char], breaker: String, toAdd: [DocTree] } in
+    
  recursive   
- let parseRec: ([Char] -> [[String]] -> { tree: [DocTree], stream: [Char] }) =
-    lam txt. lam breakers.
+ let parseRec: ([Char] -> [Breaker] -> Snippet) =
+    lam stream. lam breakers.
 
-        let buildSnippet = lam word. lam breakers.
+        -- When a break occurs, there are three possible behaviors:
+        -- 1. Local break: we simply finish the current block.
+        --    Example: lang ... end -> 'end' only terminates the 'lang' block.
+        --
+        -- 2. Global break: we terminate not just the current block, but also one or more parent blocks.
+        --    Example: lang ... sem ... end -> 'end' closes both 'sem' and 'lang'.
+        --
+        -- 3. Hard break: a new keyword forces us to reinterpret a previous assumption.
+        --    Example: let ... let ... lang
+        --      -> The second 'let' was initially assumed to be nested (a 'let in'),
+        --      but encountering 'lang' reveals that it's actually a top-level 'let' block,
+        --      requiring us to restructure the tree accordingly.
+        let buildSnippet : (NextResult -> [Breaker] -> Snippet) = lam word. lam breakers.
             let lword = lit word.token in
-            let snippet = parseRec word.stream (cons (choose (Program {}, lword)) breakers) in
-            let docNode = Node { sons = snippet.tree, v = lword } in
-            let output = parseRec snippet.stream breakers in
-            { output with  tree = cons docNode output.tree }
+            let oldState = (head breakers).state in
+            let breakers = cons (choose (oldState, lword)) breakers in
+            let newState = (head breakers).state in
+            let snippet = parseRec word.stream breakers in
+
+            let docNode = Node { sons = snippet.tree, token = word.token, state = newState } in
+            if continue (oldState, snippet.breaker) then
+                let tree = cons docNode snippet.toAdd in
+                let output = parseRec snippet.stream (tail breakers) in
+                { output with tree = concat tree output.tree }
+            else
+                { snippet with toAdd =
+                    if isHard (newState, snippet.breaker) then
+                        cons docNode snippet.toAdd
+                    else
+                        snippet.toAdd }
         in
 
         recursive
@@ -82,17 +179,23 @@ let parse = use TokenReader in use BreakerChooser in lam txt.
                 or (eqString (head arr) lword) (contains (tail arr) lword)
         in
 
-        let word = next txt in
+        let word = next stream in
         let lword = lit word.token in
-        if contains (head breakers) lword then
-            { tree = [Leaf word.token], stream = word.stream }
+
+        let state = (head breakers).state in
+        if contains (head breakers).breakers lword then
+            let absorb = absorbIt (state, lword) in
+            {
+                tree = if absorb then  [Leaf (word.token, state)] else [],
+                stream = if absorb then word.stream else stream,
+                breaker = lword, toAdd = [] }
         else match word.token with Eof {} then
-            { tree = [Leaf word.token], stream = "" }
+            { tree = [Leaf (word.token, state)], stream = "", breaker = "", toAdd = [] }
         else if contains headSnippets lword then
             buildSnippet word breakers
         else
-            let output = parseRec word.stream breakers in
-            { output with tree = cons (Leaf word.token) output.tree }
+            let snippet = parseRec word.stream breakers in
+            { snippet with tree = cons (Leaf (word.token, state)) snippet.tree }
         in
-    let output = parseRec txt [[""]] in
-    Node { sons = output.tree, v = "program" }
+    let snippet = parseRec stream [ { breakers = [""], state = Program {} }] in
+    Node { sons = snippet.tree, token = Word { content = "" }, state = Program {} }
