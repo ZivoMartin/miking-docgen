@@ -7,9 +7,11 @@ lang BreakerChooserInterface
     type Breaker = { breakers: [String], state: State }
 
     
-    sem crash /- (State, String) -/ =
+    sem chooseCrash /- (State, String) -> () -/ =
         | (state, word) -> error
-                (concatAll ["You cannot have the word ", word, "during the", (toString state), "block."])
+                (concatAll ["You cannot have the word ", word, " inside a ", (toString state), " block."])
+    sem topVersionCrash /- (State) -> () -/ =
+        | state -> error (concat (toString state) " does not have any top version")
 
         
     syn State =
@@ -36,6 +38,8 @@ lang BreakerChooserInterface
     sem isHard /- (State, String) -> Bool -/ =
     -- Determine if the breaker should be part of the current block, or should be let in the stream
     sem absorbIt /- (State, String) -> Bool -/ =
+    -- TopVersion if possible the given state to it's top version, crash otherwise.
+    sem topVersion /- State -> State -/ = 
 end
 
 -- TODO: let, lang, con, type, use, sem, syn
@@ -47,19 +51,24 @@ lang ProgramBreakerChooser = BreakerChooserInterface
         | (Program {}, "let") -> { breakers = ["lang", "in"], state = TopLet {} }
         | (Program {}, "lang") -> { breakers = ["end"], state = Lang {} }
         | (Program {}, "type") -> { breakers = ["let", "type", "lang"], state = TopType {} }
-        | (Program {}, word) -> crash (Program {}, word)
+        | (Program {}, word) -> chooseCrash (Program {}, word)
 
     sem continue =
-        | (Program {}, "") -> true
-        | (Program {}, _) -> false
-    
+        | (Program {}, "") -> false
+        | (Program {}, _) -> true
+
+    sem absorbIt =
+        | (Program {}, word) -> true
+
+    sem topVersion =
+        | Program {} -> topVersionCrash (Program {})
 end
 
 lang TopLetBreakerChooser = BreakerChooserInterface
     
     sem choose =
         | (TopLet {}, "let") -> { breakers = ["in", "lang"], state = Let {} }
-        | (TopLet {}, word) -> crash (TopLet {}, word)
+        | (TopLet {}, word) -> chooseCrash (TopLet {}, word)
 
     sem continue =
         | (TopLet {}, _) -> true
@@ -70,6 +79,8 @@ lang TopLetBreakerChooser = BreakerChooserInterface
     sem absorbIt =
         | (TopLet {}, word) -> false
 
+    sem topVersion =
+        | TopLet {} -> topVersionCrash (TopLet {})
 end
     
 lang LetBreakerChooser = BreakerChooserInterface
@@ -77,11 +88,11 @@ lang LetBreakerChooser = BreakerChooserInterface
     sem choose =
         | (Let {}, "let") -> { breakers = ["in", "lang"], state = Let {} }
         | (Let {}, "type") -> error "todo: Support type in let blocks"
-        | (Let {}, word) -> crash (Let {}, word)
+        | (Let {}, word) -> chooseCrash (Let {}, word)
 
     sem continue =
         | (Let {}, "in") -> true
-        | (Let {}, "") -> false
+        | (Let {}, "lang") -> false
 
     sem isHard =
         | (Let {}, _) -> true
@@ -90,15 +101,26 @@ lang LetBreakerChooser = BreakerChooserInterface
     sem absorbIt =
         | (Let {}, "in") -> true
         | (Let {}, word) -> false
+
+    sem topVersion =
+        | Let {} -> TopLet {}
+
 end
     
 lang LangBreakerChooser = BreakerChooserInterface
 
     sem choose =
-        | (Lang {}, word) -> crash (Lang {}, word)
+        | (Lang {}, word) -> chooseCrash (Lang {}, word)
 
     sem absorbIt =
         | (Lang {}, word) -> true
+
+    sem continue =
+        | (Lang {}, word) -> true
+
+    sem topVersion =
+        | Lang {} -> topVersionCrash (Lang {})
+
 end
 
 
@@ -124,7 +146,7 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
          print (concatAll [indentString depth, "Node (", toString state, "): ", lit token, "\n"]);
         iter (lam child. displayTreeIndented child (addi depth 1)) sons
     else match tree with Leaf (token, state) then
-        match token with Separator {} then () else 
+        match token with Separator {} | Eof {} then () else 
             print (concatAll [indentString depth, "Leaf: ", lit token, "\n"])
     else never
   in
@@ -158,17 +180,22 @@ let parse = use TokenReader in use BreakerChooser in lam stream.
             let newState = (head breakers).state in
             let snippet = parseRec word.stream breakers in
 
-            let docNode = Node { sons = snippet.tree, token = word.token, state = newState } in
-            if continue (oldState, snippet.breaker) then
+            if continue (newState, snippet.breaker) then
+                let docNode = Node { sons = snippet.tree, token = word.token, state = newState } in
                 let tree = cons docNode snippet.toAdd in
                 let output = parseRec snippet.stream (tail breakers) in
                 { output with tree = concat tree output.tree }
             else
-                { snippet with toAdd =
-                    if isHard (newState, snippet.breaker) then
-                        cons docNode snippet.toAdd
-                    else
-                        snippet.toAdd }
+                
+                let docNode = Node {
+                    sons = snippet.tree, token = word.token,
+                    state = topVersion newState } in
+                let isHardTest = isHard (newState, snippet.breaker) in
+                {
+                    snippet with
+                    toAdd = if isHardTest then cons docNode snippet.toAdd else snippet.toAdd,
+                    tree = if isHardTest then [] else cons docNode snippet.tree
+                }
         in
 
         recursive
