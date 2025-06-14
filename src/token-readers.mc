@@ -1,3 +1,5 @@
+include "util.mc"
+
 lang TokenReaderInterface
   type NextResult = {token : Token, stream : String}
 
@@ -178,6 +180,47 @@ lang EofTokenReader = TokenReaderInterface
             }
 end
     
-    
+
+lang IncludeTokenReader = TokenReaderInterface
+    syn Token =
+        | Include { content: String, lit: String }
+
+    sem lit =
+        | Include { content = content, lit = lit } -> lit
+
+    sem next =
+        | "include" ++ str ->
+            recursive
+            let extractSep =
+            lam str.
+                match str with [(' ' | '\t' ) & x] ++ xs then
+                   let extracted = extractSep xs in
+                   (cons x extracted.0, extracted.1)
+                else ("", str)
+            in
+            recursive
+            let extractStr =
+            lam str.
+                match str with "\"" ++ xs then
+                    ("", xs)              
+                else match str with [x] ++ xs then
+                    let extracted = extractStr xs in
+                    (cons x extracted.0, extracted.1)
+                else
+                    ("", "")
+            in
+            
+            let extractedSep =  extractSep str in
+            let extractedStr =  extractStr (tail extractedSep.1) in
+            {
+                token = Include {
+                    content = extractedStr.0,
+                    lit = concatAll ["include", extractedSep.0, "\"", extractedStr.0, "\""]
+                },
+                stream = extractedStr.1
+            }
         
-lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader end
+end
+
+        
+lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + IncludeTokenReader end
