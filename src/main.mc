@@ -8,7 +8,7 @@ include \"Hello\"
 -- Hello, World
 recursive
 let x =
-    recursive
+    
     let y = 8 
         let z = 3 in
         z * 2 in
@@ -50,7 +50,8 @@ end
 
 -- Main expression to run or test
 mexpr ()" in
-    let result = parse txt1 in
+    let txt3 = "" in
+    let result = parse txt3 in
     displayTree result
 
     
