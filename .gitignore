@@ -2,3 +2,4 @@ test-server/target
 output
 todo
 main
+src/*.md

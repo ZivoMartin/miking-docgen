@@ -116,23 +116,27 @@ lang WordTokenReader = TokenReaderInterface
         | Word { content = content } -> content
     
     sem next /- : String -> NextResult -/ =
+        | "=" ++ str -> { token = Word { content = "=" }, stream = str }
+        | "++" ++ str -> { token = Word { content = "++" }, stream = str }
+        | "|" ++ str -> { token = Word { content = "|" }, stream = str }
+        | "{" ++ str -> { token = Word { content = "{" }, stream = str }
+        | "}" ++ str -> { token = Word { content = "}" }, stream = str }
+        | ":" ++ str -> { token = Word { content = ":" }, stream = str }
+        | "(" ++ str -> { token = Word { content = "(" }, stream = str }
+        | ")" ++ str -> { token = Word { content = ")" }, stream = str }
+        | "->" ++ str -> { token = Word { content = "->" }, stream = str }    
         | str  ->
             recursive
             let extract =
             lam str.
-                match str with "--" ++ xs then
-                    ("", str)
-                else match str with "\"" ++ xs then
-                    ("", str)
-                else match str with " " ++ xs then
-                    ("", str)
-                else match str with "\n" ++ xs then
-                    ("", str)
-
-                else match str with [x] ++ xs then
-                    let extracted = extract xs in
-                    (cons x extracted.0, extracted.1)
-                else ("", "")
+                switch str 
+                case (("--" ++ x) | ("\"" ++ x) | (" " ++ x) | ("\n" ++ x) | ("=" ++ x) | ("++" ++ x))
+                    then ("", str)
+                case [x] ++ xs then
+                    let extracted =  in
+                    (cons x ((extract xs).0), ((extract xs).1))
+                case _ then ("", "")
+                end
             in
             let extracted =  extract str in
             {

@@ -1,12 +1,18 @@
 include "doc-tree.mc"
 include "util.mc"
+include "ext/file-ext.mc"
+include "seq.mc"
 
 let parse = use TokenReader in use BreakerChooser in lam fileName.
  let headSnippets = ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use"] in
+ let breakerAdder = [("switch", ["end"])] in
  type Snippet = { tree: [DocTree], stream: String, breaker: String, toAdd: [DocTree] } in
-    
+
+ let topState = lam breakers. let h = (head breakers).0 in h.state in
+ let topBreakers = lam breakers. let h = (head breakers).0 in h.breakers in
+  
  recursive   
- let parseRec: ([Char] -> [Breaker] -> [DocTree] -> Snippet) =
+ let parseRec: ([Char] -> [(Breaker, Bool)] -> [DocTree] -> Snippet) =
     lam stream. lam breakers. lam treeAcc.
 
         -- When a break occurs, there are three possible behaviors:
@@ -21,11 +27,11 @@ let parse = use TokenReader in use BreakerChooser in lam fileName.
         --      -> The second 'let' was initially assumed to be nested (a 'let in'),
         --      but encountering 'lang' reveals that it's actually a top-level 'let' block,
         --      requiring us to restructure the tree accordingly.
-        let buildSnippet : (NextResult -> [Breaker] -> [DocTree] -> Snippet) = lam word. lam breakers. lam treeAcc.
+        let buildSnippet : (NextResult -> [(Breaker, Bool)] -> [DocTree] -> Snippet) = lam word. lam breakers. lam treeAcc.
             let lword = lit word.token in
-            let oldState = (head breakers).state in
-            let breakers = cons (choose (oldState, lword)) breakers in
-            let newState = (head breakers).state in
+            let oldState =  topState breakers in
+            let breakers = cons ((choose (oldState, lword)), false) breakers in
+            let newState = topState breakers in
             let snippet = parseRec word.stream breakers [] in
             if continue (newState, snippet.breaker) then
                 let docNode = Node { sons = snippet.tree, token = word.token, state = newState } in
@@ -49,20 +55,33 @@ let parse = use TokenReader in use BreakerChooser in lam fileName.
 
         let word = next stream in
         let lword = lit word.token in
-
-        let state = (head breakers).state in
-        if contains (head breakers).breakers lword then
-            let absorb = absorbIt (state, lword) in
-            {
-                tree = reverse (if absorb then cons (Leaf (word.token, state)) treeAcc else treeAcc),
-                stream = if absorb then word.stream else stream,
-                breaker = lword, toAdd = [] }
-        else match word.token with Eof {} then
-            { tree = reverse (cons (Leaf (word.token, state)) treeAcc), stream = "", breaker = "", toAdd = [] }
+        let state = topState breakers in
+        if contains (topBreakers breakers) lword then
+            if (head breakers).1 then
+                parseRec word.stream (tail breakers) (cons (Leaf (word.token, state)) treeAcc)
+            else 
+                let absorb = absorbIt (state, lword) in
+                {
+                    tree = reverse (if absorb then
+                                        cons (Leaf (word.token, state)) treeAcc
+                                    else treeAcc),
+                    stream = if absorb then word.stream else stream,
+                    breaker = lword, toAdd = [] }
+            else match word.token with Eof {} then
+                { tree = reverse (cons (Leaf (word.token, state)) treeAcc), stream = "", breaker = "", toAdd = [] }
+        else match find (lam w. eqString w.0 lword) breakerAdder with Some b then
+            parseRec
+                word.stream
+                (cons ( { breakers = b.1, state = state }, true ) breakers)
+                (cons (Leaf (word.token, state)) treeAcc)
         else if contains headSnippets lword then
             buildSnippet word breakers treeAcc
         else
             parseRec word.stream breakers (cons (Leaf (word.token, state)) treeAcc)
         in
-    let snippet = parseRec "stream" [ { breakers = [""], state = Program {} }] [] in
-    Node { sons = snippet.tree, token = Word { content = fileName }, state = Program {} }
+    match fileReadOpen fileName with Some rc then
+        let s = fileReadString rc in
+        fileReadClose rc;
+        let snippet = parseRec s [({ breakers = [""], state = Program {} }, false)] [] in
+        Node { sons = snippet.tree, token = Word { content = fileName }, state = Program {} }
+    else error (concat "Error reading file " fileName)
