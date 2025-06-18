@@ -11,13 +11,13 @@ lang MdObject
 syn Object = 
     | MdProgram { filePath: String, doc: [String] }
     | MdLet { name : String, doc: [String] }
-    | MdLang { name : String, doc: [String] }
-    | MdType { name: String, t: String, doc: [String] }
+    | MdLang { name : String, parents : [String] , doc: [String] }
+    | MdType { name: String, t: Option String, doc: [String] }
     | MdUse { l: String }
-    | MdSem {}
-    | MdSyn {}
+    | MdSem { name: String, langName: String, doc: [String] }
+    | MdSyn { name: String, langName: String, doc: [String] }
     | MdCon {}
-    | MdMexpr {}
+    | MdMexpr { doc: [String] }
     | MdWord { word: String }
     | MdInclude { filePath: String }
 
@@ -61,6 +61,17 @@ let compileToMd =
         lam kind. lam namespace. lam name.
         concatAll [kind, "#", namespace, "~", name] in
 
+    let extractLastNamespaceElement = lam namespace.
+        recursive let extractLastNamespaceElement = lam namespace.
+            match namespace with "-" ++ namespace then
+                extractLastNamespaceElement namespace
+            else match namespace with [x] ++ namespace then
+                let res = extractLastNamespaceElement namespace in
+                if res.1 then (cons x res.0, res.1)
+                else res
+            else ([], true)
+        in (extractLastNamespaceElement namespace).0 in
+    
     recursive
     let sanitizePath = lam path.
         switch path
@@ -72,10 +83,13 @@ let compileToMd =
         lam sons. filter (lam s. match s with Leaf (Comment {}, _) then false else true) sons in
     recursive
     let nthWord = lam sons. lam n.
-        match sons with [Leaf (Word { content = word }, _), _] ++ rest then
-            if eqi n 0 then (word, rest)
+        switch sons
+        case [Leaf (Word { content = word }, _)] ++ rest then
+            if eqi n 0 then Some (word, rest)
             else nthWord rest (subi n 1)
-        else never in
+        case [_] ++ rest then nthWord rest n
+        case [] then None {}
+        end in
     recursive
     let compileToMdRec : (DocTree -> String -> [String] -> ([String], Object)) =
     lam tree. lam namespace. lam currentComment.
@@ -117,12 +131,13 @@ let compileToMd =
                             case MdSyn {} then { set with mdSyn = cons obj set.mdSyn }
                             case MdCon {} then { set with mdCon = cons obj set.mdCon }    
                             case MdMexpr {} then { set with mdMexpr = cons obj set.mdMexpr }
+                            case MdType {} then { set with mdType = cons obj set.mdType }    
                             case MdInclude {} then { set with mdInclude = cons obj set.mdInclude }
                             case MdWord {} then set
                             end) objects
                         case [] then set
                         end
-                    in buildSet { mdUse = [], mdLet = [], mdLang = [], mdType = [], mdSem = [], mdSyn = [], mdCon = [], mdMexpr = [], mdInclude = [] } objects.1 in
+                    in buildSet { mdUse = [], mdLet = [], mdLang = [], mdType = [], mdSem = [], mdSyn = [], mdCon = [], mdMexpr = [], mdInclude = [], mdType = [] } objects.1 in
 
 
                 -- Displaying uses and includes
@@ -151,9 +166,9 @@ let compileToMd =
             else error "Error writing to file."
         in
         match tree with Node { sons = sons, token = token, state = state } then
-            let sons = filter (lam s. match s with Leaf (Separator {}, _) | Leaf (WeakComment {}, _)
-            then false else true) sons in
+            
             let sanitized = sanitizePath namespace in
+
             switch token case Word { content = content } then
             switch state
             case Program {} then
@@ -169,12 +184,11 @@ let compileToMd =
                 render namespace extracted.0 mdTitle mdPath extracted.1;
                 ([], MdProgram { filePath = mdTitle, doc = extracted.0 })
             case (Use {} | TopUse {}) then
-                match nthWord sons 0 with (content, _) then
+                match nthWord sons 0 with Some (content, _) then
                     ([], MdUse { l = content })
                 else never
             case (Let {} | TopLet {}) then
-                match nthWord sons 0 with (name, rest) then
-                    print (concatAll ["let: ", name, "\n"]);
+                match nthWord sons 0 with Some (name, rest) then
                     let obj = MdLet { name = name, doc = currentComment } in
                     let commentBuffer = render
                         (concatAll [namespace, "-", name]) currentComment name
@@ -182,21 +196,61 @@ let compileToMd =
                     (commentBuffer, obj)
                 else never
             case (Type {} | TopType {}) then
-                match nthWord sons 0 with (content, typedef) then
-                    error "TODO: Type"
+                match nthWord sons 0 with Some (name, typedef) then
+                    let t = match nthWord typedef 0 with Some ("=", typedef) then
+                        Some (foldl (lam s. lam t.
+                            switch t
+                            case Leaf (Word { content = "in" }, _) then s
+                            case Leaf (Word { content = content }, _) then concat content s
+                            case _ then s end
+                            ) "" (reverse typedef) )
+                    else None {} in
+                    let obj = MdType { name = name, t = t, doc = currentComment } in
+                    let commentBuffer = render
+                        (concatAll [namespace, "-", name]) currentComment name
+                        (getId "Type" sanitized name) [] in
+                    (commentBuffer, obj)
                 else never 
             case Sem {} then
-                error "TODO: Sem"
+                match nthWord sons 0 with Some (name, rest) then
+                    let obj = MdSem { name = name, doc = currentComment,
+                                      langName = extractLastNamespaceElement namespace  } in
+                    let commentBuffer = render
+                        (concatAll [namespace, "-", name]) currentComment name
+                        (getId "Sem" sanitized name) rest in
+                    (commentBuffer, obj)
+                else never
             case Syn {} then
-                error "TODO: Syn"
+                match nthWord sons 0 with Some (name, rest) then
+                    let obj = MdSyn { name = name, doc = currentComment,
+                                      langName = extractLastNamespaceElement namespace  } in
+                    let commentBuffer = render
+                        (concatAll [namespace, "-", name]) currentComment name
+                        (getId "Syn" sanitized name) rest in
+                    (commentBuffer, obj)
+                else never
             case (Con {} | TopCon {}) then
                 error "TODO: Con"
             case Mexpr {} then
-                error "TODO: Mexpr"
+                let obj = MdMexpr { doc = currentComment } in
+                let commentBuffer = render
+                    (concatAll [namespace, "-", "mexpr"]) currentComment "mexpr"
+                    (getId "Mexpr" sanitized "mexpr") sons in
+                (commentBuffer, obj)
             case Lang {} then
-                match nthWord sons 0 with (name, rest) then
-                    print (concatAll ["lang: ", name, "\n"]);
-                    let obj = MdLang { name = name, doc = currentComment } in
+                match nthWord sons 0 with Some (name, rest) then
+                    recursive let extractParents = lam words.
+                        match nthWord words 0 with Some (w, words) then
+                            switch w
+                            case "end" | "type" | "sem" | "syn" | "con" then []
+                            case name then
+                                match nthWord words 0 with Some (_, words) then 
+                                    cons name (extractParents words)
+                                else [name]
+                            end
+                        else [] in
+                    let obj = MdLang { name = name, doc = currentComment,
+                                        parents = extractParents rest } in
                     let commentBuffer = render
                         (concatAll [namespace, "-", name]) currentComment name
                         (getId "Lang" sanitized name) rest in
@@ -204,7 +258,6 @@ let compileToMd =
                 else never
             end
             end
-    
         else match tree with Leaf (token, state) then
             let w = MdWord { word = lit token } in
             match token with Comment { content = content } then
