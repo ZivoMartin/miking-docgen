@@ -1,5 +1,6 @@
 include "string.mc"
 
+-- Takes an array of String and concatenates then into one single String
 let concatAll = lam arr.
     recursive let concatAll = lam arr.
         match arr with [] then "" else concat (head arr) (concatAll (tail arr)) in concatAll arr

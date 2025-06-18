@@ -2,6 +2,9 @@ include "compile.mc"
     
 mexpr
     use TokenReader in
-    let result = parse "src/token-readers.mc" in
-    compileToMd result []
-    --displayTree result
+    switch parse "src/token-readers.mc"
+    case Some result then
+        displayTree result
+        --compileToMd result []
+    end
+

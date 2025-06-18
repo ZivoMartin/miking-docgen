@@ -136,8 +136,8 @@ lang LetBreakerChooser = BreakerChooserInterface
         | (Let {}, word) -> chooseCrash (Let {}, word)
 
     sem continue =
-        | (Let {}, ("in" | "")) -> true
-        | (Let {}, "lang") -> false
+        | (Let {}, ("in")) -> true
+        | (Let {}, ("lang" | "")) -> false
 
     sem isHard =
         | (Let {}, _) -> true

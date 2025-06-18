@@ -15,11 +15,11 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
   in
   recursive let displayTreeIndented = lam tree. lam depth.
     match tree with Node { sons = sons, token = token, state = state } then
-         print (concatAll [indentString depth, "Node (", toString state, "): ", lit token, "\n"]);
+         printLn (concatAll [indentString depth, "Node (", toString state, ")"]);
         iter (lam child. displayTreeIndented child (addi depth 1)) sons
     else match tree with Leaf (token, state) then
         match token with Separator {} | Eof {} then () else 
-            print (concatAll [indentString depth, "Leaf: ", lit token, "\n"])
+            printLn (concatAll [indentString depth, "Leaf (", tokenToString token, "):", lit token])
     else never
   in
   displayTreeIndented tree 0
