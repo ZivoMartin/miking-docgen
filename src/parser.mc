@@ -6,7 +6,7 @@ include "seq.mc"
 let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser in lam fileName.
     let headSnippets = ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use"] in
     let breakerAdder = [("switch", ["end"])] in
-    type Snippet = { tree: [DocTree], stream: String, breaker: String, toAdd: [DocTree] } in
+    type Snippet = { tree: [DocTree], stream: String, breaker: String, toAdd: [DocTree], absorbed: Bool } in
     let topState = lam breakers. let h = (head breakers).0 in h.state in
     let topBreakers = lam breakers. let h = (head breakers).0 in h.breakers in
     
@@ -34,20 +34,30 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                 let newState = topState breakers in
                 let snippet = parseRec word.stream breakers [] in
                 if continue (newState, snippet.breaker) then
-                    let docNode = Node { sons = snippet.tree, token = word.token, state = newState } in
-                    let tree = reverse (cons docNode snippet.toAdd) in
-                    parseRec snippet.stream (tail breakers) (concat tree treeAcc)
+                    let last = next snippet.stream in
+                    
+                    let result = if and (not snippet.absorbed) (absorbIt (newState, lit last.token)) then
+                        let leaf = Leaf (last.token, newState) in
+                        let docNode = Node { sons = (concat snippet.tree [leaf]), token = word.token, state = newState } in
+                        { stream = last.stream, docNode = docNode }
+                    else
+                        let docNode = Node { sons = snippet.tree, token = word.token, state = newState } in    
+                        { stream = snippet.stream, docNode = docNode } in
+                    let tree = reverse (cons result.docNode snippet.toAdd) in
+                    parseRec result.stream (tail breakers) (concat tree treeAcc)
                 else                   
                     let docNode = Node {
                         sons = snippet.tree, token = word.token,
                         state = topVersion newState } in
                     let concatToAdd = cons docNode snippet.toAdd in
-                    let rev = reverse treeAcc in
                     let isHardTest = isHard (newState, snippet.breaker) in
                     {
                         snippet with
                         toAdd = if isHardTest then concatToAdd else [],
-                        tree = if isHardTest then rev else reverse (concat concatToAdd rev)
+                        tree = if isHardTest then
+                                reverse treeAcc
+                               else
+                                reverse (concat concatToAdd treeAcc)
                     }
             in
             let word = next stream in
@@ -63,9 +73,10 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                                             cons (Leaf (word.token, state)) treeAcc
                                         else treeAcc),
                         stream = if absorb then word.stream else stream,
+                        absorbed = absorb,
                         breaker = lword, toAdd = [] }
             else match word.token with Eof {} then
-                    { tree = reverse (cons (Leaf (word.token, state)) treeAcc), stream = "", breaker = "", toAdd = [] }
+                    { tree = reverse (cons (Leaf (word.token, state)) treeAcc), stream = "", breaker = "", toAdd = [], absorbed = true }
             else match find (lam w. eqString w.0 lword) breakerAdder with Some b then
                 parseRec
                     word.stream

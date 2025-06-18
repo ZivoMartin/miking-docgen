@@ -101,9 +101,9 @@ lang StrTokenReader = TokenReaderInterface
         | "\"" ++ str  ->
             recursive
             let extract =
-            lam str. lam last.
+            lam str. lam previous.
               match str with [x] ++ xs then
-                    if (and (eqc x '\"') (not (eqc last '\\'))) then
+                    if (and (eqc x '\"') (not (eqc previous '\\'))) then
                             ("\"", xs)
                     else
                         let extracted = extract xs x in
@@ -144,17 +144,21 @@ lang WordTokenReader = TokenReaderInterface
         | str  ->
             recursive
             let extract =
-            lam str.
+            lam str. lam previous.
                 switch str 
-                case (("--" ++ x) | ("\"" ++ x) | (" " ++ x) | ("\n" ++ x) | ("=" ++ x) | ("++" ++ x))
+                case (("--" ++ x)  | (" " ++ x) | ("\n" ++ x) | ("=" ++ x) | ("++" ++ x))
                     then ("", str)
+                
                 case [x] ++ xs then
-                    let extracted = extract xs in
-                    (cons x extracted.0, extracted.1)
+                    if (and (eqc x '\"') (not (eqc previous '\\'))) then
+                        ("", str)
+                    else
+                        let extracted = extract xs x in
+                        (cons x extracted.0, extracted.1)
                 case _ then ("", "")
                 end
             in
-            let extracted =  extract str in
+            let extracted =  extract str '-' in
             {
                 token = Word { content = extracted.0 },
                 stream = extracted.1
@@ -230,18 +234,19 @@ lang IncludeTokenReader = TokenReaderInterface
             in
             recursive
             let extractStr =
-            lam str.
-                match str with "\"" ++ xs then
-                    ("", xs)              
-                else match str with [x] ++ xs then
-                    let extracted = extractStr xs in
-                    (cons x extracted.0, extracted.1)
+            lam str. lam previous.
+                match str with [x] ++ xs then
+                    if (and (eqc x '\"') (not (eqc previous '\\'))) then
+                        ("", xs)
+                    else
+                        let extracted = extractStr xs x in
+                        (cons x extracted.0, extracted.1)
                 else
                     ("", "")
             in
             
             let extractedSep =  extractSep str in
-            let extractedStr =  extractStr (tail extractedSep.1) in
+            let extractedStr =  extractStr (tail extractedSep.1) '-' in
             {
                 token = Include {
                     content = extractedStr.0,
