@@ -137,7 +137,10 @@ lang WordTokenReader = TokenReaderInterface
         | "|" ++ str -> { token = Word { content = "|" }, stream = str }
         | "{" ++ str -> { token = Word { content = "{" }, stream = str }
         | "}" ++ str -> { token = Word { content = "}" }, stream = str }
+        | "[" ++ str -> { token = Word { content = "[" }, stream = str }
+        | "]" ++ str -> { token = Word { content = "]" }, stream = str }
         | ":" ++ str -> { token = Word { content = ":" }, stream = str }
+        | ";" ++ str -> { token = Word { content = ":" }, stream = str }    
         | "(" ++ str -> { token = Word { content = "(" }, stream = str }
         | ")" ++ str -> { token = Word { content = ")" }, stream = str }
         | "->" ++ str -> { token = Word { content = "->" }, stream = str }    
@@ -146,11 +149,12 @@ lang WordTokenReader = TokenReaderInterface
             let extract =
             lam str. lam previous.
                 switch str 
-                case (("--" ++ x)  | (" " ++ x) | ("\n" ++ x) | ("=" ++ x) | ("++" ++ x))
-                    then ("", str)
-                
+                case (("--" ++ x) | ("++" ++ x))
+                    then ("", str)                
                 case [x] ++ xs then
-                    if (and (eqc x '\"') (not (eqc previous '\\'))) then
+                    match find (lam c. eqc c x) "=|{}():[];\n " with Some _ then -- Should remain valid even with ''
+                        ("", str)
+                    else if (and (eqc x '\"') (not (eqc previous '\\'))) then
                         ("", str)
                     else
                         let extracted = extract xs x in

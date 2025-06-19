@@ -37,7 +37,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                     let last = next snippet.stream in
                     
                     let result = if and (not snippet.absorbed) (absorbIt (newState, lit last.token)) then
-                        let leaf = Leaf (last.token, newState) in
+                        let leaf = Leaf { token = last.token, state = newState } in
                         let docNode = Node { sons = (concat snippet.tree [leaf]), token = word.token, state = newState } in
                         { stream = last.stream, docNode = docNode }
                     else
@@ -65,27 +65,27 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
             let state = topState breakers in
             if contains (topBreakers breakers) lword then
                 if (head breakers).1 then
-                     parseRec word.stream (tail breakers) (cons (Leaf (word.token, state)) treeAcc)
+                     parseRec word.stream (tail breakers) (cons (Leaf { token = word.token, state = state }) treeAcc)
                 else 
                     let absorb = absorbIt (state, lword) in
                     {
                         tree = reverse (if absorb then
-                                            cons (Leaf (word.token, state)) treeAcc
+                                            cons (Leaf { token = word.token, state = state }) treeAcc
                                         else treeAcc),
                         stream = if absorb then word.stream else stream,
                         absorbed = absorb,
                         breaker = lword, toAdd = [] }
             else match word.token with Eof {} then
-                    { tree = reverse (cons (Leaf (word.token, state)) treeAcc), stream = "", breaker = "", toAdd = [], absorbed = true }
+                    { tree = reverse (cons (Leaf { token = word.token, state = state }) treeAcc), stream = "", breaker = "", toAdd = [], absorbed = true }
             else match find (lam w. eqString w.0 lword) breakerAdder with Some b then
                 parseRec
                     word.stream
                     (cons ( { breakers = b.1, state = state }, true ) breakers)
-                    (cons (Leaf (word.token, state)) treeAcc)
+                    (cons (Leaf { token = word.token, state = state }) treeAcc)
             else if contains headSnippets lword then
                 buildSnippet word breakers treeAcc
             else
-                parseRec word.stream breakers (cons (Leaf (word.token, state)) treeAcc)
+                parseRec word.stream breakers (cons (Leaf { token = word.token, state = state }) treeAcc)
             in
         match fileReadOpen fileName with Some rc then
             let s = fileReadString rc in

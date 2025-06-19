@@ -1,7 +1,7 @@
 include "breaker-choosers.mc"
     
 type DocTree
-con Leaf : use TokenReader in use BreakerChooser in (Token, State) -> DocTree
+con Leaf : use TokenReader in use BreakerChooser in { token: Token, state: State } -> DocTree
 con Node : use TokenReader in use BreakerChooser in { sons: [DocTree], token: Token, state: State} -> DocTree
 
 
@@ -17,7 +17,7 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
     match tree with Node { sons = sons, token = token, state = state } then
          printLn (concatAll [indentString depth, "Node (", toString state, ")"]);
         iter (lam child. displayTreeIndented child (addi depth 1)) sons
-    else match tree with Leaf (token, state) then
+    else match tree with Leaf { token = token, state = state } then
         match token with Separator {} | Eof {} then () else 
             printLn (concatAll [indentString depth, "Leaf (", tokenToString token, "):", lit token])
     else never

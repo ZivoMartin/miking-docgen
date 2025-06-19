@@ -15,3 +15,13 @@ let contains = lam arr. lam lword.
         else
             or (eqString (head arr) lword) (contains (tail arr) lword)
     in contains arr lword
+
+let contains = lam arr. lam lword. 
+    recursive
+    let contains = lam arr. lam lword.
+        match arr with [] then
+            false
+        else
+            or (eqString (head arr) lword) (contains (tail arr) lword)
+    in contains arr lword
+
