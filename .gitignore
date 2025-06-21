@@ -1,4 +1,5 @@
 test-server/target
+test-server/static/*    
 output
 todo
 main

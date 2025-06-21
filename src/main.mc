@@ -1,10 +1,10 @@
-include "compiler/compile.mc"
+include "extracting/extracter.mc"
+include "rendering/renderer.mc"
     
 mexpr
-    use TokenReader in
     switch parse "src/main.mc"
     case Some result then
         -- displayTree result
-        compileToMd result []
+        let obj = extract result in
+        render obj
     end
-

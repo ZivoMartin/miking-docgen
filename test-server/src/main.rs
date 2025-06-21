@@ -26,10 +26,6 @@ async fn serve_markdown(Path(path): Path<String>) -> Response {
     let mut file_path = PathBuf::from("static");
     file_path.push(&path);
 
-    if file_path.extension().is_none() {
-        file_path.set_extension("md");
-    }
-
     match fs::read_to_string(&file_path) {
         Ok(markdown) => {
             let parser = Parser::new(&markdown);

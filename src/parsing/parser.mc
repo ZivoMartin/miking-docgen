@@ -1,5 +1,5 @@
 include "doc-tree.mc"
-include "util.mc"
+include "../util.mc"
 include "ext/file-ext.mc"
 include "seq.mc"
 
@@ -92,5 +92,6 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
             fileReadClose rc;
             let snippet = parseRec s [({ breakers = [""], state = Program {} }, false)] [] in
             Some (Node { sons = snippet.tree, token = Word { content = fileName }, state = Program {} })
-        else None {}
+        else
+            None {}
  

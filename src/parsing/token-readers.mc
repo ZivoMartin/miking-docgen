@@ -1,4 +1,4 @@
-include "util.mc"
+include "../util.mc"
 
 lang TokenReaderInterface
     type NextResult = {token : Token, stream : String}
@@ -131,42 +131,34 @@ lang WordTokenReader = TokenReaderInterface
     sem tokenToString =
         | Word {} -> "Word"
     
-    sem next /- : String -> NextResult -/ =
-        | "=" ++ str -> { token = Word { content = "=" }, stream = str }
-        | "++" ++ str -> { token = Word { content = "++" }, stream = str }
-        | "|" ++ str -> { token = Word { content = "|" }, stream = str }
-        | "{" ++ str -> { token = Word { content = "{" }, stream = str }
-        | "}" ++ str -> { token = Word { content = "}" }, stream = str }
-        | "[" ++ str -> { token = Word { content = "[" }, stream = str }
-        | "]" ++ str -> { token = Word { content = "]" }, stream = str }
-        | ":" ++ str -> { token = Word { content = ":" }, stream = str }
-        | ";" ++ str -> { token = Word { content = ":" }, stream = str }    
-        | "(" ++ str -> { token = Word { content = "(" }, stream = str }
-        | ")" ++ str -> { token = Word { content = ")" }, stream = str }
-        | "->" ++ str -> { token = Word { content = "->" }, stream = str }    
+    sem next /- : String -> NextResult -/ =    
         | str  ->
-            recursive
-            let extract =
-            lam str. lam previous.
-                switch str 
-                case (("--" ++ x) | ("++" ++ x))
-                    then ("", str)                
-                case [x] ++ xs then
-                    match find (lam c. eqc c x) "=|{}():[];\n " with Some _ then -- Should remain valid even with ''
-                        ("", str)
-                    else if (and (eqc x '\"') (not (eqc previous '\\'))) then
-                        ("", str)
-                    else
-                        let extracted = extract xs x in
-                        (cons x extracted.0, extracted.1)
-                case _ then ("", "")
-                end
-            in
-            let extracted =  extract str '-' in
-            {
-                token = Word { content = extracted.0 },
-                stream = extracted.1
-            }
+            let separators = ["=", "++", "|", "{", "}", "[", "]", ":", ";", ".", ",", "(", ")", "->"] in
+            match find (flip strStartsWith str) separators with Some s then
+                { token = Word { content = s }, stream = strTruncate str (length s) }
+            else
+                recursive
+                let extract =
+                lam str. lam previous.
+                    switch str 
+                    case (("--" ++ x) | ("++" ++ x))
+                        then ("", str)                
+                    case [x] ++ xs then
+                        match find (lam c. eqc c x) "=.,|{}():[];\n " with Some _ then -- Should remain valid even with ''
+                            ("", str)
+                        else if (and (eqc x '\"') (not (eqc previous '\\'))) then
+                            ("", str)
+                        else
+                            let extracted = extract xs x in
+                            (cons x extracted.0, extracted.1)
+                    case _ then ("", "")
+                    end
+                in
+                let extracted =  extract str '-' in
+                {
+                    token = Word { content = extracted.0 },
+                    stream = extracted.1
+                }
 end
 
 lang SeparatorTokenReader = TokenReaderInterface
@@ -227,7 +219,7 @@ lang IncludeTokenReader = TokenReaderInterface
         | Include {} -> "Include"    
     
     sem next =
-        | "include" ++ str ->
+        | "include " ++ str ->
             recursive
             let extractSep =
             lam str.
