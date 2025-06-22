@@ -2,9 +2,16 @@ include "doc-tree.mc"
 include "../util.mc"
 include "ext/file-ext.mc"
 include "seq.mc"
+include "hashmap.mc"
 
 let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser in lam fileName.
-    let headSnippets = ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use"] in
+    let headSnippets =
+        foldl
+        (lam m. lam k. hmInsert k () m)
+        (hashmapEmpty ())
+        ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use"] in
+
+    let breakerAdder = hashmapEmpty in
     let breakerAdder = [("switch", ["end"])] in
     type Snippet = { tree: [DocTree], stream: String, breaker: String, toAdd: [DocTree], absorbed: Bool } in
     let topState = lam breakers. let h = (head breakers).0 in h.state in
@@ -82,7 +89,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                     word.stream
                     (cons ( { breakers = b.1, state = state }, true ) breakers)
                     (cons (Leaf { token = word.token, state = state }) treeAcc)
-            else if contains headSnippets lword then
+            else if hmMem lword headSnippets then
                 buildSnippet word breakers treeAcc
             else
                 parseRec word.stream breakers (cons (Leaf { token = word.token, state = state }) treeAcc)

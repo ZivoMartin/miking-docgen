@@ -2,22 +2,31 @@ include "../parsing/doc-tree.mc"
 include "../parsing/token-readers.mc"
 include "../util.mc"
 include "string.mc"
+include "stdlib.mc"
+include "sys.mc"
 
 let getNamespace = lam namespace. lam name.
-    concatAll [namespace, "-", name]
+    concatAll [namespace, "/", name]
 
 let extractLastNamespaceElement = lam namespace.
-    match strSplit "-" namespace with ([_] ++ _) & namespace then head (reverse namespace) else ""
+    match strSplit "/" namespace with ([_] ++ _) & namespace then head (reverse namespace) else ""
 
 let sanitizePath = lam path.
-    recursive
-    let sanitizePath = lam path.
-        switch path
-        case (['/'] ++ path) then cons '-' (sanitizePath path)
-        case [x] ++ path then cons x (sanitizePath path)
-        case [] then [] end
-    in sanitizePath path
+    -- recursive
+    -- let sanitizePath = lam path.
+    --     switch path
+    --     case (['/'] ++ path) then cons '-' (sanitizePath path)
+    --     case [x] ++ path then cons x (sanitizePath path)
+    --     case [] then [] end
+    -- in sanitizePath path
+    path
 
+let goHere = lam currentLoc. lam target.
+    let path = if strStartsWith "/" target then target
+               else concatAll [currentLoc, "/", target] in
+    if sysFileExists path then path else concatAll [stdlibLoc, "/", target]
+
+        
 let removeComments = use TokenReader in
     lam sons. filter (lam s. match s with Leaf { token = Comment {} } then false else true) sons
 

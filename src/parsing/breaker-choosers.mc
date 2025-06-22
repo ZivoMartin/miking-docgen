@@ -137,7 +137,7 @@ lang LetBreakerChooser = BreakerChooserInterface
 
     sem continue =
         | (Let {}, ("in")) -> true
-        | (Let {}, ("lang" | "utest" | "con" | "")) -> false
+        | (Let {}, _) -> false
 
     sem isHard =
         | (Let {}, _) -> true

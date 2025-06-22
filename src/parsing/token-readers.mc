@@ -1,4 +1,5 @@
 include "../util.mc"
+include "hashmap.mc"
 
 lang TokenReaderInterface
     type NextResult = {token : Token, stream : String}
@@ -120,6 +121,16 @@ lang StrTokenReader = TokenReaderInterface
 end
 
 
+let separatorMap =
+    let traits = hashmapStrTraits in
+    let insert = lam x. hashmapInsert traits x in
+    let mem = lam x. hashmapMem traits x in
+    foldl
+        (lam m. lam k. hmInsert k () m)
+        (hashmapEmpty ())
+        ["=", "++", "|", "{", "}", "[", "]", ":", ";", ".", ",", "(", ")", "->", " ", "\n", "\t"] 
+let isSep = lam s. hmMem s separatorMap
+
 lang WordTokenReader = TokenReaderInterface
     syn Token =
       | Word { content: String }
@@ -131,22 +142,24 @@ lang WordTokenReader = TokenReaderInterface
     sem tokenToString =
         | Word {} -> "Word"
     
-    sem next /- : String -> NextResult -/ =    
-        | str  ->
-            let separators = ["=", "++", "|", "{", "}", "[", "]", ":", ";", ".", ",", "(", ")", "->"] in
-            match find (flip strStartsWith str) separators with Some s then
-                { token = Word { content = s }, stream = strTruncate str (length s) }
+    sem next /- : String -> NextResult -/ =
+        | str ->
+            match str with [x] then { token = Word { content = [x] }, stream = "" } else
+            if isSep [head str] then
+                { token = Word { content = [head str] }, stream = tail str }
+            else let arr = [head str, head (tail str)] in if isSep arr then
+                { token = Word { content = arr }, stream = tail (tail str) }
             else
                 recursive
                 let extract =
                 lam str. lam previous.
                     switch str 
                     case (("--" ++ x) | ("++" ++ x))
-                        then ("", str)                
+                        then ("", str)
                     case [x] ++ xs then
-                        match find (lam c. eqc c x) "=.,|{}():[];\n " with Some _ then -- Should remain valid even with ''
+                        if isSep [x] then
                             ("", str)
-                        else if (and (eqc x '\"') (not (eqc previous '\\'))) then
+                        else if and (eqc x '\"') (not (eqc previous '\\')) then
                             ("", str)
                         else
                             let extracted = extract xs x in

@@ -7,18 +7,21 @@ include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
 include "ext/file-ext.mc"
 include "fileutils.mc"
-
+include "hashmap.mc"
+    
 -- Takes a tree and build the md object 
 -- Avoir un buffer qui preserve le long du parcours les commentaires sur des lignes consecutives reperés. Le vider si l'on croise un retour à la ligne dans un sep ou un word quelconque, le mettre dans la doc si l'on croise un noeud, et le vider juste après
 let extract : DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
     lam tree.
 
+    -- At the end of an extract call, the returned IncludeSet is an hashset containing all the paths in the projects.
+    type IncludeSet = HashMap String () in
     type CommentBuffer = [String] in
-        
+    type ExtractRecOutput = { obj: ObjectTree, commentBuffer: CommentBuffer, includeSet: IncludeSet } in
     recursive
-    let extractRec : (DocTree -> String -> CommentBuffer -> { obj: ObjectTree, commentBuffer: CommentBuffer }) =
-    lam tree. lam namespace. lam commentBuffer.
+    let extractRec : (DocTree -> String -> CommentBuffer -> IncludeSet -> ExtractRecOutput) =
+    lam tree. lam namespace. lam commentBuffer. lam includeSet.
         switch tree
         case Node { sons = sons, token = token, state = state } then
 
@@ -32,18 +35,18 @@ let extract : DocTree -> ObjectTree =
             let obj = { defaultObject with namespace = namespace } in
             let doc = buildDoc commentBuffer in
 
-            let process : [DocTree] -> String -> String -> String -> ObjectKind -> { obj: ObjectTree, commentBuffer: CommentBuffer } =
+            let process : [DocTree] -> String -> String -> String -> ObjectKind -> ExtractRecOutput =
                 lam sons. lam name. lam namespace. lam doc. lam kind.
 
                 let foldResult = foldl
                     (lam arg. lam s.
-                    let res = extractRec s namespace arg.commentBuffer in
-                    { commentBuffer = res.commentBuffer, sons = cons res.obj arg.sons })
-                    { commentBuffer = [], sons = [] }
+                    let res = extractRec s namespace arg.commentBuffer arg.includeSet in
+                    { commentBuffer = res.commentBuffer, sons = cons res.obj arg.sons, includeSet = res.includeSet })
+                    { commentBuffer = [], sons = [], includeSet = includeSet }
                     sons in
                 let obj = { obj with name = name, kind = kind, doc = doc } in
                 let obj = ObjectNode { obj = obj, sons = foldResult.sons } in
-                { obj = obj, commentBuffer = foldResult.commentBuffer } in
+                { obj = obj, commentBuffer = foldResult.commentBuffer, includeSet = foldResult.includeSet } in
 
 
             switch token case Word { content = content } then
@@ -64,7 +67,7 @@ let extract : DocTree -> ObjectTree =
             case (Use {} | TopUse {}) then
                 let name = getName sons in
                 let obj = { obj with name = name.word, kind = ObjUse {} } in
-                { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [] }
+                { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [], includeSet = includeSet }
             case state then
                 let name = getName sons in
                 let kind = switch state
@@ -105,32 +108,35 @@ let extract : DocTree -> ObjectTree =
         case Leaf { token = token, state = state } then
             let w = ObjectLeaf (lit token) in
             switch token
-            case Comment { content = content } then { commentBuffer = cons content commentBuffer, obj = w }
+            case Comment { content = content } then
+                { commentBuffer = cons content commentBuffer, obj = w, includeSet = includeSet }
             case Include { content = content } then
-                let path = if strStartsWith "/" content then content else
-                            concatAll [dirname namespace, "/", content] in
+                let path = goHere (dirname namespace) content in
                 let path = normalizePath path in
+                let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude {}, name = path, namespace = path }, sons = [] } in
+        
+                if hmMem path includeSet then { commentBuffer = [], obj = emptyInclude, includeSet = includeSet } else
+
+                let newIncludeSet = hmInsert path () includeSet in
                 printLn path;
                 switch parse path
                 case Some tree then
-                    match extractRec tree path [] with { commentBuffer = [], obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
+                    match extractRec tree path [] newIncludeSet with { commentBuffer = [], obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } then
                         let includeObj = { progObj with kind = ObjInclude {} } in
-                        { commentBuffer = [], obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] } }
+                        { commentBuffer = [], obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet }
                     else never
                 case None {} then
                     printLn (concat "WARNING: Failed to open file " path);
-                    let obj = { defaultObject with kind = ObjInclude {}, name = path } in
-                    let obj = ObjectNode { obj = obj, sons = [] } in
-                    { commentBuffer = [], obj = obj }
+                    { commentBuffer = [], obj = emptyInclude, includeSet = newIncludeSet }
                 end
             case Separator { content = content } then
-                if strContains content '\n' then { commentBuffer = [], obj = w }
-                else { commentBuffer = commentBuffer, obj = w }
+                if strContains content '\n' then { commentBuffer = [], obj = w, includeSet = includeSet }
+                else { commentBuffer = commentBuffer, obj = w, includeSet = includeSet }
     
-            case _ then { commentBuffer = [], obj = w }
+            case _ then { commentBuffer = [], obj = w, includeSet = includeSet }
             end
         end
     in
     match tree with Node { token = Word { content = content }, state = Program {} } then
-        let res = extractRec tree content [] in res.obj
+        let res = extractRec tree content [] (hashmapEmpty ()) in res.obj
     else error "The top node of the tree should be a Program."

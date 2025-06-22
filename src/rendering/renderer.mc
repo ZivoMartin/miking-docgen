@@ -3,8 +3,10 @@
 -- It goes through each nodes and generates all the pages
 -- following an ordered display of definitions (use/include, types, constructors, language definitions, etc.).
 
+include "preprocessor.mc"
 include "../extracting/objects.mc"
-    
+include "util.mc"
+
 -- ## Render Function
 --
 -- The main function that generates a Markdown file from an `ObjectTree`.
@@ -23,6 +25,7 @@ include "../extracting/objects.mc"
 --   - `let` / `sem`
 --   - `mexpr`
 let render : ObjectTree -> () = use ObjectKinds in lam obj.
+    preprocess obj;
     recursive
     let render : ObjectTree -> () = lam obj.
         switch obj
@@ -31,7 +34,7 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [] } then ()
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening md file
-            match fileWriteOpen (concat "doc-gen-output/" (objLink obj)) with Some wc then
+            match createAndOpen (concat "doc-gen-output/" (objLink obj))  with Some wc then
                 let write = fileWriteString wc in
 
                 -- Pushing title and global documentation
@@ -70,14 +73,14 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                         end
                     in buildSet { mdUse = [], mdLet = [], mdLang = [], mdType = [], mdSem = [], mdSyn = [], mdCon = [], mdMexpr = [], mdInclude = [], mdType = [] } sons in
 
-                let pushLink = lam obj. write (concatAll ["\n[-](", objLink obj,")\n\n"]) in
+                let pushLink = lam obj. write (concatAll ["\n[-](/", objLink obj,")\n\n"]) in
 
                 -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
                     let title = match arr with [] then "" else concatAll ["**", title, ":** \n\n"] in
                     write title;
                     let doc = map (lam u. match u with { name = name } then
-                                            concatAll ["[", name, "](", objLink u, ")"]
+                                            concatAll ["[", name, "](/", objLink u, ")"]
                                         else never) arr in
                     write (strJoin ", " (reverse doc));
                     write "\n\n"
@@ -99,7 +102,7 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                     
                 fileWriteClose wc
                 
-            else printLn (concat "Renderer: Error writing to file " (objLink obj))
+            else ()
         case _ then () end
         
     in render obj

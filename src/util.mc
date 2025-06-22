@@ -1,4 +1,5 @@
 include "string.mc"
+include "hashmap.mc"
 
 -- Takes an array of String and concatenates then into one single String
 let concatAll = lam arr.
@@ -66,3 +67,9 @@ let strTruncate = lam s. lam n.
             if eqi n 0 then str
             else strTruncate s (subi n 1)
         else str in strTruncate s n
+
+let hmTraits = hashmapStrTraits
+let hmInsert = lam x. hashmapInsert hmTraits x
+let hmMem = lam x. hashmapMem hmTraits x
+let hmValues = lam x. hashmapValues hmTraits x
+let hmKeys = lam x. hashmapKeys hmTraits x    

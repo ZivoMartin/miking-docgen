@@ -32,19 +32,21 @@ type Object = use ObjectKinds in { name: String, doc : String, namespace: String
 
 let objMdTitle : Object -> String = lam obj. obj.name
 
-let getLangLink = lam name. concat "Lang-" name 
+let getLangLink = lam name. concat "Lang/" name 
     
 let objLink : Object -> String = use ObjectKinds in lam obj.
     switch obj
-    case { name = name, kind = (ObjLang {} | ObjUse {}) } then getLangLink name
-    case { name = name, kind = (ObjProgram {} | ObjInclude {}) } then concatAll ["File-", sanitizePath name]
-    case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, "-", name, "-", (sanitizePath namespace)]
+    case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
+    case { namespace = namespace, kind = (ObjProgram {} | ObjInclude {}) } then concatAll ["File/", sanitizePath namespace]
+    case { name = name, kind = (ObjSem { langName = langName } | ObjSyn { langName = langName }) & kind } then
+        concatAll [getLangLink langName, "/", getFirstWord kind, "/", name]    
+    case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, "/", (sanitizePath namespace), "/", name, ".", getFirstWord kind]
     end
 
 let objNamespace : Object -> String = use ObjectKinds in lam obj.
     switch obj
-    case { kind = ObjProgram {}, name = name } then name
-    case { name = name, namespace = namespace } then concatAll [namespace, "-", name]
+    case { kind = (ObjProgram {} | ObjInclude {}), name = name } then name
+    case { name = name, namespace = namespace } then concatAll [namespace, "/", name]
     end
 
 
@@ -71,10 +73,10 @@ let objGetSpecificDoc : Object -> String = use ObjectKinds in lam obj.
     concatAll [
         switch obj
         case { kind = ObjLang { parents = parents & ([_] ++ _) } } then
-            let parents = map (lam p. concatAll ["[", p, "](", getLangLink p, ")"]) parents in
+            let parents = map (lam p. concatAll ["[", p, "](/", getLangLink p, ".lang)"]) parents in
             concat "**Stem from:**\n\n " (strJoin " + " parents)
         case { kind = ( ObjSyn { langName = langName } | ObjSem { langName = langName } ) } then
-            concatAll ["From ", "[", langName, "](", getLangLink langName, ")"]
+            concatAll ["From ", "[", langName, "](/", getLangLink langName, ".lang)"]
         case { kind = ObjProgram {} } then ""
         case _ then ""
         end,
