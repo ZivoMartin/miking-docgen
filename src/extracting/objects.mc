@@ -3,16 +3,16 @@ include "../util.mc"
 lang ObjectKinds
 
     syn ObjectKind = 
-    | ObjProgram {}
+    | ObjProgram { isStdlib: Bool }
     | ObjLet { rec : Bool, args : [String] }
     | ObjLang { parents : [String] }
     | ObjType { t: Option String }
     | ObjUse {}
-    | ObjSem { langName: String }
-    | ObjSyn { langName: String }
+    | ObjSem { langName: String, variants: [String] }
+    | ObjSyn { langName: String, variants: [String] }
     | ObjCon { t: String }
     | ObjMexpr {}
-    | ObjInclude {}
+    | ObjInclude { isStdlib: Bool }
 
     sem getFirstWord =
     | ObjLet {} -> "let"
@@ -30,17 +30,25 @@ end
 
 type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind }
 
-let objMdTitle : Object -> String = lam obj. obj.name
+let toTruncate = addi 1 (length stdlibLoc)
+    
+let objTitle : Object -> String = use ObjectKinds in lam obj.
+    switch obj
+    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then
+        strTruncate namespace toTruncate
+    case _ then obj.name
+    end
 
 let getLangLink = lam name. concat "Lang/" name 
-    
+
 let objLink : Object -> String = use ObjectKinds in lam obj.
     switch obj
     case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
-    case { namespace = namespace, kind = (ObjProgram {} | ObjInclude {}) } then concatAll ["File/", sanitizePath namespace]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then concatAll ["File/", namespace]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then concatAll ["Lib/", strTruncate namespace toTruncate]
     case { name = name, kind = (ObjSem { langName = langName } | ObjSyn { langName = langName }) & kind } then
         concatAll [getLangLink langName, "/", getFirstWord kind, "/", name]    
-    case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, "/", (sanitizePath namespace), "/", name, ".", getFirstWord kind]
+    case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, "/", namespace, "/", name, ".", getFirstWord kind]
     end
 
 let objNamespace : Object -> String = use ObjectKinds in lam obj.
@@ -69,25 +77,24 @@ let objMdFormat : Object -> String = use ObjectKinds in lam obj.
 -- - Lang : Displays the parents
 -- - Sem and Syn : Displays the language they are declared into
 -- - Let : Displays the name of the function and his arguments.
-let objGetSpecificDoc : Object -> String = use ObjectKinds in lam obj.
-    concatAll [
-        switch obj
-        case { kind = ObjLang { parents = parents & ([_] ++ _) } } then
-            let parents = map (lam p. concatAll ["[", p, "](/", getLangLink p, ".lang)"]) parents in
-            concat "**Stem from:**\n\n " (strJoin " + " parents)
-        case { kind = ( ObjSyn { langName = langName } | ObjSem { langName = langName } ) } then
-            concatAll ["From ", "[", langName, "](/", getLangLink langName, ".lang)"]
-        case { kind = ObjProgram {} } then ""
-        case _ then ""
-        end,
-        "\n\n",
-        objMdFormat obj,
-        "\n\n"
-    ]
+let objGetSpecificDoc : Object -> String = use ObjectKinds in lam obj.      
+    switch obj
+    case { kind = ObjLang { parents = parents & ([_] ++ _) } } then
+        let parents = map (lam p. concatAll ["[", p, "](/", getLangLink p, ".lang)"]) parents in
+        concatAll ["**Stem from:**\n\n ", (strJoin " + " parents), objMdFormat obj]
+    case { name = name, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind } then
+        let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
+        concatAll [
+            "From ", "[", langName, "](/", getLangLink langName, ".lang)\n\n",
+            "```ocaml\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n"
+         ]
+    case _ then objMdFormat obj
+    end
+        
 
 
     
-let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram {} }
+let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false } }
 
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree

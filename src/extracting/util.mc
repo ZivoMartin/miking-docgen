@@ -11,20 +11,44 @@ let getNamespace = lam namespace. lam name.
 let extractLastNamespaceElement = lam namespace.
     match strSplit "/" namespace with ([_] ++ _) & namespace then head (reverse namespace) else ""
 
-let sanitizePath = lam path.
-    -- recursive
-    -- let sanitizePath = lam path.
-    --     switch path
-    --     case (['/'] ++ path) then cons '-' (sanitizePath path)
-    --     case [x] ++ path then cons x (sanitizePath path)
-    --     case [] then [] end
-    -- in sanitizePath path
-    path
 
-let goHere = lam currentLoc. lam target.
+let normalizePath = lam path.
+    let isAbsolute = match path with "/" ++ s then true else false in
+    let components = strSplit "/" path in
+    recursive let process = lam comps. lam stack.
+        switch comps
+        case [] then stack
+        case ["."] ++ rest then process rest stack
+        case [""] ++ rest then process rest stack  -- skip multiple slashes
+        case [".."] ++ rest then
+            (switch stack
+             case ([] | [".."] ++ _) then process rest (cons ".." stack)
+             case [_] ++ tl then process rest tl end)
+        case [comp] ++ rest then process rest (cons comp stack) end
+    in
+    let cleaned = reverse (process components []) in
+    let result = strJoin "/" cleaned in
+    if isAbsolute then cons '/'  result
+    else result
+
+utest normalizePath "repo1/../repo2" with "repo2"
+utest normalizePath "/repo1/../repo2" with "/repo2"
+utest normalizePath "../../repo2" with "../../repo2"
+utest normalizePath "./a/./b/../c" with "a/c"
+utest normalizePath "/a/b/../../c" with "/c"
+
+        
+-- Takes in input the current location on the file system and a target path.
+-- If the target is absolute, the function returns the target
+-- Otherwise, will normalize the path, if the file exists it returns the fusion of current location and target
+-- If the file doesnt exists, returns the target with the isStdlib as true.
+let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentLoc. lam target.
     let path = if strStartsWith "/" target then target
                else concatAll [currentLoc, "/", target] in
-    if sysFileExists path then path else concatAll [stdlibLoc, "/", target]
+    if sysFileExists path then
+        { path = normalizePath path, isStdlib = false }
+    else
+        { path = concatAll [stdlibLoc, "/", target], isStdlib = true }        
 
         
 let removeComments = use TokenReader in
@@ -51,6 +75,7 @@ let extractType = use TokenReader in lam typedef.
          case _ then s end
           ) "" (reverse typedef)
 
+    
 let extractParents = lam words.
     recursive let extractParents = lam words.
         match nthWord words 0 with Some { word = w, rest = words } then
@@ -69,3 +94,31 @@ let skipUseIn : [DocTree] -> [DocTree] = lam sons.
             match (nthWord sons 1) with Some { rest = sons } then
                 skipUseIn sons else never
         else sons in skipUseIn sons
+
+-- Takes a stream and returns the list of variant.
+-- If the input is :
+--  | x .... | y ... | z
+-- The function will return [x, y, z].
+-- Here ... involves anything, and the space between | and variant name can be any separator / comment
+-- The input stream should be valid and have as first word '|', empty list is returned otherwise
+let extractVariants : [DocTree] -> [String] = lam stream.
+    let extractType = lam typedef.     
+     foldl (lam s. lam t.
+         switch t
+         case  ","  then concat "," s
+         case content then concatAll [" ", content, s]
+         case _ then s end
+          ) "" typedef in
+
+    recursive let extractVariants : [DocTree] -> Option [String] -> [String] = lam stream. lam typeAcc.
+        switch (nthWord stream 0, typeAcc)
+        case (Some { word = "|", rest = stream }, Some typeAcc) then cons (extractType typeAcc) (extractVariants stream (Some []))
+        case (Some { word = "|", rest = stream }, None {}) then extractVariants stream (Some [])
+        case (Some { word = "->", rest = stream }, Some typeAcc) then cons (extractType typeAcc) (extractVariants stream (None {}))
+        case (Some { word = word, rest = stream }, Some typeAcc) then extractVariants stream (Some (cons word typeAcc))
+        case (Some { rest = stream }, None {}) then extractVariants stream (None {})
+        case (None {}, Some typeAcc) then [extractType typeAcc]
+        case (None {}, None {}) then []
+        end
+        
+    in extractVariants stream (None {})

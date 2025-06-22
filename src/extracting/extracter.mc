@@ -20,8 +20,8 @@ let extract : DocTree -> ObjectTree =
     type CommentBuffer = [String] in
     type ExtractRecOutput = { obj: ObjectTree, commentBuffer: CommentBuffer, includeSet: IncludeSet } in
     recursive
-    let extractRec : (DocTree -> String -> CommentBuffer -> IncludeSet -> ExtractRecOutput) =
-    lam tree. lam namespace. lam commentBuffer. lam includeSet.
+    let extractRec : (DocTree -> String -> CommentBuffer -> IncludeSet -> Bool -> ExtractRecOutput) =
+    lam tree. lam namespace. lam commentBuffer. lam includeSet. lam inStdlib.
         switch tree
         case Node { sons = sons, token = token, state = state } then
 
@@ -40,7 +40,7 @@ let extract : DocTree -> ObjectTree =
 
                 let foldResult = foldl
                     (lam arg. lam s.
-                    let res = extractRec s namespace arg.commentBuffer arg.includeSet in
+                    let res = extractRec s namespace arg.commentBuffer arg.includeSet inStdlib in
                     { commentBuffer = res.commentBuffer, sons = cons res.obj arg.sons, includeSet = res.includeSet })
                     { commentBuffer = [], sons = [], includeSet = includeSet }
                     sons in
@@ -60,7 +60,7 @@ let extract : DocTree -> ObjectTree =
                     else { comments = [], sons = sons } in
                 match extractProgramComments sons with
                     { comments = extractedComments, sons = sons } then
-                    process sons content content (buildDoc extractedComments) (ObjProgram {})
+                    process sons content content (buildDoc (reverse extractedComments)) (ObjProgram { isStdlib = inStdlib })
                 else never
             case Mexpr {} then
                 process sons "mexpr" (getNamespace namespace "mexpr") doc (ObjMexpr {})
@@ -69,17 +69,18 @@ let extract : DocTree -> ObjectTree =
                 let obj = { obj with name = name.word, kind = ObjUse {} } in
                 { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [], includeSet = includeSet }
             case state then
+                recursive let goToEqual = lam sons.
+                    switch nthWord sons 0
+                    case Some { word = "=", rest = rest } then rest
+                    case Some { rest = rest } then goToEqual rest
+                    case None {} then []
+                    end in
                 let name = getName sons in
                 let kind = switch state
                     case (Let {} | TopLet {}) then
-                        let sons = recursive let goToEqual = lam sons.
-                            switch nthWord sons 0
-                            case Some { word = "=", rest = rest } then rest
-                            case Some { rest = rest } then goToEqual rest
-                            end in goToEqual sons in
+                        let sons = goToEqual sons in
 
                         let sons = skipUseIn sons in
-
                         let args = recursive let extractParams = lam sons.
                             switch nthWord sons 0 
                             case Some { word = "lam", rest = rest } then
@@ -92,8 +93,8 @@ let extract : DocTree -> ObjectTree =
                             end in extractParams sons in
 
                         ObjLet { rec = false, args = args }
-                    case Sem {} then ObjSem { langName = extractLastNamespaceElement namespace }
-                    case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace }
+                    case Sem {} then ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
+                    case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
                     case Lang {} then ObjLang { parents = reverse (extractParents name.rest) }
                     case (Con {} | TopCon {}) then
                         let t = match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
@@ -111,24 +112,22 @@ let extract : DocTree -> ObjectTree =
             case Comment { content = content } then
                 { commentBuffer = cons content commentBuffer, obj = w, includeSet = includeSet }
             case Include { content = content } then
-                let path = goHere (dirname namespace) content in
-                let path = normalizePath path in
-                let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude {}, name = path, namespace = path }, sons = [] } in
-        
-                if hmMem path includeSet then { commentBuffer = [], obj = emptyInclude, includeSet = includeSet } else
+                match goHere (dirname namespace) content with { path = path, isStdlib = isStdlib } then
+                    let isStdlib = or inStdlib isStdlib in
+                    let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib }, name = path, namespace = path }, sons = [] } in
+            
+                    if hmMem path includeSet then { commentBuffer = [], obj = emptyInclude, includeSet = includeSet } else
 
-                let newIncludeSet = hmInsert path () includeSet in
-                printLn path;
-                switch parse path
-                case Some tree then
-                    match extractRec tree path [] newIncludeSet with { commentBuffer = [], obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } then
-                        let includeObj = { progObj with kind = ObjInclude {} } in
-                        { commentBuffer = [], obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet }
+                    let newIncludeSet = hmInsert path () includeSet in
+                    printLn path;
+                    match parse path with Some tree then
+                        match extractRec tree path [] newIncludeSet isStdlib with
+                        { commentBuffer = [], obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } then
+                            let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib } } in
+                            { commentBuffer = [], obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet }
+                        else never
                     else never
-                case None {} then
-                    printLn (concat "WARNING: Failed to open file " path);
-                    { commentBuffer = [], obj = emptyInclude, includeSet = newIncludeSet }
-                end
+                else never
             case Separator { content = content } then
                 if strContains content '\n' then { commentBuffer = [], obj = w, includeSet = includeSet }
                 else { commentBuffer = commentBuffer, obj = w, includeSet = includeSet }
@@ -138,5 +137,5 @@ let extract : DocTree -> ObjectTree =
         end
     in
     match tree with Node { token = Word { content = content }, state = Program {} } then
-        let res = extractRec tree content [] (hashmapEmpty ()) in res.obj
+        let res = extractRec tree content [] (hashmapEmpty ()) false in res.obj
     else error "The top node of the tree should be a Program."

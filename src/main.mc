@@ -1,6 +1,5 @@
 include "extracting/extracter.mc"
 include "rendering/renderer.mc"
-include "stdlib.mc"
 
 mexpr
     switch parse "src/main.mc"

@@ -38,7 +38,7 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                 let write = fileWriteString wc in
 
                 -- Pushing title and global documentation
-                write (concatAll ["# ", objMdTitle obj, "\n\n"]);
+                write (concatAll ["# ", objTitle obj, "\n\n"]);
                 write (objGetSpecificDoc obj);
                 write "\n\n";    
                 write obj.doc;
@@ -67,11 +67,12 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                             case ObjCon {} then { set with mdCon = cons obj set.mdCon }    
                             case ObjMexpr {} then { set with mdMexpr = cons obj set.mdMexpr }
                             case ObjType {} then { set with mdType = cons obj set.mdType }    
-                            case ObjInclude {} then { set with mdInclude = cons obj set.mdInclude }
+                            case ObjInclude { isStdlib = true } then { set with mdLibInclude = cons obj set.mdLibInclude }
+                            case ObjInclude { isStdlib = false } then { set with mdInclude = cons obj set.mdInclude }    
                             end) objects
                         case [] then set
                         end
-                    in buildSet { mdUse = [], mdLet = [], mdLang = [], mdType = [], mdSem = [], mdSyn = [], mdCon = [], mdMexpr = [], mdInclude = [], mdType = [] } sons in
+                    in buildSet { mdUse = [], mdLet = [], mdLang = [], mdType = [], mdSem = [], mdSyn = [], mdCon = [], mdMexpr = [], mdInclude = [], mdLibInclude = [], mdType = [] } sons in
 
                 let pushLink = lam obj. write (concatAll ["\n[-](/", objLink obj,")\n\n"]) in
 
@@ -80,7 +81,7 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                     let title = match arr with [] then "" else concatAll ["**", title, ":** \n\n"] in
                     write title;
                     let doc = map (lam u. match u with { name = name } then
-                                            concatAll ["[", name, "](/", objLink u, ")"]
+                                            concatAll ["[", objTitle u, "](/", objLink u, ")"]
                                         else never) arr in
                     write (strJoin ", " (reverse doc));
                     write "\n\n"
@@ -94,8 +95,7 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                     iter (lam u. write (objMdFormat u); pushLink u) arr
                 in
                     
-                displayUseInclude "Using" set.mdUse;
-                displayUseInclude "Include" set.mdInclude;
+                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.mdUse), ("Includes", set.mdInclude), ("Stdlib Includes", set.mdLibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
                 [("Types", set.mdType), ("Constructors", set.mdCon), ("Languages", set.mdLang),
                 ("Syntaxes", set.mdSyn), ("Variables", set.mdLet), ("Sementics", set.mdSem),("", set.mdMexpr)];
