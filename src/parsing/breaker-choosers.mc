@@ -1,3 +1,22 @@
+-- # BreakerChooser system: choosing breakers and managing parse state
+--
+-- This module defines a set of "BreakerChoosers", one per parsing state.
+--
+-- The core idea is that parsing is guided by a "state machine":  
+-- - The current **state** determines which tokens can appear next  
+-- - A "breaker" is a token that closes one or more blocks  
+-- - When a token is seen, the BreakerChooser decides:
+--     * Does this token start a new block? (choose)
+--     * Does parsing continue in this block? (continue)
+--     * Is this a hard break? (isHard)
+--     * Should this breaker be absorbed? (absorbIt)
+--     * What is the top version of this state? (topVersion)
+--
+-- Each concrete BreakerChooser implements this logic for one state:  
+-- Program, Let, Lang, Type, Sem, Syn, Con, Use, Mexpr, etc.
+--
+-- The whole system is composed at the bottom into one `BreakerChooser`.
+
 include "token-readers.mc"
 
 lang BreakerChooserInterface
