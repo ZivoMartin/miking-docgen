@@ -110,11 +110,13 @@ let extract : DocTree -> ObjectTree =
                         let args = recursive let extractParams = lam sons.
                             switch nthWord sons 0 
                             case Some { word = "lam", rest = rest } then
-                                match getName rest with { word = word, rest = rest} then
-                                    match nthWord rest 0 with Some { rest = rest, word = w } then
-                                        cons word (extractParams rest)
-                                    else never
-                                else never
+                                let w = switch getName rest
+                                case { word = ".", rest = rest} then "_"
+                                case { word = word, rest = rest} then
+                                    match nthWord rest 0 with Some { rest = rest, word = _ } then
+                                        word else never
+                                end in
+                                cons w (extractParams rest)
                             case _ then []
                             end in extractParams sons in
 

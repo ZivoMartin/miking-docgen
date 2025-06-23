@@ -86,7 +86,7 @@ let objMdFormat : Object -> String = use ObjectKinds in lam obj.
     case ObjProgram {} then ""
     case _ then concatAll [getFirstWord obj.kind, " ", obj.name] 
     end in
-    match s with "" then "" else concatAll ["\n\n```ocaml\n", s, "\n```\n\n"]
+    match s with "" then "" else concatAll ["\n\n```\n", s, "\n```\n\n"]
 
 -- Markdown specific doc:
 -- - Lang shows parents
@@ -101,7 +101,7 @@ let objGetSpecificDoc : Object -> String = use ObjectKinds in lam obj.
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
             "From ", "[", langName, "](/", getLangLink langName, ".lang)\n\n",
-            "```ocaml\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n"
+            "```\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n"
          ]
     case _ then objMdFormat obj
     end
