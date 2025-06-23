@@ -1,8 +1,9 @@
 include "extracting/extracter.mc"
 include "rendering/renderer.mc"
 include "options.mc"
-        
-        
+include "sys.mc"        
+include "server.mc"
+
 mexpr
 
     let opt = parseOptions argv in
@@ -11,6 +12,7 @@ mexpr
     case Some result then
         -- displayTree result
         let obj = extract result in
-        render obj
+        render obj;
+        startServer
     case None {} then usage ()
     end
