@@ -74,41 +74,20 @@ let objNamespace : Object -> String = use ObjectKinds in lam obj.
     case { name = name, namespace = namespace } then concatAll [namespace, "/", name]
     end
 
--- Markdown formatted display for an object
-let objMdFormat : Object -> String = use ObjectKinds in lam obj.
-    let s = switch obj.kind
-    case ObjLet { rec = rec, args = args } then
-        let rec = if rec then "recursive " else "" in
-        concatAll [rec, "let ", obj.name, " ", strJoin " " args]
-    case ObjType { t = t } then concatAll ["type ", obj.name, match t with Some t then concat " : " t else ""]
-    case ObjCon { t = t } then concatAll ["con ", obj.name, " : ", t]
-    case ObjMexpr {} then "mexpr"
-    case ObjProgram {} then ""
-    case _ then concatAll [getFirstWord obj.kind, " ", obj.name] 
-    end in
-    match s with "" then "" else concatAll ["\n\n```\n", s, "\n```\n\n"]
-
--- Markdown specific doc:
--- - Lang shows parents
--- - Sem / Syn shows language + variants
--- - Let shows args
-let objGetSpecificDoc : Object -> String = use ObjectKinds in lam obj.      
-    switch obj
-    case { kind = ObjLang { parents = parents & ([_] ++ _) } } then
-        let parents = map (lam p. concatAll ["[", p, "](/", getLangLink p, ".lang)"]) parents in
-        concatAll ["**Stem from:**\n\n ", (strJoin " + " parents), objMdFormat obj]
-    case { name = name, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind } then
-        let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
-        concatAll [
-            "From ", "[", langName, "](/", getLangLink langName, ".lang)\n\n",
-            "```\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n"
-         ]
-    case _ then objMdFormat obj
-    end
-
 -- Empty default object
 let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false } }
 
+-- Returns a string representation of the object
+let objToString = use ObjectKinds in lam kind. lam name.
+    switch kind
+    case ObjLet { rec = rec, args = args } then concatAll [if rec then "recursive " else "", "let ", name, " ", strJoin " " args]
+    case ObjType { t = t } then concatAll ["type ", name, match t with Some t then concat " : " t else ""]
+    case ObjCon { t = t } then concatAll ["con ", name, " : ", t]
+    case ObjMexpr {} then "mexpr"
+    case ObjProgram {} then ""
+    case kind then concatAll [getFirstWord kind, " ", name]
+    end
+    
 -- Object tree (hierarchy)
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree

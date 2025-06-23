@@ -47,7 +47,7 @@ mexpr
     case Some result then
         -- displayTree result
         let obj = extract result in
-        render obj;
+        render opt.fmt obj;
         match obj with ObjectNode { obj = obj } then
             if opt.noOpen then () else startServer obj
         else error "Extraction failed: `extract` should always return a tree with a Program root."

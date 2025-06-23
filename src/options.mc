@@ -7,17 +7,19 @@
 --   --format <format>     -> sets output format (`html` or `md`), default is `html`
 --   <file>                -> input file to process
 
+include "rendering/renderer.mc"
+    
 -- Options type holding flags and input file path
-type Options = {
+type Options = use Renderer in {
     noOpen: Bool,    -- disable auto-open of output
-    format: String,  -- output format: `html` or `md`
+    fmt: Format,  -- output format: `html` or `md`
     file: String     -- input file path
 }
 
 -- Default options
-let optionsDefault : Options = {
+let optionsDefault : Options = use Renderer in {
     noOpen = false,
-    format = "html",
+    fmt = defaultFormat (),
     file = ""
 }
 
@@ -28,11 +30,13 @@ let usage = lam x.
 -- Parse command-line arguments into Options
 let parseOptions : [String] -> Options = lam argv.
     -- Recursive helper to process args
-    recursive let parse : [String] -> Options -> Options = lam args. lam opts.
+    recursive let parse : [String] -> Options -> Options = use Renderer in lam args. lam opts.
         switch args
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
-        case ["--format", "md" | "Markdown" | "markdown"] ++ rest then parse rest { opts with format = "md" }
-        case ["--format", "html" | "Html" | "HTML" ] ++ rest then parse rest { opts with format = "html" }
+        case ["--format", fmt] ++ rest then
+            match formatFromStr fmt with Some fmt then
+                parse rest { opts with fmt = fmt }
+            else usage ()
         case [s] ++ rest then
             if eqString opts.file "" then parse rest { opts with file = s }
             else usage ()
