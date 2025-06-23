@@ -48,7 +48,7 @@ let extract : DocTree -> ObjectTree =
                 match res with "" then "No documentation available here." else res in
 
             -- Get first word in sons
-            let getName = lam sons. match nthWord sons 0 with Some r then r else never in
+            let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] } in
 
             -- Start new object
             let obj = { defaultObject with namespace = namespace } in
@@ -78,10 +78,10 @@ let extract : DocTree -> ObjectTree =
                         let output = extractProgramComments rest in
                         { output with comments = cons content output.comments }
                     else { comments = [], sons = sons } in
-                match extractProgramComments sons with
-                    { comments = extractedComments, sons = sons } then
-                    process sons content content (buildDoc (reverse extractedComments)) (ObjProgram { isStdlib = inStdlib })
-                else never
+                let extractRes = extractProgramComments sons in
+                process extractRes.sons content content
+                    (buildDoc (reverse extractRes.comments))
+                    (ObjProgram { isStdlib = inStdlib })
 
             case Mexpr {} then
                 process sons "mexpr" (getNamespace namespace "mexpr") doc (ObjMexpr {})
@@ -114,7 +114,10 @@ let extract : DocTree -> ObjectTree =
                                 case { word = ".", rest = rest} then "_"
                                 case { word = word, rest = rest} then
                                     match nthWord rest 0 with Some { rest = rest, word = _ } then
-                                        word else never
+                                        word
+                                    else
+                                        warn "While extracting the let arguments, we detected a pointless lamda function declaration.";
+                                        []
                                 end in
                                 cons w (extractParams rest)
                             case _ then []
@@ -129,8 +132,13 @@ let extract : DocTree -> ObjectTree =
                     case Lang {} then ObjLang { parents = reverse (extractParents name.rest) }
 
                     case (Con {} | TopCon {}) then
-                        let t = match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
-                                extractType (skipUseIn typedef) else never in
+                        let t =
+                            match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
+                                extractType (skipUseIn typedef)
+                            else
+                                warn (concatAll ["The constructor ", name.word, " is typeless."]);
+                                ""
+                        in
                         ObjCon { t = t }
 
                     case (Type {} | TopType {}) then
@@ -182,4 +190,4 @@ let extract : DocTree -> ObjectTree =
     -- Entry point: tree must be Program node
     match tree with Node { token = Word { content = content }, state = Program {} } then
         let res = extractRec tree content [] (hashmapEmpty ()) false in res.obj
-    else error "The top node of the tree should be a Program."
+    else error "Extraction failed: the top node of the output tree should always be a program."

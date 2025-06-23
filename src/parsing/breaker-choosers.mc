@@ -26,9 +26,9 @@ lang BreakerChooserInterface
     
     sem chooseCrash /- (State, String) -> () -/ =
         | (state, word) -> error
-                (concatAll ["You cannot have the word ", word, " inside a ", (toString state), " block."])
+                (concatAll ["Parsing failed: You cannot have the word ", word, " inside a ", (toString state), " block."])
     sem topVersionCrash /- (State) -> () -/ =
-        | state -> error (concat "You should never call topVersion for "(toString state)) 
+        | state -> error (concat "Parsing failed: There is no top version of "(toString state)) 
 
         
     syn State = 
@@ -64,7 +64,7 @@ lang BreakerChooserInterface
     sem choose /- (State, String) -> Breaker -/ =
     -- Determine if for a given breaker, the tokenisation should continue for the parent state
     sem continue /- (State, String) -> Bool -/ =
-        | (state, word) -> error (concatAll [(toString state), " ", word])
+        | (state, word) -> error (concatAll ["Parsing Failed: ", word, " should not be a breaker of ", (toString state), "."])
     -- Determine for a given context if the block become hard or no
     sem isHard /- (State, String) -> Bool -/ =
     -- Determine if the breaker should be part of the current block, or should remain in the stream.
@@ -201,7 +201,7 @@ lang TypeBreakerChooser = BreakerChooserInterface
 
     sem isHard =
         | (Type {}, _) -> true
-        | (Type {}, "in") -> error "Unreachable, we should not ask the state machine if finding a 'in' bound to a 'type' makes the block hard."
+        | (Type {}, "in") -> warn "Should be unreachable to ask the state machine if finding a 'in' bound to a 'type' makes the block hard."; true
     
     sem absorbIt =
         | (Type {}, "in") -> true

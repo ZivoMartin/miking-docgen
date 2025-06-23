@@ -31,14 +31,17 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
     
     -- Recursive print of tree with current indentation depth
     recursive let displayTreeIndented = lam tree. lam depth.
-        match tree with Node { sons = sons, token = token, state = state } then
+            
+        switch tree
+        case Node { sons = sons, token = token, state = state } then
             printLn (concatAll [indentString depth, "Node (", toString state, ")"]);
             iter (lam child. displayTreeIndented child (addi depth 1)) sons
-        else match tree with Leaf { token = token, state = state } then
+        case Leaf { token = token, state = state } then
             -- Skip separators and EOF for cleaner output
             match token with Separator {} | Eof {} then () else 
                 printLn (concatAll [indentString depth, "Leaf (", tokenToString token, "):", lit token])
-        else never
+        case _ then warn "No-covered variant in DocTree reached during displayTree execution."
+        end
     in
     
     displayTreeIndented tree 0

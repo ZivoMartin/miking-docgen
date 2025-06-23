@@ -34,8 +34,8 @@ lang ObjectKinds
     | ObjSyn {} -> "syn"
     | ObjCon {} -> "con"
     | ObjMexpr {} -> "mexpr"
+    | ObjInclude {} -> "include"
     | ObjProgram {} -> ""
-    | ObjInclude {} -> error "No first word for an include."
   
 end
 

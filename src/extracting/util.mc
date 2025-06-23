@@ -92,7 +92,10 @@ let skipUseIn : [DocTree] -> [DocTree] = lam sons.
         match nthWord sons 0 with
         Some { word = "use", rest = sons } then
             match (nthWord sons 1) with Some { rest = sons } then
-                skipUseIn sons else never
+                skipUseIn sons
+            else
+                warn "The last word of the stream is a use without any name after.";
+                []
         else sons in skipUseIn sons
 
 -- Takes a stream and returns the list of variant.

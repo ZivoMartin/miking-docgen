@@ -117,4 +117,4 @@ let startServer = lam obj.
         let path = concat (sysGetCwd ()) "/doc-gen-output" in
         let res = sysRunCommand ["python3", file, path, objLink obj] "" "/" in ()
         
-    else error "Failed to open temporary file."
+    else error "Failed to open temporary file. The browser failed to start but the files have been generated."

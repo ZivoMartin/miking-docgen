@@ -6,6 +6,7 @@
 include "preprocessor.mc"
 include "../extracting/objects.mc"
 include "util.mc"
+include "../util.mc"    
 
 -- ## Render Function
 --
@@ -51,7 +52,13 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                 iter render sons;
 
                 -- Extracting infos
-                let sons = map (lam s. match s with ObjectNode { obj = obj } then obj else never) sons in
+                let sons = foldl (lam a. lam s.
+                    match s with ObjectNode { obj = obj } then
+                        cons obj a
+                    else
+                        warn "sons should only contain ObjectNode at this stage.";
+                        a  
+                    ) [] sons in
 
                 -- Ordering objects in a set
                 let set = 
@@ -80,9 +87,7 @@ let render : ObjectTree -> () = use ObjectKinds in lam obj.
                 let displayUseInclude = lam title. lam arr.
                     let title = match arr with [] then "" else concatAll ["**", title, ":** \n\n"] in
                     write title;
-                    let doc = map (lam u. match u with { name = name } then
-                                            concatAll ["[", objTitle u, "](/", objLink u, ")"]
-                                        else never) arr in
+                    let doc = map (lam u. concatAll ["[", objTitle u, "](/", objLink u, ")"]) arr in
                     write (strJoin ", " (reverse doc));
                     write "\n\n"
                 in

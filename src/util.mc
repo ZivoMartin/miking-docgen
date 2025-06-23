@@ -7,11 +7,14 @@
 include "string.mc"
 include "hashmap.mc"
 
--- Takes an array of String and concatenates them into one single String
-let concatAll = lam arr. strJoin "" arr
-
 -- Print a line with newline
 let printLn = lam word. print word; print "\n"
+    
+-- Displays a warning message
+let warn : String -> () = lam m. printLn (concat "WARNING: " m)
+    
+-- Takes an array of String and concatenates them into one single String
+let concatAll = lam arr. strJoin "" arr
 
 -- Check if an array of strings contains lword
 let contains = lam arr. lam lword. 
@@ -59,3 +62,5 @@ let hmInsert = lam x. hashmapInsert hmTraits x
 let hmMem = lam x. hashmapMem hmTraits x
 let hmValues = lam x. hashmapValues hmTraits x
 let hmKeys = lam x. hashmapKeys hmTraits x
+
+    
