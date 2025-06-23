@@ -14,7 +14,7 @@ mexpr
         let obj = extract result in
         render obj;
         match obj with ObjectNode { obj = obj } then
-            startServer obj
+            if opt.noOpen then () else startServer obj
         else never
     case None {} then usage ()
     end
