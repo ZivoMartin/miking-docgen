@@ -1,3 +1,24 @@
+-- # Simple Local Doc Server
+--
+-- This file defines a small utility to preview the generated documentation.
+-- 
+-- It embeds a Python script (`pythonScript`) which:
+-- - starts a local HTTP server on port 3000
+-- - serves the generated Markdown files as HTML (using Python’s `markdown` module)
+-- - auto-opens the browser
+-- 
+-- ## How it works:
+-- 
+-- - `startServer` writes the Python script to a temporary file
+-- - launches it with:
+--   ```bash
+--   python3 script.py <doc-gen-output dir> <initial object>
+--   ```
+-- - The server uses `markdown.markdown()` to convert `.md` on the fly
+-- 
+-- **Dependencies:** Python 3 + markdown (`pip install markdown`).
+
+
 include "extracting/objects.mc"
 
 let pythonScript = "
