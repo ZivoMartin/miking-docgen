@@ -13,6 +13,8 @@ mexpr
         -- displayTree result
         let obj = extract result in
         render obj;
-        startServer
+        match obj with ObjectNode { obj = obj } then
+            startServer obj
+        else never
     case None {} then usage ()
     end

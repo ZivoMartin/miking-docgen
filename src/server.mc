@@ -1,3 +1,5 @@
+include "extracting/objects.mc"
+
 let pythonScript = "
     
 MARKED_JS = r'''
@@ -77,8 +79,9 @@ from urllib.parse import unquote
 import mimetypes
 import webbrowser
 import threading
+import sys
 
-DOC_DIR = 'doc-gen-output'
+DOC_DIR = sys.argv[1]
 
 class MarkdownHandler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -145,23 +148,33 @@ class MarkdownHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(content)
 
-if __name__ == '__main__':
-    server_address = ('127.0.0.1', 3000)
-    httpd = HTTPServer(server_address, MarkdownHandler)
-    print(\"Serveur démarré sur http://127.0.0.1:3000\")
-    def open_url():
-        webbrowser.open('127.0.0.1:3000/File/src/main.mc')
-    t = threading.Thread(target=open_url)
-    t.start()
 
+server_address = ('127.0.0.1', 3000)
+httpd = HTTPServer(server_address, MarkdownHandler)
+print(\"Server started on http://127.0.0.1:3000\")
+def open_url():
+    webbrowser.open('127.0.0.1:3000/' + sys.argv[2])
+
+t = threading.Thread(target=open_url)
+t.start()
+
+try:
     httpd.serve_forever()
+except KeyboardInterrupt:
+    pass
+finally:
+    httpd.server_close()
 "
     
-let startServer =
-        let file = sysTempFileMake () in
-        match fileWriteOpen file with Some wc then
-            let write = fileWriteString wc in
-            printLn file;
-            let res = sysRunCommand ["python", file] "" "." in
-            fileWriteClose wc
-        else error "Failed to open temporary file."
+let startServer = lam obj.
+    let file = sysTempFileMake () in
+    match fileWriteOpen file with Some wc then
+        let write = fileWriteString wc in
+        printLn file;
+        write pythonScript;
+        fileWriteFlush wc;
+        fileWriteClose wc;
+        let path = concat (sysGetCwd ()) "/doc-gen-output" in
+        let res = sysRunCommand ["python3", file, path, objLink obj] "" "/" in ()
+        
+    else error "Failed to open temporary file."

@@ -158,7 +158,6 @@ let extract : DocTree -> ObjectTree =
                         { commentBuffer = [], obj = emptyInclude, includeSet = includeSet }
                     else
                         let newIncludeSet = hmInsert path () includeSet in
-                        printLn path;
                         match parse path with Some tree then
                             match extractRec tree path [] newIncludeSet isStdlib with
                             { commentBuffer = [], obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } then
