@@ -1,6 +1,17 @@
 include "renderer-interface.mc"
+include "../extracting/objects.mc"    
 
-lang HtmlRenderer = RendererInterface
+
+    
+let htmlBalise = lam s. lam b. concatAll ["<", b, ">", s, "</", b, ">"]
+let htmlText = lam s. htmlBalise s "p"
+let htmlCode = lam s. htmlText (htmlBalise s "code")
+let htmlStrong = lam s. htmlText (htmlBalise s "strong")
+
+let htmlGetLink = lam l. lam txt. concatAll ["<a href=\"/", l, "\">", txt, "</a>"]
+let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") lng
+
+lang HtmlRenderer = RendererInterface + ObjectKinds
 
     syn Format =
         | Html {}
@@ -8,44 +19,66 @@ lang HtmlRenderer = RendererInterface
     sem formatFromStr =
         | "html" | "HTML" | "Html" | ".html" -> Some (Html {})
 
-    sem objFormat /- (Format, Object) -> String -/ =
-        | (Html {}, obj) ->
-            let s = objToString obj.kind obj.name in
-            match s with "" then "" else concatAll ["\n\n```\n", s, "\n```\n\n"]
+    sem objFormatHeader /- (Format, Object) -> String -/ =
+        | (Html {}, obj) -> concatAll 
+["<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset=\"utf-8\">
+        <title>", objTitle obj, "</title>
+        <style>
+            body {{ font-family: sans-serif; max-width: 800px; margin: auto; padding: 2em; }}
+            h1, h2, h3 {{ color: #444; }}
+            pre, code {{ background: #f4f4f4; padding: 0.2em 0.4em; }}
+        </style>
+    </head>
+    <body>
+"]
 
-    -- Markdown specific doc:
-    -- - Lang shows parents
-    -- - Sem / Syn shows language + variants
-    -- - Let shows args
-    sem objGetSpecificDoc /- (Format, Object) -> String -/ =
-    | ( Md {}, { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj ) ->
-        let parents = map (lam p. concatAll ["[", p, "](/", getLangLink p, ".lang)"]) parents in
-        concatAll ["**Stem from:**\n\n ", (strJoin " + " parents), objFormat (Md {}, obj)]
-
-    | (Md {}, { name = name, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind } ) ->
-        let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
-        concatAll [
-            "From ", "[", langName, "](/", getLangLink langName, ".lang)\n\n",
-            "```\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n"
-         ]
     
-    | ( Md {}, obj ) ->
-        let s = objToString obj.kind obj.name in
-        match s with "" then "" else concatAll ["\n\n```\n", s, "\n```\n\n"]
-
-
     sem objFormatedTitle /- (Format, Object) -> String -/ =
-    | (Md {}, obj) -> concatAll ["# ", objTitle obj, "\n\n"]
-
-    sem objGetFormatedLink /- (Format, Object) -> String -/ =
-    | (Md {}, obj) -> concatAll ["\n[-](/", objLink obj,")\n\n"]
+    | (Html {}, obj) -> concat (htmlBalise (objTitle obj) "h1") "\n"
 
     sem getFormatedSectionTitle /- (Format, String) -> String -/ =
-    | (Md {}, title) -> concatAll ["**", title, ":** \n\n"]
+    | (Html {}, title) -> concat (htmlStrong (concat title ":") ) "\n"
+
+    
+    sem objFormat /- (Format, Object) -> String -/ =
+     | (Html {}, obj) ->
+        let s = objToString obj.kind obj.name in
+        match s with "" then "" else concat (htmlCode s) "\n"
+
+    sem objGetSpecificDoc /- (Format, Object) -> String -/ =
+    | (Html {}, { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj ) ->
+        let parents = map htmlGetLangLink parents in
+        concatAll [
+        htmlStrong "Stem from:", "\n",
+        (strJoin " + " parents), objFormat (Html {}, obj), "\n"]
+
+    | (Html {}, { name = name, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind } ) ->
+        let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
+        concatAll [
+            htmlStrong "From", " ", htmlGetLangLink langName, "\n",
+            htmlCode (concatAll [getFirstWord kind, " ", name, "\n", variants]), "\n"
+         ]
+    
+    | (Html {}, obj ) ->
+        let s = objToString obj.kind obj.name in
+        match s with "" then "" else concat (htmlCode s) "\n"
+
+
+    sem objGetFormatedLink /- (Format, Object) -> String -/ =
+    | (Html {}, obj) -> concat (htmlGetLink (objLink obj) "-") "\n"
+
 
     sem getFormatedLinkList /- (Format, [Object]) -> String -/ =
-    | (Md {}, objects) ->
-        let doc = map (lam u. concatAll ["[", objTitle u, "](/", objLink u, ")"]) objects in
-        concat (strJoin ", " (reverse doc)) "\n\n"
+    | (Html {}, objects) ->
+        let doc = map (lam u. htmlGetLink (objLink u) (objTitle u)) objects in
+        concat (strJoin ", " (reverse doc)) "\n"
 
+    sem objFormatFooter /- (Format, Object) -> String -/ =
+        | (Html {}, _) -> "</body>\n</html>"
 end
+
+
+    

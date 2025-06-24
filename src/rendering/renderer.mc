@@ -8,8 +8,9 @@ include "../extracting/objects.mc"
 include "util.mc"
 include "../util.mc"    
 include "md-renderer.mc"
+include "html-renderer.mc"
 
-lang Renderer = MarkdownRenderer
+lang Renderer = MarkdownRenderer + HtmlRenderer
 
     -- Returns the default format if nothing is specified in the CLI
     sem defaultFormat /- () -> Format -/ =
@@ -47,10 +48,12 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
             match createAndOpen (concat "doc-gen-output/" (objLink obj))  with Some wc then
                 let write = fileWriteString wc in
 
+                -- Push header of the output file
+                write (objFormatHeader (fmt, obj));
+
                 -- Pushing title and global documentation
                 write (objFormatedTitle (fmt, obj));
                 write (objGetSpecificDoc (fmt, obj));
-                write obj.doc;
 
                 -- Removing words
                 let sons = filter (lam s. match s with ObjectNode {} then true else false) sons in
@@ -93,7 +96,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
-                            getFormatedSectionTitle (Md {}, title) in
+                            getFormatedSectionTitle (fmt, title) in
                     write title;
                     write (getFormatedLinkList (fmt, arr))
                 in
@@ -110,7 +113,9 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 iter (lam a. displayDefault a.0 a.1)
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
                 ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem),("", set.Mexpr)];
-                    
+
+                -- Push the footer of the page
+                write (objFormatFooter (fmt, obj));
                 fileWriteClose wc
                 
             else ()

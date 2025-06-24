@@ -10,8 +10,11 @@ lang RendererInterface
     sem formatFromStr /- String -> Option Format -/ = 
         | _ -> None {}
 
+    -- Returns the header of the page
+    sem objFormatHeader /- (Format, Object) -> String -/ =
+    
     -- Takes a format and an object, returns the String representing the object on a page as a son.
-    sem objFormat /- (Format, Object), String -/ =
+    sem objFormat /- (Format, Object) -> String -/ =
 
     -- Takes a format and an object, returns the String representing the object on its own page.
     sem objGetSpecificDoc /- (Format, Object) -> String -/ = 
@@ -27,4 +30,6 @@ lang RendererInterface
 
     -- Takes a format and a list of object, returns a String representing all the objects displayed as a list of link separated with a comma
     sem getFormatedLinkList /- (Format, [Object]) -> String -/ =
+
+    sem objFormatFooter /- (Format, Object) -> String -/ =
 end

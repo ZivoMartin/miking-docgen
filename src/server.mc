@@ -20,20 +20,25 @@
 
 
 include "extracting/objects.mc"
+include "rendering/renderer.mc"
 
-let pythonScript = "
+let pythonScript = use Renderer in lam fmt. concatAll ["
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import unquote
 import mimetypes
 import webbrowser
 import threading
-import markdown
+",
+match fmt with Md {} then
+"import markdown"
+else
+"", "
 import sys
 
 DOC_DIR = sys.argv[1]
 
-class MarkdownHandler(BaseHTTPRequestHandler):
+class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = unquote(self.path.lstrip('/'))
         
@@ -47,11 +52,11 @@ class MarkdownHandler(BaseHTTPRequestHandler):
             return
 
         with open(file_path, 'r', encoding='utf-8') as f:
-            markdown_content = f.read()
+            content = f.read()
 
-        html_output = markdown.markdown(markdown_content)
+        html_output = ", match fmt with Md {} then " markdown.markdown(content)" else "content", "
 
-        full_html = f\"\"\"<!DOCTYPE html>
+        full_html = ", match fmt with Md {} then "f\"\"\"<!DOCTYPE html>
 <html>
     <head>
         <meta charset=\"utf-8\">
@@ -63,7 +68,7 @@ class MarkdownHandler(BaseHTTPRequestHandler):
         </style>
     </head>
     <body>{html_output}</body>
-</html>\"\"\"
+</html>\"\"\"" else "html_output", "
 
         self.send_response(200)
         self.send_header('Content-type', 'text/html; charset=utf-8')
@@ -91,7 +96,7 @@ class MarkdownHandler(BaseHTTPRequestHandler):
 
 
 server_address = ('127.0.0.1', 3000)
-httpd = HTTPServer(server_address, MarkdownHandler)
+httpd = HTTPServer(server_address, Handler)
 print(\"Server started on http://127.0.0.1:3000\")
 def open_url():
     webbrowser.open('127.0.0.1:3000/' + sys.argv[2])
@@ -106,12 +111,12 @@ except KeyboardInterrupt:
 finally:
     httpd.server_close()
 "
-    
-let startServer = lam obj.
+]    
+let startServer = lam obj. lam fmt.
     let file = sysTempFileMake () in
     match fileWriteOpen file with Some wc then
         let write = fileWriteString wc in
-        write pythonScript;
+        write (pythonScript fmt);
         fileWriteFlush wc;
         fileWriteClose wc;
         let path = concat (sysGetCwd ()) "/doc-gen-output" in

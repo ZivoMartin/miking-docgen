@@ -2,7 +2,7 @@ include "renderer-interface.mc"
 include "../extracting/objects.mc"
 include "../util.mc"
     
-lang MarkdownRenderer = ObjectKinds
+lang MarkdownRenderer = RendererInterface + ObjectKinds
 
     syn Format =
         | Md {}
@@ -10,6 +10,9 @@ lang MarkdownRenderer = ObjectKinds
     sem formatFromStr =
         | "md" | "Markdown" | "markdown" | "MARKDOWN" | "MD" | ".md" -> Some (Md {})
 
+    sem objFormatHeader /- (Format, Object) -> String -/ =
+        | (Md {}, _) -> ""
+    
     -- Markdown formatted display for an object    
     sem objFormat /- (Format, Object) -> String -/ =
         | (Md {}, obj) ->
@@ -21,20 +24,20 @@ lang MarkdownRenderer = ObjectKinds
     -- - Sem / Syn shows language + variants
     -- - Let shows args
     sem objGetSpecificDoc /- (Format, Object) -> String -/ =
-    | ( Md {}, { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj ) ->
+    | ( Md {}, { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } & obj ) ->
         let parents = map (lam p. concatAll ["[", p, "](/", getLangLink p, ".lang)"]) parents in
-        concatAll ["**Stem from:**\n\n ", (strJoin " + " parents), objFormat (Md {}, obj)]
+        concatAll ["**Stem from:**\n\n ", (strJoin " + " parents), objFormat (Md {}, obj), "\n\n", doc, "\n\n"]
 
-    | (Md {}, { name = name, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind } ) ->
+    | (Md {}, { name = name, doc = doc, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind } ) ->
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
             "From ", "[", langName, "](/", getLangLink langName, ".lang)\n\n",
-            "```\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n"
+            "```\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n", doc, "\n\n"
          ]
     
     | ( Md {}, obj ) ->
         let s = objToString obj.kind obj.name in
-        match s with "" then "" else concatAll ["\n\n```\n", s, "\n```\n\n"]
+        match s with "" then "" else concatAll ["\n\n```\n", s, "\n```\n\n", obj.doc, "\n\n"]
 
 
     sem objFormatedTitle /- (Format, Object) -> String -/ =
@@ -51,5 +54,6 @@ lang MarkdownRenderer = ObjectKinds
         let doc = map (lam u. concatAll ["[", objTitle u, "](/", objLink u, ")"]) objects in
         concat (strJoin ", " (reverse doc)) "\n\n"
 
-    
+    sem objFormatFooter /- (Format, Object) -> String -/ =
+        | (Md {}, _) -> ""
 end
