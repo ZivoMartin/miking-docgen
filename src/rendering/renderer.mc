@@ -106,13 +106,13 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                     let title = match arr with [] then "" else match title with "" then "" else
                             getFormatedSectionTitle (fmt, title) in
                     write title;
-                    iter (lam u. write (objFormat (fmt, u)); pushLink u) arr
+                    iter (lam u. write (objFormat (fmt, u))) arr
                 in
 
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
-                ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem),("", set.Mexpr)];
+                ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem),("Mexpr", set.Mexpr)];
 
                 -- Push the footer of the page
                 write (objFormatFooter (fmt, obj));

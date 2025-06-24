@@ -43,7 +43,6 @@ let extract : DocTree -> ObjectTree =
 
             -- Builds doc string from comments
             let buildDoc : [String] -> String = lam commentBuffer.
-                let commentBuffer = map strTrim commentBuffer in
                 let res = strJoin "  \n" (reverse commentBuffer) in
                 match res with "" then "No documentation available here." else res in
 
