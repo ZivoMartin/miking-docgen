@@ -19,7 +19,7 @@
 --      but encountering 'lang' reveals that it's actually a top-level 'let' block,
 --      requiring us to restructure the tree accordingly.    
 --
--- Result is a `DocTree` for the entire file.
+-- Result is a `DocTree` for the entire file. 
 
     
 include "doc-tree.mc"
@@ -27,7 +27,7 @@ include "../util.mc"
 include "ext/file-ext.mc"
 include "seq.mc"
 include "hashmap.mc"
-
+    
 -- # The parse function
 -- - Takes in input a String representing a Miking program.
 -- - Returns the corresponding `DocTree`.
