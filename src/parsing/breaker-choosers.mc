@@ -19,6 +19,8 @@
 
 include "token-readers.mc"
 
+
+-- Interface for a BreakerChoser, they will all implement it. 
 lang BreakerChooserInterface
 
     type Breaker = { breakers: [String], state: State }
