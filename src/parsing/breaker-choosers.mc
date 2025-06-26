@@ -45,6 +45,9 @@ lang BreakerChooserInterface
         | Con {}
         | TopCon {}
         | Mexpr {}
+        | Utest {}
+        | TopUtest {}
+
 
     sem toString =
         | Program {} -> "Program"
@@ -59,6 +62,8 @@ lang BreakerChooserInterface
         | TopCon {} -> "TopCon"
         | Mexpr {} -> "Mexpr"
         | Use {} -> "Use"
+        | Utest {} -> "Utest"
+        | TopUtest {} -> "TopUtest"
 
     -- Determine the new state and the breakers after having find a block opener
     sem choose /- (State, String) -> Breaker -/ =
@@ -69,21 +74,29 @@ lang BreakerChooserInterface
     sem isHard /- (State, String) -> Bool -/ =
     -- Determine if the breaker should be part of the current block, or should remain in the stream.
     sem absorbIt /- (State, String) -> Bool -/ =
+        | (state, word) -> error (concatAll ["Parsing Failed: ", word, " should not call absorbIt in ", (toString state), " state."])
     -- TopVersion if possible the given state to it's top version, crash otherwise.
     sem topVersion /- State -> State -/ = 
 end
 
--- TODO: let, lang, con, type, sem, syn, mexpr, recursive, include, use
 
+let topBreak = ["let", "recursive", "con", "lang", "sem", "syn", "type", "mexpr", "utest"]
+let fullTopBreak = cons "in" topBreak
+
+let letBreak = ["lang", "mexpr"]
+let fullLetBreak = cons "in" letBreak
+    
 lang ProgramBreakerChooser = BreakerChooserInterface
 
     sem choose =
-        | (Program {}, "let") -> { breakers = ["lang", "in", "mexpr", "utest"], state = TopLet {} }
-        | (Program {}, "recursive") -> { breakers = ["lang", "in", "mexpr", "utest"], state = TopLet {} }    
+        | (Program {}, "let") -> { breakers = letBreak, state = TopLet {} }
+        | (Program {}, "recursive") -> { breakers = letBreak, state = TopLet {} }
+        | (Program {}, "utest") -> { breakers = letBreak, state = TopUtest {} }
+
         | (Program {}, "lang") -> { breakers = ["end"], state = Lang {} }
-        | (Program {}, "mexpr") -> { breakers = ["lang", "mexpr", "utest"], state = Mexpr {} }
-        | (Program {}, "type") -> { breakers = ["let", "recursive", "con", "lang", "sem", "syn", "type", "mexpr", "utest"], state = TopType {} }
-        | (Program {}, "con") -> { breakers = ["let", "recursive", "lang", "sem", "syn", "type", "con", "mexpr", "utest"], state = TopCon {} }
+        | (Program {}, "mexpr") -> { breakers = ["lang", "mexpr"], state = Mexpr {} }
+        | (Program {}, "type") -> { breakers = topBreak, state = TopType {} }
+        | (Program {}, "con") -> { breakers = topBreak, state = TopCon {} }
         | (Program {}, word) -> chooseCrash (Program {}, word)
 
     sem continue =
@@ -100,10 +113,12 @@ end
 lang MexprBreakerChooser = BreakerChooserInterface
     
     sem choose =
-        | (Mexpr {}, "let") -> { breakers = ["in", "lang", "mexpr", "utest"], state = Let {} }
-        | (Mexpr {}, "recursive") -> { breakers = ["in", "lang", "mexpr", "utest"], state = Let {} }    
-        | (Mexpr {}, "type") -> { breakers = ["in", "let", "recursive", "lang", "type", "con", "mexpr", "utest"], state = Type {} }
-        | (Mexpr {}, "con") -> { breakers = ["in", "let", "recursive", "lang", "type", "con", "mexpr", "utest"], state = Con {} }
+        | (Mexpr {}, "let") -> { breakers = fullLetBreak, state = Let {} }
+        | (Mexpr {}, "recursive") -> { breakers = fullLetBreak, state = Let {} }
+        | (Mexpr {}, "utest") -> { breakers = fullLetBreak, state = Utest {} }
+
+        | (Mexpr {}, "type") -> { breakers = fullTopBreak, state = Type {} }
+        | (Mexpr {}, "con") -> { breakers = fullTopBreak, state = Con {} }
         | (Mexpr {}, "use") -> { breakers = ["in"], state = Use {} }
         | (Mexpr {}, word) -> chooseCrash (Mexpr {}, word)
 
@@ -124,10 +139,12 @@ end
 lang TopLetBreakerChooser = BreakerChooserInterface
     
     sem choose =
-        | (TopLet {}, "let") -> { breakers = ["in", "lang", "utest", "mexpr"], state = Let {} }
-        | (TopLet {}, "recursive") -> { breakers = ["in", "lang", "utest", "mexpr"], state = Let {} }    
-        | (TopLet {}, "type") -> { breakers = ["in", "let", "recursive", "lang", "utest", "type", "con", "mexpr"], state = Type {} }
-        | (TopLet {}, "con") -> { breakers = ["in", "let", "recursive", "lang", "utest", "type", "con", "mexpr"], state = Con {} }
+        | (TopLet {}, "let") -> { breakers = fullLetBreak, state = Let {} }
+        | (TopLet {}, "recursive") -> { breakers = fullLetBreak, state = Let {} }
+        | (TopLet {}, "utest") -> { breakers = fullLetBreak, state = Utest {} }
+
+        | (TopLet {}, "type") -> { breakers = fullTopBreak, state = Type {} }
+        | (TopLet {}, "con") -> { breakers = fullTopBreak, state = Con {} }
         | (TopLet {}, "use") -> { breakers = ["in"], state = Use {} }    
         | (TopLet {}, word) -> chooseCrash (TopLet {}, word)
 
@@ -147,10 +164,12 @@ end
 lang LetBreakerChooser = BreakerChooserInterface
 
     sem choose =
-        | (Let {}, "let") -> { breakers = ["in", "lang", "utest", "mexpr"], state = Let {} }
-        | (Let {}, "recursive") -> { breakers = ["in", "lang", "utest", "mexpr"], state = Let {} }    
-        | (Let {}, "type") -> { breakers = ["in", "let", "recursive", "lang", "utest", "type", "sem", "syn", "end", "con", "mexpr"], state = Type {} }
-        | (Let {}, "con") -> { breakers = ["in", "let", "recursive", "lang", "utest", "type", "sem", "syn", "end", "con", "mexpr"], state = Con {} }
+        | (Let {}, "let") -> { breakers = fullLetBreak, state = Let {} }
+        | (Let {}, "recursive") -> { breakers = fullLetBreak, state = Let {} }
+        | (Let {}, "utest") -> { breakers = fullTopBreak, state = Utest {} }
+
+        | (Let {}, "type") -> { breakers = fullTopBreak, state = Type {} }
+        | (Let {}, "con") -> { breakers = fullTopBreak, state = Con {} }
         | (Let {}, "use") -> { breakers = ["in"], state = Use {} }    
         | (Let {}, word) -> chooseCrash (Let {}, word)
 
@@ -212,14 +231,17 @@ lang TypeBreakerChooser = BreakerChooserInterface
 
 end
 
-        
+let langBreak = ["end", "sem", "syn"]
+let langFullBreak = concat ["type", "con"] langBreak
+
+            
 lang LangBreakerChooser = BreakerChooserInterface
 
     sem choose =
-        | (Lang {}, "type") -> { breakers = ["end", "sem", "syn", "type", "con"], state = TopType {} }
-        | (Lang {}, "con") -> { breakers = ["end", "sem", "syn", "type", "con"], state = TopCon {} }
-        | (Lang {}, "syn") -> { breakers = ["end", "sem", "syn"], state = Syn {} }
-        | (Lang {}, "sem") -> { breakers = ["end", "sem", "syn"], state = Sem {} }
+        | (Lang {}, "type") -> { breakers = langFullBreak, state = TopType {} }
+        | (Lang {}, "con") -> { breakers = langFullBreak, state = TopCon {} }
+        | (Lang {}, "syn") -> { breakers = langBreak, state = Syn {} }
+        | (Lang {}, "sem") -> { breakers = langBreak, state = Sem {} }
         | (Lang {}, word) -> chooseCrash (Lang {}, word)
     
     sem absorbIt =
@@ -237,11 +259,13 @@ lang SemBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Sem {}, "let") -> { breakers = ["in"], state = Let {} }
-        | (Sem {}, "recursive") -> { breakers = ["in"], state = Let {} }    
-        | (Sem {}, "type") -> { breakers = ["in", "type", "syn", "sem", "end", "con"], state = Type {} }
-        | (Sem {}, "con") -> { breakers = ["in", "type", "syn", "sem", "end", "con"], state = Con {} }
-        | (Sem {}, "syn") -> { breakers = ["end", "sem", "syn", "type"], state = Syn {} }
-        | (Sem {}, "sem") -> { breakers = ["end", "sem", "syn"], state = Sem {} }
+        | (Sem {}, "recursive") -> { breakers = ["in"], state = Let {} }
+        | (Sem {}, "utest") -> { breakers = ["in"], state = Utest {} }
+
+        | (Sem {}, "type") -> { breakers = cons "in" langFullBreak, state = Type {} }
+        | (Sem {}, "con") -> { breakers = cons "in" langFullBreak, state = Con {} }
+        | (Sem {}, "syn") -> { breakers = langFullBreak, state = Syn {} }
+        | (Sem {}, "sem") -> { breakers = langBreak, state = Sem {} }
         | (Sem {}, "use") -> { breakers = ["in"], state = Use {} }        
         | (Sem {}, word) -> chooseCrash (Sem {}, word)
 
@@ -263,8 +287,8 @@ end
 lang SynBreakerChooser = BreakerChooserInterface
 
     sem choose =
-        | (Syn {}, "syn") -> { breakers = ["end", "sem", "syn"], state = Syn {} }
-        | (Syn {}, "sem") -> { breakers = ["end", "sem", "syn"], state = Sem {} }
+        | (Syn {}, "syn") -> { breakers = langBreak, state = Syn {} }
+        | (Syn {}, "sem") -> { breakers = langFullBreak, state = Sem {} }
         | (Syn {}, "use") -> { breakers = ["in"], state = Use {} }    
         | (Syn {}, word) -> chooseCrash (Syn {}, word)
 
@@ -282,6 +306,7 @@ lang SynBreakerChooser = BreakerChooserInterface
         | Syn {} -> Syn {}
 
 end
+
 
 
 lang TopConBreakerChooser = BreakerChooserInterface
@@ -326,6 +351,7 @@ lang ConBreakerChooser = BreakerChooserInterface
 end
 
 
+
 lang UseBreakerChooser = BreakerChooserInterface
 
     sem choose =
@@ -348,4 +374,59 @@ lang UseBreakerChooser = BreakerChooserInterface
 
 end
 
-lang BreakerChooser = ProgramBreakerChooser + TopLetBreakerChooser + LetBreakerChooser + LangBreakerChooser + TopTypeBreakerChooser + TypeBreakerChooser + SynBreakerChooser + SemBreakerChooser + ConBreakerChooser  + TopConBreakerChooser + ConBreakerChooser + MexprBreakerChooser + UseBreakerChooser end
+lang TopUtestBreakerChooser = BreakerChooserInterface
+    
+    sem choose =
+        | (TopUtest {}, "let") -> { breakers = fullLetBreak, state = Let {} }
+        | (TopUtest {}, "recursive") -> { breakers = fullLetBreak, state = Let {} }
+        | (TopUtest {}, "utest") -> { breakers = fullLetBreak, state = Utest {} }
+
+        | (TopUtest {}, "type") -> { breakers = fullTopBreak, state = Type {} }
+        | (TopUtest {}, "con") -> { breakers = fullTopBreak, state = Con {} }
+        | (TopUtest {}, "use") -> { breakers = ["in"], state = Use {} }    
+        | (TopUtest {}, word) -> chooseCrash (TopLet {}, word)
+
+    sem continue =
+        | (TopUtest {}, _) -> true
+
+    sem isHard =
+        | (TopUtest {}, _) -> false
+
+    sem absorbIt =
+        | (TopUtest {}, word) -> false
+
+    sem topVersion =
+        | TopUtest {} -> topVersionCrash (TopUtest {})
+end
+    
+lang UtestBreakerChooser = BreakerChooserInterface
+
+    sem choose =
+        | (Utest {}, "let") -> { breakers = fullLetBreak, state = Let {} }
+        | (Utest {}, "recursive") -> { breakers = fullLetBreak, state = Let {} }
+        | (Utest {}, "utest") -> { breakers = fullTopBreak, state = Utest {} }
+
+        | (Utest {}, "type") -> { breakers = fullTopBreak, state = Type {} }
+        | (Utest {}, "con") -> { breakers = fullTopBreak, state = Con {} }
+        | (Utest {}, "use") -> { breakers = ["in"], state = Use {} }    
+        | (Utest {}, word) -> chooseCrash (Utest {}, word)
+
+    sem continue =
+        | (Utest {}, ("in")) -> true
+        | (Utest {}, _) -> false
+
+    sem isHard =
+        | (Utest {}, _) -> true
+    
+    sem absorbIt =
+        | (Utest {}, "in") -> true
+        | (Utest {}, word) -> false
+
+    sem topVersion =
+        | Utest {} -> TopUtest {}
+
+end
+
+
+    
+lang BreakerChooser = ProgramBreakerChooser + TopLetBreakerChooser + LetBreakerChooser + LangBreakerChooser + TopTypeBreakerChooser + TypeBreakerChooser + SynBreakerChooser + SemBreakerChooser + ConBreakerChooser  + TopConBreakerChooser + ConBreakerChooser + MexprBreakerChooser + UseBreakerChooser + UtestBreakerChooser + TopUtestBreakerChooser end

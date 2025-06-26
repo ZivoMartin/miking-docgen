@@ -14,7 +14,7 @@ lang Renderer = MarkdownRenderer + HtmlRenderer
 
     -- Returns the default format if nothing is specified in the CLI
     sem defaultFormat /- () -> Format -/ =
-        | _ -> Md {}
+        | _ -> Html {}
 
 end
     
@@ -85,13 +85,12 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjMexpr {} then { set with Mexpr = cons obj set.Mexpr }
                             case ObjType {} then { set with Type = cons obj set.Type }    
                             case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj set.LibInclude }
-                            case ObjInclude { isStdlib = false } then { set with Include = cons obj set.Include }    
+                            case ObjInclude { isStdlib = false } then { set with Include = cons obj set.Include }
+                            case ObjUtest {} then set    
                             end) objects
                         case [] then set
                         end
                     in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [] } sons in
-
-                let pushLink = lam obj. write (objGetFormatedLink (fmt, obj)) in
 
                 -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
@@ -106,7 +105,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                     let title = match arr with [] then "" else match title with "" then "" else
                             getFormatedSectionTitle (fmt, title) in
                     write title;
-                    iter (lam u. write (objFormat (fmt, u))) arr
+                    iter (lam u. write (objFormat (fmt, u))) (reverse arr)
                 in
 
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];

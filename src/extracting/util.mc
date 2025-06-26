@@ -66,14 +66,31 @@ let nthWord = use TokenReader in lam sons. lam n.
         end in
     nthWord sons n
 
-let extractType = use TokenReader in lam typedef.     
-     foldl (lam s. lam t.
-         switch t
-         case Leaf {token = Word { content = "in" } } then s
-         case Leaf {token = Word { content = "," } } then concat "," s
-         case Leaf {token = Word { content = content } } then concatAll [" ", content, s]
-         case _ then s end
-          ) "" (reverse typedef)
+let strExtractType = use TokenReader in lam typedef.
+    recursive let strExtractType = lam typedef.
+        switch typedef
+        case [] | ["in"] then ""
+        case [x, "in"] | [x] then x
+        case [current] ++ rest then
+            let res = strExtractType rest in
+            switch (current, res)
+            case (_, "," ++ _) | ("{", "}" ++ _) | ("[", _) | (_, "]" ++ _) | ("(", _) | (_, ")" ++ _) | (_, ":" ++ _) then
+                concat current res
+            case (current, _) then concatAll [current, " ", res]
+            end
+        end in strExtractType (reverse typedef)
+    
+        
+
+    
+
+let extractType = use TokenReader in lam typedef.
+    strExtractType (foldl
+        (lam a. lam w.
+            match w with Leaf { token = Word { content = content } } then cons content a
+            else a
+         ) [] typedef)
+
 
     
 let extractParents = lam words.
@@ -105,22 +122,14 @@ let skipUseIn : [DocTree] -> [DocTree] = lam sons.
 -- Here ... involves anything, and the space between | and variant name can be any separator / comment
 -- The input stream should be valid and have as first word '|', empty list is returned otherwise
 let extractVariants : [DocTree] -> [String] = lam stream.
-    let extractType = lam typedef.     
-     foldl (lam s. lam t.
-         switch t
-         case  ","  then concat "," s
-         case content then concatAll [" ", content, s]
-         case _ then s end
-          ) "" typedef in
-
     recursive let extractVariants : [DocTree] -> Option [String] -> [String] = lam stream. lam typeAcc.
         switch (nthWord stream 0, typeAcc)
-        case (Some { word = "|", rest = stream }, Some typeAcc) then cons (extractType typeAcc) (extractVariants stream (Some []))
+        case (Some { word = "|", rest = stream }, Some typeAcc) then cons (strExtractType typeAcc) (extractVariants stream (Some []))
         case (Some { word = "|", rest = stream }, None {}) then extractVariants stream (Some [])
-        case (Some { word = "->", rest = stream }, Some typeAcc) then cons (extractType typeAcc) (extractVariants stream (None {}))
+        case (Some { word = "->", rest = stream }, Some typeAcc) then cons (strExtractType typeAcc) (extractVariants stream (None {}))
         case (Some { word = word, rest = stream }, Some typeAcc) then extractVariants stream (Some (cons word typeAcc))
         case (Some { rest = stream }, None {}) then extractVariants stream (None {})
-        case (None {}, Some typeAcc) then [extractType typeAcc]
+        case (None {}, Some typeAcc) then [strExtractType typeAcc]
         case (None {}, None {}) then []
         end
         

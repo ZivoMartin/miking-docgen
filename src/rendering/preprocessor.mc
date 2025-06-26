@@ -21,8 +21,7 @@ let preprocess : ObjectTree -> () = lam obj.
         lam pathMap. lam obj.
         switch obj
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then preprocessRec pathMap p
-        case ObjectNode { obj = { kind = ObjUse {} | ObjInclude {}}, sons = sons } then pathMap
-
+        case ObjectNode { obj = { kind = ObjUse {} | ObjInclude {} | ObjUtest {}}, sons = sons } then pathMap
         case ObjectNode { obj = obj, sons = sons } then
             let path = dirname (concat "doc-gen-output/" (objLink obj)) in
             foldl preprocessRec (hmInsert path () pathMap) sons

@@ -1,9 +1,16 @@
+-- # HTML Renderer for mi-doc-gen
+--
+-- This module implements the **HtmlRenderer**, an instance of `RendererInterface`.
+-- It generates HTML pages from the extracted ObjectTree.
+
+
+
 include "renderer-interface.mc"
 include "../extracting/objects.mc"    
 
 
-    
-let htmlBalise = lam s. lam b. concatAll ["<", b, ">", s, "</", b, ">"]
+-- HTML helpers
+let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
 let htmlText = lam s. htmlBalise s "p"
 let htmlCode = lam s. concatAll ["<pre class=code>", s, "</pre>"]
 let htmlStrong = lam s. htmlText (htmlBalise s "strong")
@@ -12,7 +19,8 @@ let htmlGetLink = lam l. lam txt. concatAll ["<a href=\"/", l, "\">", txt, "</a>
 let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") lng
 
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
-    
+
+-- Object pretty-printer with syntax coloring 
 let objToStringColorized = use ObjectKinds in lam obj.
     let span = lam content. lam kind. concatAll ["<span class=\"", kind, "\">", content, "</span>"] in
     let kw = lam content. span content "kw" in
@@ -28,7 +36,8 @@ let objToStringColorized = use ObjectKinds in lam obj.
     case ObjProgram {} then ""
     case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
     end
-    
+
+-- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface + ObjectKinds
 
     syn Format =
@@ -133,13 +142,14 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     .arg { color: #24292e; font-style: italic; }  
     .tp  { color: #22863a; }
 
-    </style>
+</style>
 </head>
 <body>
 <nav>
     <a href=\"/\">Home (todo)</a>
     <a href=\"/Lang/\">Modules (todo)</a>
-</nav>"]
+</nav>
+"]
 
     
     sem objFormatedTitle /- (Format, Object) -> String -/ =
@@ -154,10 +164,11 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         let s = objToStringColorized obj in
         
         match s with "" then "" else
+        let link = objLink obj in
         concatAll [
         "<div style=\"position: relative;\">\n",
         htmlBalise s "pre", "\n",
-        "<a href=\"", objLink obj, "\" style=\"
+        "<a href=\"", if strStartsWith "/" link then "" else "/", link, "\" style=\"
             position: absolute;
             bottom: 0.4em;
             right: 0.8em;
@@ -173,12 +184,15 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         let parents = map htmlGetLangLink parents in
         concatAll [
         htmlStrong "Stem from:", "\n",
-        (strJoin " + " parents), objFormat (Html {}, obj), "\n", htmlDoc doc]
+        (strJoin " + " parents), "\n<br>\n",
+        htmlStrong "Signature:", "\n",
+        objFormat (Html {}, obj), "\n<br>\n",
+        htmlDoc doc]
 
     | (Html {}, { doc = doc, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } )} & obj ) ->
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
-            htmlStrong "From:", htmlGetLangLink langName, "\n\n",
+            htmlStrong "From:", "\n", htmlGetLangLink langName, "\n\n",
             htmlBalise "Signature" "h2", "\n\n",
             htmlCode (concatAll [objToStringColorized obj, "\n", variants]), "\n",
             htmlDoc doc, "\n" 
@@ -190,10 +204,6 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         match s with "" then "" else 
             concatAll [htmlBalise "Signature" "h2", "\n\n", (htmlCode s), "\n"],
             htmlDoc obj.doc, "\n"]
-
-
-    sem objGetFormatedLink /- (Format, Object) -> String -/ =
-    | (Html {}, obj) -> concat (htmlText (htmlGetLink (objLink obj) "-")) "\n"
 
 
     sem getFormatedLinkList /- (Format, [Object]) -> String -/ =

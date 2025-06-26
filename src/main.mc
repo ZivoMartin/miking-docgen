@@ -1,22 +1,23 @@
 -- This is the main entry point for the Miking Doc Generator.
 -- The project is composed of the following modules:
--- parsing/parser.mc: Builds a DocTree representing the structure of the file.
--- extracting/extracter.mc: Converts DocTree into an ObjectTree suitable for generating documentation.
--- rendering/renderer.mc: Renders the `ObjectTree` into Markdown pages (HTML support planned).
+-- parsing: Builds a DocTree representing the structure of the file.
+-- extracting: Converts DocTree into an ObjectTree suitable for generating documentation.
+-- rendering: Renders the `ObjectTree` into Markdown pages (HTML support planned).
 
+-- include "main/compile.mc"
+include "parsing/parser.mc"    
 include "extracting/extracter.mc"
 include "rendering/renderer.mc"
 include "options.mc"
-include "sys.mc"        
 include "server.mc"
+
 
 mexpr
 
     let opt = parseOptions argv in
-    
+
     switch parse opt.file
     case Some result then
-        -- displayTree result
         let obj = extract result in
         render opt.fmt obj;
         match obj with ObjectNode { obj = obj } then

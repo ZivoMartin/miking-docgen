@@ -1,35 +1,38 @@
+-- # Renderer Interface
+--
+-- This module defines the interface for a renderer used in **mi-doc-gen**.
+--
+-- Any renderer (MarkdownRenderer, HTMLRenderer, etc.) must implement this interface.
+
 include "../extracting/objects.mc"
 
 lang RendererInterface
 
-    -- Differents format supported by mi-doc-gen
+    -- Different formats supported by mi-doc-gen
     syn Format =
 
-    -- Take in input a String representing a format and output the corresponding format.
-    -- Returns None if the format is invalid.
+    -- Parse format string (example: "html" or "md"), returns None if invalid
     sem formatFromStr /- String -> Option Format -/ = 
         | _ -> None {}
 
-    -- Returns the header of the page
+    -- Returns the header of the page for an object
     sem objFormatHeader /- (Format, Object) -> String -/ =
     
-    -- Takes a format and an object, returns the String representing the object on a page as a son.
+    -- Render an object as child (inside another page)
     sem objFormat /- (Format, Object) -> String -/ =
 
-    -- Takes a format and an object, returns the String representing the object on its own page.
-    sem objGetSpecificDoc /- (Format, Object) -> String -/ = 
+    -- Render an object on its own page (full documentation)
+    sem objGetSpecificDoc /- (Format, Object) -> String -/ =
 
-    -- Takes a format and an object, returns the String representing the title on its own page.
+    -- Render the title of an object on its page
     sem objFormatedTitle /- (Format, Object) -> String -/ =
 
-    -- Takes a format and an object, returns the link of the object formated.
-    sem objGetFormatedLink /- (Format, Object) -> String -/ =
-
-    -- Takes a format and a section's title, returns the section title formated.
+    -- Render a section title
     sem getFormatedSectionTitle /- (Format, String) -> String -/ =
 
-    -- Takes a format and a list of object, returns a String representing all the objects displayed as a list of link separated with a comma
+    -- Render a list of objects as a link list, separated by commas
     sem getFormatedLinkList /- (Format, [Object]) -> String -/ =
 
+    -- Render the footer of the page for an object
     sem objFormatFooter /- (Format, Object) -> String -/ =
 end

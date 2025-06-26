@@ -22,7 +22,8 @@ lang ObjectKinds
     | ObjSyn { langName: String, variants: [String] }
     | ObjCon { t: String }
     | ObjMexpr {}
-    | ObjInclude { isStdlib: Bool }
+    | ObjUtest {}    
+    | ObjInclude { isStdlib: Bool, pathInFile: String }
 
     -- First keyword associated to this object kind (for printing / links)
     sem getFirstWord =
@@ -35,6 +36,7 @@ lang ObjectKinds
     | ObjCon {} -> "con"
     | ObjMexpr {} -> "mexpr"
     | ObjInclude {} -> "include"
+    | ObjUtest {} -> "utest"    
     | ObjProgram {} -> ""
   
 end
@@ -48,8 +50,9 @@ let toTruncate = addi 1 (length stdlibLoc)
 -- Get display title for an object
 let objTitle : Object -> String = use ObjectKinds in lam obj.
     switch obj
-    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then
+    case { namespace = namespace, kind = ObjProgram { isStdlib = true } } then
         strTruncate namespace toTruncate
+    case { kind = ObjInclude { pathInFile = pathInFile } } then pathInFile
     case _ then obj.name
     end
 

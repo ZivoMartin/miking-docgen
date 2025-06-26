@@ -1,4 +1,4 @@
--- # Parser: building a DocTree from a source file
+-- # Parser: building a DocTree from a source file 
 --
 -- This module defines a parser that reads a file and produces a `DocTree`, a hierarchical
 -- structure of tokens annotated with formatting state.
@@ -21,6 +21,7 @@
 --
 -- Result is a `DocTree` for the entire file.
 
+    
 include "doc-tree.mc"
 include "../util.mc"
 include "ext/file-ext.mc"
@@ -38,11 +39,11 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
         foldl
         (lam m. lam k. hmInsert k () m)
         (hashmapEmpty ())
-        ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use"] in
+        ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use", "utest"] in
 
     -- Extra breakers (manually added).
     -- We would like to ignore `switch` keyword, but we cant becauses it ends with then end keyword. It may break a lang block in some situations.
-    let breakerAdder = [("switch", ["end"])] in
+    let breakerAdder = [("switch", ["end"]), ("match", ["then", "in"])] in
 
     -- Snippet type = partial parse result
     type Snippet = { tree: [DocTree], stream: String, breaker: String, toAdd: [DocTree], absorbed: Bool } in

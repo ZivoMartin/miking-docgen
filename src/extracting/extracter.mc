@@ -124,6 +124,7 @@ let extract : DocTree -> ObjectTree =
 
                         ObjLet { rec = false, args = args }
 
+                    case TopUtest {} | Utest {} then ObjUtest {}
                     case Sem {} then ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
 
                     case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
@@ -161,7 +162,7 @@ let extract : DocTree -> ObjectTree =
                 -- Load included file
                 match goHere (dirname namespace) content with { path = path, isStdlib = isStdlib } then
                     let isStdlib = or inStdlib isStdlib in
-                    let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib }, name = path, namespace = path }, sons = [] } in
+                    let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content }, name = path, namespace = path }, sons = [] } in
 
                     if hmMem path includeSet then
                         { commentBuffer = [], obj = emptyInclude, includeSet = includeSet }
@@ -170,7 +171,7 @@ let extract : DocTree -> ObjectTree =
                         match parse path with Some tree then
                             match extractRec tree path [] newIncludeSet isStdlib with
                             { commentBuffer = [], obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } then
-                                let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib } } in
+                                let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
                                 { commentBuffer = [], obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet }
                             else never
                         else never
