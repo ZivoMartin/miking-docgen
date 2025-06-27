@@ -289,4 +289,8 @@ lang IncludeTokenReader = TokenReaderInterface
 end
 
 -- Combine all token readers into a single TokenReader
-lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + IncludeTokenReader end
+lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + IncludeTokenReader
+
+syn Token =
+    
+end

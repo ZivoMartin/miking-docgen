@@ -58,7 +58,7 @@ let nthWord = use TokenReader in lam sons. lam n.
     recursive
     let nthWord = lam sons. lam n.
         switch sons
-        case [Leaf { token = Word { content = word } }] ++ rest then
+        case [Leaf { token = (Word { content = word } | Str { content = word }) }] ++ rest then
             if eqi n 0 then Some { word = word, rest = rest }
             else nthWord rest (subi n 1)
         case [_] ++ rest then nthWord rest n

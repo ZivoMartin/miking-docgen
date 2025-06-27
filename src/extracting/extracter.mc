@@ -48,7 +48,7 @@ let extract : DocTree -> ObjectTree =
 
             -- Get first word in sons
             let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] } in
-
+                
             -- Start new object
             let obj = { defaultObject with namespace = namespace } in
             let doc = buildDoc commentBuffer in

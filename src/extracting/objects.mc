@@ -44,6 +44,9 @@ end
 -- Object structure
 type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind }
 
+
+let basePosition : String = concat (sysGetCwd ()) "/"
+
 -- Prefix length to truncate stdlib paths
 let toTruncate = addi 1 (length stdlibLoc)
 
@@ -59,17 +62,22 @@ let objTitle : Object -> String = use ObjectKinds in lam obj.
 -- Build lang link prefix
 let getLangLink = lam name. concat "Lang/" name
 
+
+-- Returns the absolute path of the object
+let objAbsolutePath : Object -> String = lam obj. normalizePath (concat basePosition obj.namespace)
+    
 -- Get URL link for an object
 let objLink : Object -> String = use ObjectKinds in lam obj.
     switch obj
     case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
-    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then concatAll ["File/", namespace]
-    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then concatAll ["Lib/", strTruncate namespace toTruncate]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then concatAll ["File", objAbsolutePath obj]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then concatAll ["Lib", namespace]
     case { name = name, kind = (ObjSem { langName = langName } | ObjSyn { langName = langName }) & kind } then
         concatAll [getLangLink langName, "/", getFirstWord kind, "/", name]    
-    case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, "/", namespace, "/", name, ".", getFirstWord kind]
+    case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, objAbsolutePath obj, "/", name, ".", getFirstWord kind]
     end
 
+    
 -- Get full namespace of object
 let objNamespace : Object -> String = use ObjectKinds in lam obj.
     switch obj

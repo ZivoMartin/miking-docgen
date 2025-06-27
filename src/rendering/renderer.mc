@@ -45,7 +45,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [] } then ()
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
-            match createAndOpen (concat "doc-gen-output/" (objLink obj))  with Some wc then
+            let path = concat "doc-gen-output/" (objLink obj) in
+            match createAndOpen path  with Some wc then
                 let write = fileWriteString wc in
 
                 -- Push header of the output file
@@ -117,7 +118,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 write (objFormatFooter (fmt, obj));
                 fileWriteClose wc
                 
-            else ()
+            else warn (concat "Failed to open " path)
         case _ then () end
         
     in render fmt obj
