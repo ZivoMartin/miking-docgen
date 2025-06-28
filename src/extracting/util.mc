@@ -137,7 +137,7 @@ let extractVariants : [DocTree] -> [String] = lam stream.
     in extractVariants stream (None {})
 
 -- Extract all the arguments name, returns empty list if no argument.
-let extractParams = lam sons: dz aijsizsjka zlsozkdzodj.
+let extractParams = lam sons.
     recursive let extractParams = lam sons.
         switch nthWord sons 0 
         case Some { word = "lam", rest = rest } then
