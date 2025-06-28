@@ -40,9 +40,7 @@ let extract : DocTree -> ObjectTree =
     recursive
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> IncludeSet -> Bool -> ExtractRecOutput) =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam includeSet. lam inStdlib.
-        
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
-
         switch tree 
         case Node { sons = sons, token = token, state = state } then
 
@@ -54,7 +52,7 @@ let extract : DocTree -> ObjectTree =
             -- Get first word in sons
             let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] } in
 
-            let finish : Object -> { builder: SourceCodeBuilder, obj: Object } = lam obj.
+            let finish : Object -> SourceCodeBuilder -> { builder: SourceCodeBuilder, obj: Object } = lam obj. lam sourceCodeBuilder.
                 let sourceCode = finish sourceCodeBuilder in
                 { obj = { obj with sourceCode = sourceCode.sourceCode }, builder = sourceCode.builder } in
     
@@ -67,14 +65,20 @@ let extract : DocTree -> ObjectTree =
             let process : [DocTree] -> String -> String -> String -> ObjectKind -> ExtractRecOutput =
                 lam sons. lam name. lam namespace. lam doc. lam kind.
 
+                type Arg = { commentBuffer: CommentBuffer, sourceCodeBuilder: SourceCodeBuilder, includeSet: IncludeSet, sons: [ObjectTree]} in
                 let foldResult = foldl
-                    (lam arg. lam s.
-                    let res = extractRec s namespace arg.commentBuffer sourceCodeBuilder arg.includeSet inStdlib in
-                    { commentBuffer = res.commentBuffer, sons = cons res.obj arg.sons, includeSet = res.includeSet })
-                    { commentBuffer = [], sons = [], includeSet = includeSet }
+                    (lam arg: Arg. lam s: DocTree.
+                    let res = extractRec s namespace arg.commentBuffer arg.sourceCodeBuilder arg.includeSet inStdlib in
+                    {
+                        commentBuffer = res.commentBuffer,
+                        sourceCodeBuilder = res.sourceCodeBuilder,
+                        sons = cons res.obj arg.sons,
+                        includeSet = res.includeSet
+                    })
+                    { commentBuffer = [], sons = [], includeSet = includeSet, sourceCodeBuilder = sourceCodeBuilder }
                     sons in
                 let obj = { obj with name = name, kind = kind, doc = doc } in
-                match finish obj with { obj = obj, builder = sourceCodeBuilder } in
+                match finish obj foldResult.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 let obj = ObjectNode { obj = obj, sons = foldResult.sons } in
                 { obj = obj, commentBuffer = foldResult.commentBuffer, sourceCodeBuilder = sourceCodeBuilder, includeSet = foldResult.includeSet } in
 
@@ -100,7 +104,7 @@ let extract : DocTree -> ObjectTree =
                 let name = getName sons in
                 let obj = { obj with name = name.word, kind = ObjUse {} } in
                 let sourceCodeBuilder = foldl absorbWord sourceCodeBuilder sons in
-                match finish obj with { obj = obj, builder = sourceCodeBuilder } in
+                match finish obj sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, includeSet = includeSet }
 
             case state then
@@ -202,5 +206,5 @@ let extract : DocTree -> ObjectTree =
 
     -- Entry point: tree must be Program node
     match tree with Node { token = Word { content = content }, state = Program {} } then
-        let res = extractRec tree content [] (newSourceCodeBuilder ()) (hashmapEmpty ()) false in res.obj
+        (extractRec tree content [] (newSourceCodeBuilder ()) (hashmapEmpty ()) false).obj
     else error "Extraction failed: the top node of the output tree should always be a program."

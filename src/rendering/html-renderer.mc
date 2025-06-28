@@ -12,6 +12,7 @@ include "../extracting/source-code-reconstruction.mc"
 -- HTML helpers
 let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
 let htmlText = lam s. htmlBalise s "p"
+let htmlPre = lam s. htmlBalise s "pre"    
 let htmlCode = lam s. concatAll ["<pre class=code>", s, "</pre>"]
 let htmlStrong = lam s. htmlText (htmlBalise s "strong")
 
@@ -167,8 +168,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         let link = objLink obj in
         concatAll [
         "<div style=\"position: relative;\">\n",
-        htmlBalise s "pre", "\n",
-        htmlText (getRawSourceCode (ObjectNode { sons = sons, obj = obj })), "\n",
+        htmlPre s, "\n",
         "<a href=\"", if strStartsWith "/" link then "" else "/", link, "\" style=\"
             position: absolute;
             bottom: 0.4em;
@@ -177,7 +177,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             color: #2980b9;
             text-decoration: none;
             \">[→]</a>
-        </div>\n"
+        </div>\n",
+          htmlPre (getRawSourceCode (ObjectNode { sons = sons, obj = obj })), "\n"
         ]
 
     sem objGetSpecificDoc =

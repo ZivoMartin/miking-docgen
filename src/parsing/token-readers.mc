@@ -100,7 +100,7 @@ lang CommentTokenReader = TokenReaderInterface
             {
                 token = Comment {
                     content = extracted.0,
-                    lit = concat "--" extracted.0
+                    lit = concatAll ["--", extracted.0, "\n"]
                 },
                 stream = extracted.1
             }

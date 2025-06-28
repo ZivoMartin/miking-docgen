@@ -18,6 +18,7 @@ mexpr
 
     switch parse opt.file
     case Some result then
+
         let obj = extract result in
         render opt.fmt obj;
         match obj with ObjectNode { obj = obj } then

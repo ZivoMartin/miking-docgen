@@ -41,6 +41,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
     let render : Format -> ObjectTree -> () = lam fmt. lam obj.
         switch obj
         case ObjectNode { obj = { kind = ObjUse {}}, sons = sons } then ()
+        case ObjectNode { obj = { kind = ObjUtest {}}, sons = sons } then ()    
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then render fmt p
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [] } then ()
         case ObjectNode { obj = obj, sons = sons } then
@@ -57,7 +58,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 write (objGetSpecificDoc (fmt, obj, sons));
 
                 -- Removing words
-                let sons = filter (lam s. match s with ObjectNode {} then true else false) sons in
+                let sons = objectSonsFilterNodes sons in
             
                 -- Recursive calls
                 iter (render fmt) sons;

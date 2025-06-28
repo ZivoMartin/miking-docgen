@@ -89,7 +89,7 @@ let objNamespace : Object -> String = use ObjectKinds in lam obj.
 
 -- Empty default object
 let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty () }
-
+    
 -- Returns a string representation of the object
 let objToString = use ObjectKinds in lam kind. lam name.
     switch kind
@@ -105,3 +105,5 @@ let objToString = use ObjectKinds in lam kind. lam name.
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 con ObjectLeaf : String -> ObjectTree
+
+let objectSonsFilterNodes : [ObjectTree] -> [ObjectTree] = lam sons. filter (lam s. match s with ObjectNode {} then true else false) sons
