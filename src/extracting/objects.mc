@@ -8,6 +8,7 @@
 -- Used in doc generation and object representation.
 
 include "../util.mc"
+include "./source-code-builder.mc"
     
 lang ObjectKinds
 
@@ -42,7 +43,7 @@ lang ObjectKinds
 end
 
 -- Object structure
-type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind }
+type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode }
 
 
 let basePosition : String = concat (sysGetCwd ()) "/"
@@ -86,7 +87,7 @@ let objNamespace : Object -> String = use ObjectKinds in lam obj.
     end
 
 -- Empty default object
-let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false } }
+let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty () }
 
 -- Returns a string representation of the object
 let objToString = use ObjectKinds in lam kind. lam name.
