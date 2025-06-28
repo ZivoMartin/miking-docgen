@@ -41,7 +41,6 @@ let extract : DocTree -> ObjectTree =
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> IncludeSet -> Bool -> Int -> ExtractRecOutput ) =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam includeSet. lam inStdlib. lam utestCount.
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
-        printLn namespace;
         switch tree 
         case Node { sons = sons, token = token, state = state } then
 
@@ -169,7 +168,7 @@ let extract : DocTree -> ObjectTree =
                         { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } in
 
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
-                    { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] } }
+                    { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet  }
             case Separator { content = content } then
                 -- Clear comment buffer if \n found
                 if strContains content '\n' then defaultRes
