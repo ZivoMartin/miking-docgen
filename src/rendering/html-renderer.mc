@@ -166,6 +166,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         
         match s with "" then "" else
         let link = objLink obj in
+        let objNode = ObjectNode { sons = sons, obj = obj } in
+        let sourceCodeTree = getTreeSourceCode objNode in
         concatAll [
         "<div style=\"position: relative;\">\n",
         htmlPre s, "\n",
@@ -178,7 +180,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             text-decoration: none;
             \">[→]</a>
         </div>\n",
-          htmlPre (getRawSourceCode (ObjectNode { sons = sons, obj = obj })), "\n"
+          htmlPre (getRawSourceCode objNode), "\n"
         ]
 
     sem objGetSpecificDoc =
