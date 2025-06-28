@@ -22,7 +22,7 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 
 -- Object pretty-printer with syntax coloring 
-let objToStringColorized = use ObjectKinds in lam obj.
+let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
     let span = lam content. lam kind. concatAll ["<span class=\"", kind, "\">", content, "</span>"] in
     let kw = lam content. span content "kw" in
     let var = lam content. span content "var" in
@@ -180,7 +180,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             color: #2980b9;
             text-decoration: none;
             \">[→]</a>
-        </div>\n"
+        </div>\n",
+        htmlDoc obj.doc
           -- htmlPre (getRawSourceCode objNode), "\n"
         ]
 
@@ -191,8 +192,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         htmlStrong "Stem from:", "\n",
         (strJoin " + " parents), "\n<br>\n",
         htmlStrong "Signature:", "\n",
-        objFormat (Html {}, obj, sons), "\n<br>\n",
-        htmlDoc doc]
+        objFormat (Html {}, obj, sons), "\n<br>\n"]
 
     | (Html {}, { doc = doc, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } )} & obj ) ->
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
