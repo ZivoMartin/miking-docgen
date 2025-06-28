@@ -101,9 +101,8 @@ let extract : DocTree -> ObjectTree =
                 { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, includeSet = includeSet, utestCount = utestCount }
 
             case TopUtest {} | Utest {} then
-                
-                let name = getName sons in
-                process sons (int2string utestCount) (getNamespace namespace name.word) doc (ObjUtest {}) (addi utestCount 1)
+                let name = int2string utestCount in
+                process sons name (getNamespace namespace name) doc (ObjUtest {}) (addi utestCount 1)
     
             case state then
                 -- Look for '=' in children
