@@ -33,7 +33,8 @@ let objToStringColorized = use ObjectKinds in lam obj.
     case ObjLet { rec = rec, args = args } then concatAll [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " ", strJoin " " (map arg args)]
     case ObjType { t = t } then concatAll [kw "type", " ", var obj.name, match t with Some t then concat " : " (tp t) else ""]
     case ObjCon { t = t } then concatAll [kw "con", " ", var obj.name, " : ", tp t]
-    case ObjMexpr {} then kw "mexpr"
+    case (ObjMexpr {} | ObjUtest {}) & kind then kw (getFirstWord kind)
+    
     case ObjProgram {} then ""
     case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
     end
@@ -179,8 +180,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             color: #2980b9;
             text-decoration: none;
             \">[→]</a>
-        </div>\n",
-          htmlPre (getRawSourceCode objNode), "\n"
+        </div>\n"
+          -- htmlPre (getRawSourceCode objNode), "\n"
         ]
 
     sem objGetSpecificDoc =

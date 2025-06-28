@@ -85,7 +85,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjCon {} then { set with Con = cons obj set.Con }    
                             case ObjMexpr {} then { set with Mexpr = cons obj set.Mexpr }
                             case ObjType {} then { set with Type = cons obj set.Type }
-                            case ObjType {} then { set with Utest = cons obj set.Utest }
+                            case ObjUtest {} then { set with Utest = cons obj set.Utest }
                             case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj.obj set.LibInclude }
                             case ObjInclude { isStdlib = false } then { set with Include = cons obj.obj set.Include }
                             end) objects
