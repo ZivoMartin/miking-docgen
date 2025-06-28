@@ -55,6 +55,20 @@ let strTruncate = lam s. lam n.
             else strTruncate s (subi n 1)
         else str in strTruncate s n
 
+let splitOn : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. lam arr.
+    recursive let work = lam arr.
+        switch arr
+        case [] then { left = [], right = [] }
+        case [x] ++ rest then
+            if f x then
+                let res = work rest in
+                { res with left = cons x res.left }
+            else
+                { left = [], right = arr }
+        end in
+    work arr
+
+    
 -- HashMap helpers for String-based maps
 
 let hmTraits = hashmapStrTraits

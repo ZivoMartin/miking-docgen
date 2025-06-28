@@ -66,6 +66,11 @@ let nthWord = use TokenReader in lam sons. lam n.
         end in
     nthWord sons n
 
+-- Get first word in sons
+let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] } 
+
+
+    
 let strExtractType = use TokenReader in lam typedef.
     recursive let strExtractType = lam typedef.
         switch typedef
@@ -80,9 +85,6 @@ let strExtractType = use TokenReader in lam typedef.
             end
         end in strExtractType (reverse typedef)
     
-        
-
-    
 
 let extractType = use TokenReader in lam typedef.
     strExtractType (foldl
@@ -90,7 +92,6 @@ let extractType = use TokenReader in lam typedef.
             match w with Leaf { token = Word { content = content } } then cons content a
             else a
          ) [] typedef)
-
 
     
 let extractParents = lam words.
@@ -134,3 +135,25 @@ let extractVariants : [DocTree] -> [String] = lam stream.
         end
         
     in extractVariants stream (None {})
+
+-- Extract all the arguments name, returns empty list if no argument.
+let extractParams = lam sons: dz aijsizsjka zlsozkdzodj.
+    recursive let extractParams = lam sons.
+        switch nthWord sons 0 
+        case Some { word = "lam", rest = rest } then
+            let res = switch getName rest
+            case { word = ".", rest = rest} then { word = "_", rest = rest }
+            case { word = word, rest = rest} then
+                recursive let goToPoint = lam sons.
+                    switch nthWord sons 0
+                    case Some { rest = rest, word = "." } then rest
+                    case Some { rest = rest } then goToPoint rest
+                    case None {} then
+                        warn "While extracting the let arguments, we detected a pointless lamda function declaration.";
+                        []
+                    end in
+                { word = word, rest = goToPoint rest }
+            end in
+            cons res.word (extractParams res.rest)
+        case _ then []
+        end in extractParams sons

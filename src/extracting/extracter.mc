@@ -49,9 +49,6 @@ let extract : DocTree -> ObjectTree =
                 let res = strJoin "  \n" (reverse commentBuffer) in
                 match res with "" then "No documentation available here." else res in
 
-            -- Get first word in sons
-            let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] } in
-
             let finish : Object -> SourceCodeBuilder -> { builder: SourceCodeBuilder, obj: Object } = lam obj. lam sourceCodeBuilder.
                 let sourceCode = finish sourceCodeBuilder in
                 { obj = { obj with sourceCode = sourceCode.sourceCode }, builder = sourceCode.builder } in
@@ -123,22 +120,7 @@ let extract : DocTree -> ObjectTree =
                         let sons = skipUseIn sons in
 
                         -- Extract params if any
-                        let args = recursive let extractParams = lam sons.
-                            switch nthWord sons 0 
-                            case Some { word = "lam", rest = rest } then
-                                let w = switch getName rest
-                                case { word = ".", rest = rest} then "_"
-                                case { word = word, rest = rest} then
-                                    match nthWord rest 0 with Some { rest = rest, word = _ } then
-                                        word
-                                    else
-                                        warn "While extracting the let arguments, we detected a pointless lamda function declaration.";
-                                        []
-                                end in
-                                cons w (extractParams rest)
-                            case _ then []
-                            end in extractParams sons in
-
+                        let args = extractParams sons in
                         ObjLet { rec = false, args = args }
 
                     case TopUtest {} | Utest {} then ObjUtest {}
