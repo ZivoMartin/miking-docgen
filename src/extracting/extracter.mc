@@ -12,9 +12,12 @@
 -- The result can later be rendered as Markdown / HTML files.
 
 include "util.mc"
-include "objects.mc"    
+include "objects.mc"
+include "source-code-builder.mc"
+    
 include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
+
 include "ext/file-ext.mc"
 include "fileutils.mc"
 include "hashmap.mc"
