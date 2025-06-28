@@ -63,7 +63,7 @@ let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
 -- - the reversed buffer containing the current block's source
 let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: SourceCode } = lam builder.
     match builder with SourceCodeNode { parent = parent, buffer = buffer } in
-        { builder = parent, sourceCode = reverse buffer }
+        { builder = parent, sourceCode = buffer }
 
 -- Returns a new SourceCodeBuilder
-let newSourceCodeBuilder : () -> SourceCodeBuilder = lam . SourceCodeRoot { buffer = [] }
+let newSourceCodeBuilder : () -> SourceCodeBuilder = lam . SourceCodeRoot { buffer = [] }    

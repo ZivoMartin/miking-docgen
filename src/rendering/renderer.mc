@@ -54,7 +54,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
 
                 -- Pushing title and global documentation
                 write (objFormatedTitle (fmt, obj));
-                write (objGetSpecificDoc (fmt, obj));
+                write (objGetSpecificDoc (fmt, obj, sons));
 
                 -- Removing words
                 let sons = filter (lam s. match s with ObjectNode {} then true else false) sons in
@@ -64,8 +64,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
 
                 -- Extracting infos
                 let sons = foldl (lam a. lam s.
-                    match s with ObjectNode { obj = obj } then
-                        cons obj a
+                    match s with ObjectNode { obj = obj, sons = sons } then
+                        cons { obj = obj, sons = sons } a
                     else
                         warn "sons should only contain ObjectNode at this stage.";
                         a  
@@ -76,8 +76,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                     recursive
                     let buildSet = lam set. lam objects. 
                         switch objects
-                        case [obj] ++ objects then buildSet (switch obj.kind
-                            case ObjUse {} then { set with Use = cons obj set.Use }
+                        case [obj] ++ objects then buildSet (switch obj.obj.kind
+                            case ObjUse {} then { set with Use = cons obj.obj set.Use }
                             case ObjLet {} then { set with Let = cons obj set.Let }
                             case ObjLang {} then { set with Lang = cons obj set.Lang }
                             case ObjSem {} then { set with Sem = cons obj set.Sem }
@@ -85,8 +85,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjCon {} then { set with Con = cons obj set.Con }    
                             case ObjMexpr {} then { set with Mexpr = cons obj set.Mexpr }
                             case ObjType {} then { set with Type = cons obj set.Type }    
-                            case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj set.LibInclude }
-                            case ObjInclude { isStdlib = false } then { set with Include = cons obj set.Include }
+                            case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj.obj set.LibInclude }
+                            case ObjInclude { isStdlib = false } then { set with Include = cons obj.obj set.Include }
                             case ObjUtest {} then set    
                             end) objects
                         case [] then set
@@ -106,7 +106,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                     let title = match arr with [] then "" else match title with "" then "" else
                             getFormatedSectionTitle (fmt, title) in
                     write title;
-                    iter (lam u. write (objFormat (fmt, u))) (reverse arr)
+                    iter (lam u. write (objFormat (fmt, u.obj, u.sons))) (reverse arr)
                 in
 
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];

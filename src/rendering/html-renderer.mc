@@ -7,7 +7,7 @@
 
 include "renderer-interface.mc"
 include "../extracting/objects.mc"    
-
+include "../extracting/source-code-reconstruction.mc"
 
 -- HTML helpers
 let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
@@ -159,8 +159,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     | (Html {}, title) -> concat (htmlBalise (concat title ":") "h2") "\n"
 
     
-    sem objFormat /- (Format, Object) -> String -/ =
-     | (Html {}, obj) ->
+    sem objFormat =
+     | (Html {}, obj, sons) ->
         let s = objToStringColorized obj in
         
         match s with "" then "" else
@@ -168,6 +168,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         concatAll [
         "<div style=\"position: relative;\">\n",
         htmlBalise s "pre", "\n",
+        htmlText (getRawSourceCode (ObjectNode { sons = sons, obj = obj })), "\n",
         "<a href=\"", if strStartsWith "/" link then "" else "/", link, "\" style=\"
             position: absolute;
             bottom: 0.4em;
@@ -179,14 +180,14 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         </div>\n"
         ]
 
-    sem objGetSpecificDoc /- (Format, Object) -> String -/ =
-    | (Html {}, { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } & obj ) ->
+    sem objGetSpecificDoc =
+    | (Html {}, { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } & obj, sons ) ->
         let parents = map htmlGetLangLink parents in
         concatAll [
         htmlStrong "Stem from:", "\n",
         (strJoin " + " parents), "\n<br>\n",
         htmlStrong "Signature:", "\n",
-        objFormat (Html {}, obj), "\n<br>\n",
+        objFormat (Html {}, obj, sons), "\n<br>\n",
         htmlDoc doc]
 
     | (Html {}, { doc = doc, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } )} & obj ) ->

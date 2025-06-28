@@ -18,7 +18,6 @@ include "source-code-builder.mc"
 include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
 
-include "ext/file-ext.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 
