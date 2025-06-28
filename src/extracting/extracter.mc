@@ -35,12 +35,13 @@ let extract : DocTree -> ObjectTree =
     type CommentBuffer = [String] in
 
     -- Output of one extractRec step
-    type ExtractRecOutput = { obj: ObjectTree, commentBuffer: CommentBuffer, includeSet: IncludeSet, sourceCodeBuilder: SourceCodeBuilder } in
+    type ExtractRecOutput = { obj: ObjectTree, commentBuffer: CommentBuffer, includeSet: IncludeSet, sourceCodeBuilder: SourceCodeBuilder, utestCount: Int } in
 
     recursive
-    let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> IncludeSet -> Bool -> ExtractRecOutput) =
-    lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam includeSet. lam inStdlib.
+    let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> IncludeSet -> Bool -> Int -> ExtractRecOutput ) =
+    lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam includeSet. lam inStdlib. lam utestCount.
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
+        printLn namespace;
         switch tree 
         case Node { sons = sons, token = token, state = state } then
 
@@ -59,25 +60,20 @@ let extract : DocTree -> ObjectTree =
             
 
             -- Process children nodes
-            let process : [DocTree] -> String -> String -> String -> ObjectKind -> ExtractRecOutput =
-                lam sons. lam name. lam namespace. lam doc. lam kind.
-
-                type Arg = { commentBuffer: CommentBuffer, sourceCodeBuilder: SourceCodeBuilder, includeSet: IncludeSet, sons: [ObjectTree]} in
+            let process : [DocTree] -> String -> String -> String -> ObjectKind -> Int -> ExtractRecOutput =
+                lam sons. lam name. lam namespace. lam doc. lam kind. lam utestCount.
+                type Arg = { sons: [ObjectTree], ctx: ExtractRecOutput } in
                 let foldResult = foldl
                     (lam arg: Arg. lam s: DocTree.
-                    let res = extractRec s namespace arg.commentBuffer arg.sourceCodeBuilder arg.includeSet inStdlib in
-                    {
-                        commentBuffer = res.commentBuffer,
-                        sourceCodeBuilder = res.sourceCodeBuilder,
-                        sons = cons res.obj arg.sons,
-                        includeSet = res.includeSet
-                    })
-                    { commentBuffer = [], sons = [], includeSet = includeSet, sourceCodeBuilder = sourceCodeBuilder }
+                        let ctx = arg.ctx in
+                        let ctx = extractRec s namespace ctx.commentBuffer ctx.sourceCodeBuilder ctx.includeSet inStdlib ctx.utestCount in
+                        { sons = cons ctx.obj arg.sons, ctx = ctx })
+                    { sons = [], ctx = { commentBuffer = [], includeSet = includeSet, sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount, obj = ObjectLeaf "" } }
                     sons in
                 let obj = { obj with name = name, kind = kind, doc = doc } in
-                match finish obj foldResult.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
+                match finish obj foldResult.ctx.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 let obj = ObjectNode { obj = obj, sons = foldResult.sons } in
-                { obj = obj, commentBuffer = foldResult.commentBuffer, sourceCodeBuilder = sourceCodeBuilder, includeSet = foldResult.includeSet } in
+                { foldResult.ctx with obj = obj, sourceCodeBuilder = sourceCodeBuilder } in
 
             -- Dispatch by token type + state
             switch token case Word { content = content } then
@@ -93,17 +89,23 @@ let extract : DocTree -> ObjectTree =
                 process sons content content
                     (buildDoc (reverse extractRes.comments))
                     (ObjProgram { isStdlib = inStdlib })
+                    utestCount
 
             case Mexpr {} then
-                process sons "mexpr" (getNamespace namespace "mexpr") doc (ObjMexpr {})
+                process sons "mexpr" (getNamespace namespace "mexpr") doc (ObjMexpr {}) utestCount
 
             case (Use {} | TopUse {}) then
                 let name = getName sons in
                 let obj = { obj with name = name.word, kind = ObjUse {} } in
                 let sourceCodeBuilder = foldl absorbWord sourceCodeBuilder sons in
                 match finish obj sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
-                { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, includeSet = includeSet }
+                { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, includeSet = includeSet, utestCount = utestCount }
 
+            case TopUtest {} | Utest {} then
+                
+                let name = getName sons in
+                process sons (int2string utestCount) (getNamespace namespace name.word) doc (ObjUtest {}) (addi utestCount 1)
+    
             case state then
                 -- Look for '=' in children
                 recursive let goToEqual = lam sons.
@@ -122,14 +124,9 @@ let extract : DocTree -> ObjectTree =
                         -- Extract params if any
                         let args = extractParams sons in
                         ObjLet { rec = false, args = args }
-
-                    case TopUtest {} | Utest {} then ObjUtest {}
                     case Sem {} then ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
-
                     case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
-
                     case Lang {} then ObjLang { parents = reverse (extractParents name.rest) }
-
                     case (Con {} | TopCon {}) then
                         let t =
                             match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
@@ -146,12 +143,12 @@ let extract : DocTree -> ObjectTree =
                         ObjType { t = t }
 
                 end in
-                process sons name.word (getNamespace namespace name.word) doc kind
+                process sons name.word (getNamespace namespace name.word) doc kind utestCount
              end end
 
         case Leaf { token = token, state = state } then
             let w = ObjectLeaf (lit token) in
-            let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet } in
+            let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet, utestCount = utestCount } in
             -- Leaf dispatch
             switch token
             case Comment { content = content } then
@@ -168,7 +165,7 @@ let extract : DocTree -> ObjectTree =
                 else
                     let newIncludeSet = hmInsert path () includeSet in
                     match parse path with Some tree in
-                    match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib with
+                    match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib utestCount with
                         { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } in
 
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
@@ -185,5 +182,5 @@ let extract : DocTree -> ObjectTree =
 
     -- Entry point: tree must be Program node
     match tree with Node { token = Word { content = content }, state = Program {} } then
-        (extractRec tree content [] (newSourceCodeBuilder ()) (hashmapEmpty ()) false).obj
+        (extractRec tree content [] (newSourceCodeBuilder ()) (hashmapEmpty ()) false 0).obj
     else error "Extraction failed: the top node of the output tree should always be a program."
