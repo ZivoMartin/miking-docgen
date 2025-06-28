@@ -151,37 +151,34 @@ let extract : DocTree -> ObjectTree =
 
         case Leaf { token = token, state = state } then
             let w = ObjectLeaf (lit token) in
-
+            let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet } in
             -- Leaf dispatch
             switch token
             case Comment { content = content } then
-                { commentBuffer = cons content commentBuffer, sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet }
+                { defaultRes with commentBuffer = cons content commentBuffer }
 
             case Include { content = content } then
                 -- Load included file
-                match goHere (dirname namespace) content with { path = path, isStdlib = isStdlib } then
-                    let isStdlib = or inStdlib isStdlib in
-                    let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content }, name = path, namespace = path }, sons = [] } in
+                match goHere (dirname namespace) content with { path = path, isStdlib = isStdlib } in
+                let isStdlib = or inStdlib isStdlib in
+                let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content }, name = path, namespace = path }, sons = [] } in
+    
+                if hmMem path includeSet then
+                    { defaultRes with obj = emptyInclude }
+                else
+                    let newIncludeSet = hmInsert path () includeSet in
+                    match parse path with Some tree in
+                    match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib with
+                        { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } in
 
-                    if hmMem path includeSet then
-                        { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = emptyInclude, includeSet = includeSet }
-                    else
-                        let newIncludeSet = hmInsert path () includeSet in
-                        match parse path with Some tree then
-                            match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib with
-                            { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } then
-                                let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
-                                { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet }
-                            else never
-                        else never
-                else never
-
+                    let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
+                    { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] } }
             case Separator { content = content } then
                 -- Clear comment buffer if \n found
-                if strContains content '\n' then { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet }
-                else { commentBuffer = commentBuffer, sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet }
+                if strContains content '\n' then defaultRes
+                else { defaultRes with commentBuffer = commentBuffer }
 
-            case _ then { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet }
+            case _ then defaultRes
             end
         end
     in
