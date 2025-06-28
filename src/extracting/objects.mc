@@ -78,7 +78,6 @@ let objLink : Object -> String = use ObjectKinds in lam obj.
         concatAll [getLangLink langName, "/", getFirstWord kind, "/", name]    
     case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, objAbsolutePath obj, "/", name, ".", getFirstWord kind]
     end
-
     
 -- Get full namespace of object
 let objNamespace : Object -> String = use ObjectKinds in lam obj.

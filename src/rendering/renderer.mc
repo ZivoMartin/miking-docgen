@@ -41,7 +41,6 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
     let render : Format -> ObjectTree -> () = lam fmt. lam obj.
         switch obj
         case ObjectNode { obj = { kind = ObjUse {}}, sons = sons } then ()
-        case ObjectNode { obj = { kind = ObjUtest {}}, sons = sons } then ()    
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then render fmt p
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [] } then ()
         case ObjectNode { obj = obj, sons = sons } then
@@ -85,14 +84,14 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjSyn {} then { set with Syn = cons obj set.Syn }
                             case ObjCon {} then { set with Con = cons obj set.Con }    
                             case ObjMexpr {} then { set with Mexpr = cons obj set.Mexpr }
-                            case ObjType {} then { set with Type = cons obj set.Type }    
+                            case ObjType {} then { set with Type = cons obj set.Type }
+                            case ObjType {} then { set with Utest = cons obj set.Utest }
                             case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj.obj set.LibInclude }
                             case ObjInclude { isStdlib = false } then { set with Include = cons obj.obj set.Include }
-                            case ObjUtest {} then set    
                             end) objects
                         case [] then set
                         end
-                    in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [] } sons in
+                    in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } sons in
 
                 -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
@@ -113,12 +112,12 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
-                ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem),("Mexpr", set.Mexpr)];
+                ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr), ("Tests", set.Utest)];
 
                 -- Push the footer of the page
                 write (objFormatFooter (fmt, obj));
                 fileWriteClose wc
-                
+
             else warn (concat "Failed to open " path)
         case _ then () end
         
