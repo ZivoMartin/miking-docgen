@@ -34,7 +34,7 @@ let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
     use TokenReader in use Colorizer in lam builder. lam word.
     match builder with SourceCodeNode { buffer = buffer, parent = parent, ctx = ctx } in
     let token = (match word with Node { token = token } | Leaf { token = token } in token) in
-    let ctx = colorizerNext (ctx, lit token) in
+    let ctx = colorizerNext (ctx, token) in
     let token = ctx.word in
     switch word
     case Node {} then
