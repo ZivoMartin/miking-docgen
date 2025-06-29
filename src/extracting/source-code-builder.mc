@@ -8,13 +8,8 @@
 -- No explicit indexing or backtracking is required.
 
 include "../parsing/doc-tree.mc"
-
--- ## SourceCodeWord
---
--- Represents a single word from the source code.
--- - `Some word` -> an actual token string
--- - `None {}`   -> a placeholder for a child block's source code
-type SourceCodeWord = Option String
+include "./source-code-word.mc"
+include "./colorizer.mc"
 
 -- Representation of the source code with word's buffer
 type SourceCode = [SourceCodeWord]
@@ -40,8 +35,9 @@ con SourceCodeRoot : { buffer: [SourceCodeWord] } -> SourceCodeBuilder
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
     use TokenReader in lam builder. lam word.
     match builder with SourceCodeNode { buffer = buffer } | SourceCodeRoot { buffer = buffer } in
+    let token = (match word with Node { token = token } | Leaf { token = token } in token) in
     switch word
-    case Node { token = token } then
+    case Node {} then
         let buffer = cons (None {}) buffer in
         let parent =
             match builder with SourceCodeNode { parent = parent} then
@@ -49,7 +45,7 @@ let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
             else 
                 SourceCodeRoot { buffer = buffer} in
         SourceCodeNode { parent = parent, buffer = [Some (lit token)] }
-    case Leaf { token = token } then
+    case Leaf {} then
         let buffer = cons (Some (lit token)) buffer in
         match builder with SourceCodeNode { parent = parent} then
             SourceCodeNode { parent = parent, buffer = buffer }
