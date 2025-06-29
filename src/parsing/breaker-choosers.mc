@@ -232,7 +232,7 @@ lang LangBreakerChooser = BreakerChooserInterface
     sem choose =
         | (Lang {}, "type") -> build langFullBreak (TopType {})
         | (Lang {}, "con") -> build langFullBreak (TopCon {})
-        | (Lang {}, "syn") -> build langBreak (Syn {})
+        | (Lang {}, "syn") -> build langFullBreak (Syn {})
         | (Lang {}, "sem") -> build langBreak (Sem {})
         | (Lang {}, word) -> chooseCrash (Lang {}, word)
     
@@ -279,8 +279,8 @@ end
 lang SynBreakerChooser = BreakerChooserInterface
 
     sem choose =
-        | (Syn {}, "syn") -> build langBreak (Syn {})
-        | (Syn {}, "sem") -> build langFullBreak (Sem {})
+        | (Syn {}, "syn") -> build langFullBreak (Syn {})
+        | (Syn {}, "sem") -> build langBreak (Sem {})
         | (Syn {}, "use") -> build ["in"] (Use {})    
         | (Syn {}, word) -> chooseCrash (Syn {}, word)
 
