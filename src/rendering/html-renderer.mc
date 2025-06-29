@@ -22,7 +22,7 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 
 let htmlBuildCodeSource : TreeSourceCode -> String = lam tree: TreeSourceCode.
-    recursive let work : TreeSourceCode -> String -> { res: String, previous: String } = lam tree: TreeSourceCode. lam previous: String.
+    recursive let work = lam tree: TreeSourceCode.
         switch tree
         case TreeSourceCodeNode arr then
             let code = concatAll (map work arr) in
