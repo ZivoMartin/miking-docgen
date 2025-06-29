@@ -28,27 +28,47 @@ lang ColorizerInterface = SourceCodeWordKinds + TokenReader
     sem colorizerNext : (ColorizerContext, Token) -> ColorizerContext
 
 end
-
+    
 lang ColorizerDefault = ColorizerInterface
 
     sem colorizerNext =
-    | ({ word = previous, state = Default {} } & ctx, (Word { content = "let" | "lam" }) & token) -> ctxChangeState ctx (NextIsName {}) token (CodeKeyword {}) 
-    | ({ word = previous, state = Default {} } & ctx, (Word { content = "type" | "con" | "lang" }) & token) -> ctxChangeState ctx (NextIsType {}) token (CodeKeyword {}) 
-    | ({ word = previous, state = Default {} } & ctx, token) -> ctxChangeWord ctx token (CodeDefault {})
+    | ({ state = Default {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" }) & token) -> ctxChangeWord ctx token (CodeKeyword {})
+    | ({ state = Default {} } & ctx, (Word { content = "let" | "lam" | "sem" }) & token) -> ctxChangeState ctx (NextIsName {}) token (CodeKeyword {}) 
+    | ({ state = Default {} } & ctx, (Word { content = "type" | "con" | "lang" | "syn" | "use" }) & token) -> ctxChangeState ctx (NextIsType {}) token (CodeKeyword {})
+    
+    | ({ state = Default {} } & ctx, token) -> ctxChangeWord ctx token (CodeDefault {})
 
 end
 
-
--- lang ColorizerNextIsName
+lang ColorizerNextIsName = ColorizerInterface
     
---     sem colorizerNext =
---     | ({ word = previous, state = Default {} } & ctx, ("." | ":" | "") & token) -> ctxChangeState ctx (NextIsName {}) token (CodeKeyword {}) 
+    sem colorizerNext =
+    | ({ state = NextIsName {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" }) & token) -> ctxChangeState ctx (Default {}) token (CodeKeyword {})
+    | ({ state = NextIsName {} } & ctx, (Word { content = "let" | "lam" | "sem" }) & token) -> ctxChangeWord ctx token (CodeKeyword {})
+    | ({ state = NextIsName {} } & ctx, (Word { content = "type" | "con" | "lang" | "syn" | "use" }) & token) -> ctxChangeState ctx (NextIsType {}) token (CodeKeyword {})
+    
+    | ({ state = NextIsName {} } & ctx, (Word { content = "." | "=" }) & token) -> ctxChangeState ctx (Default {}) token (CodeDefault {})
+    | ({ state = NextIsName {} } & ctx, (Word { content = ":" }) & token) -> ctxChangeState ctx (NextIsType {}) token (CodeDefault {})
 
--- end
+    | ({ state = NextIsName {} } & ctx, (Separator {}) & token) -> ctxChangeWord ctx token (CodeDefault {})      
+    | ({ state = NextIsName {} } & ctx, token) -> ctxChangeState ctx (Default {}) token (CodeName {}) -- We should normally never read another name after in the Miking syntax
 
-lang ColorizerNextIsType
+end
+
+lang ColorizerNextIsType = ColorizerInterface
+
+    sem colorizerNext =
+    | ({ state = NextIsType {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" }) & token) -> ctxChangeState ctx (Default {}) token (CodeKeyword {})
+    | ({ state = NextIsType {} } & ctx, (Word { content = "let" | "lam" | "sem" }) & token) -> ctxChangeState ctx (NextIsName {}) token (CodeKeyword {}) 
+    | ({ state = NextIsType {} } & ctx, (Word { content = "type" | "con" | "lang" | "syn" | "use" }) & token) -> ctxChangeWord ctx token (CodeKeyword {})
+    
+    | ({ state = NextIsType {} } & ctx, (Word { content = "=" | "." }) & token) -> ctxChangeState ctx (Default {}) token (CodeDefault {})
+    | ({ state = NextIsType {} } & ctx, (Word { content = "->" }) & token) -> ctxChangeWord ctx token (CodeDefault {})
+
+    | ({ state = NextIsType {} } & ctx, (Separator {}) & token) -> ctxChangeWord ctx token (CodeDefault {})      
+    | ({ state = NextIsType {} } & ctx, token) -> ctxChangeWord ctx token (CodeType {}) -- Can't go in Dafault yet because we could be in a record kind of type
 
 end
 
     
-lang Colorizer = ColorizerDefault end
+lang Colorizer = ColorizerDefault + ColorizerNextIsName + ColorizerNextIsType end
