@@ -11,7 +11,7 @@ include "../parsing/doc-tree.mc"
 include "./source-code-word.mc"
 include "./colorizer.mc"
 -- Representation of the source code with word's buffer
-type SourceCode = [SourceCodeWord]
+type SourceCode = [Option SourceCodeWord]
 
 -- An empty source code
 let sourceCodeEmpty : () -> SourceCode = lam . []
@@ -22,7 +22,7 @@ let sourceCodeEmpty : () -> SourceCode = lam . []
 -- When entering a `Node`, a new builder context is pushed.
 -- When finishing a node, the buffer is returned and the parent context is restored.
 type SourceCodeBuilder
-con SourceCodeNode : { parent: Option SourceCodeBuilder, buffer: [SourceCodeWord] } -> SourceCodeBuilder
+con SourceCodeNode : use Colorizer in { parent: Option SourceCodeBuilder, ctx: ColorizerContext, buffer: SourceCode } -> SourceCodeBuilder
     
 -- ## absorbWord
 --
@@ -31,17 +31,19 @@ con SourceCodeNode : { parent: Option SourceCodeBuilder, buffer: [SourceCodeWord
 -- - If the word is a `Node`, we inject a `None {}` into the parent
 --   and start a fresh buffer for the child node.
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
-    use TokenReader in lam builder. lam word.
-    match builder with SourceCodeNode { buffer = buffer, parent = parent } in
+    use TokenReader in use Colorizer in lam builder. lam word.
+    match builder with SourceCodeNode { buffer = buffer, parent = parent, ctx = ctx } in
     let token = (match word with Node { token = token } | Leaf { token = token } in token) in
+    let ctx = colorizerNext (ctx, lit token) in
+    let token = ctx.word in
     switch word
     case Node {} then
         let buffer = cons (None {}) buffer in
-        let parent = SourceCodeNode { parent = parent, buffer = buffer} in
-        SourceCodeNode { parent = Some parent, buffer = [Some (lit token)] }
+        let parent = SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx } in
+        SourceCodeNode { parent = Some parent, buffer = [Some token], ctx = ctx }
     case Leaf {} then
-        let buffer = cons (Some (lit token)) buffer in
-        SourceCodeNode { parent = parent, buffer = buffer }
+        let buffer = cons (Some token) buffer in
+        SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx }
     end
 
 -- ## finish
@@ -50,11 +52,12 @@ let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
 -- - the restored parent builder
 -- - the reversed buffer containing the current block's source
 let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: SourceCode } = lam builder.
-    match builder with SourceCodeNode { parent = Some parent, buffer = buffer } then
-        { builder = parent, sourceCode = buffer }
+    match builder with SourceCodeNode { parent = Some parent, buffer = buffer, ctx = ctx } then
+        match parent with SourceCodeNode { parent = parent, buffer = parentBuffer  } in
+        { builder = SourceCodeNode { parent = parent, buffer = parentBuffer, ctx = ctx }, sourceCode = buffer }
     else match builder with SourceCodeNode { buffer = buffer } in
         warn "finish: Builder parent should never be empty at this point";
         { builder = builder, sourceCode = buffer }
 
 -- Returns a new SourceCodeBuilder
-let newSourceCodeBuilder : () -> SourceCodeBuilder = lam . SourceCodeNode { buffer = [], parent = None {} }    
+let newSourceCodeBuilder : () -> SourceCodeBuilder = use Colorizer in lam . SourceCodeNode { buffer = [], parent = None {}, ctx = colorizerEmptyContext () }

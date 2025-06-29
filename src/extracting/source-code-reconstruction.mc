@@ -14,7 +14,7 @@ let getTreeSourceCode : ObjectTree -> TreeSourceCode = lam tree.
         case ObjectNode { sons = sons, obj = { sourceCode = sourceCode } } then
             let sons = objectSonsFilterNodes sons in
             let foldResult = foldl
-                (lam a: Arg. lam word: SourceCodeWord.
+                (lam a: Arg. lam word: Option SourceCodeWord.
                     match word with Some w then
                         { a with buffer = cons w a.buffer }
                     else
