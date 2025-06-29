@@ -18,7 +18,7 @@ let getTreeSourceCode : ObjectTree -> TreeSourceCode = lam tree.
                     match word with Some w then
                         { a with buffer = cons w a.buffer }
                     else
-                        match sons with [son] ++ sons then
+                        match a.sons with [son] ++ sons then
                             let sonCode = work son in 
                             let tree =
                                 match s with "" then
@@ -53,7 +53,7 @@ let getRawSourceCode : ObjectTree -> String = lam tree.
                     match word with Some w then
                         { a with s = concat w a.s }
                     else
-                        match sons with [son] ++ sons then
+                        match a.sons with [son] ++ sons then
                             let sonCode = work son in
                             { s = concat sonCode a.s, sons = sons }
                         else

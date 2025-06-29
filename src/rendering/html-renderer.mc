@@ -12,7 +12,7 @@ include "../extracting/source-code-reconstruction.mc"
 -- HTML helpers
 let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
 let htmlText = lam s. htmlBalise s "p"
-let htmlPre = lam s. htmlBalise s "pre"    
+let htmlPre = lam s. concatAll ["<pre>", s, "</pre>"]
 let htmlCode = lam s. concatAll ["<pre class=code>", s, "</pre>"]
 let htmlStrong = lam s. htmlText (htmlBalise s "strong")
 
@@ -21,6 +21,26 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 
+let htmlBuildCodeSource : TreeSourceCode -> String = lam tree: TreeSourceCode.
+    recursive let work = lam tree.
+        switch tree
+        case TreeSourceCodeNode arr then
+            let code = concatAll (map work arr) in
+
+            concatAll [
+"<button onclick=\"(function(btn){
+  const div = btn.nextElementSibling;
+  if (div.style.display === 'none') {
+    div.style.display = 'block';
+  } else {
+    div.style.display = 'none';
+  }
+})(this)\">Afficher / Cacher</button>",
+"<div style=\"display: none;\">", code, "</div>"
+]    
+        case TreeSourceCodeSnippet buffer then concatAll buffer
+        end
+    in work tree    
 -- Object pretty-printer with syntax coloring 
 let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
     let span = lam content. lam kind. concatAll ["<span class=\"", kind, "\">", content, "</span>"] in
@@ -168,7 +188,6 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         match s with "" then "" else
         let link = objLink obj in
         let objNode = ObjectNode { sons = sons, obj = obj } in
-        let sourceCodeTree = getTreeSourceCode objNode in
         concatAll [
         "<div style=\"position: relative;\">\n",
         htmlPre s, "\n",
@@ -180,9 +199,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             color: #2980b9;
             text-decoration: none;
             \">[→]</a>
-        </div>\n",
-        htmlDoc obj.doc
-          -- htmlPre (getRawSourceCode objNode), "\n"
+            </div>\n",
+            htmlPre (htmlBuildCodeSource (getTreeSourceCode objNode))
         ]
 
     sem objGetSpecificDoc =
