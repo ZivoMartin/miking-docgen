@@ -28,15 +28,7 @@ let htmlBuildCodeSource : TreeSourceCode -> String = lam tree: TreeSourceCode.
             let code = concatAll (map work arr) in
 
             concatAll [
-"<button onclick=\"(function(btn){
-  const div = btn.nextElementSibling;
-  if (div.style.display === 'none') {
-    div.style.display = 'block';
-  } else {
-    div.style.display = 'none';
-  }
-})(this)\">Afficher / Cacher</button>",
-"<div style=\"display: none;\">", code, "</div>"
+"<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">", code, "</div>"
 ]    
         case TreeSourceCodeSnippet buffer then concatAll buffer
         end
@@ -147,7 +139,11 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         font-size: 0.9em;
         color: #999;
     }
-
+    
+    .inline-container {
+      display: flex;
+    }
+    
     nav a {
         margin-right: 1em;
         color: #999;
@@ -157,6 +153,22 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
 
     nav a:hover {
         text-decoration: none;
+    }
+
+    .toggle-btn {
+        background: none;
+        border: none;
+        color: #888;
+        font-family: monospace;
+        font-size: 1em;
+        cursor: pointer;
+        padding: 0;
+        margin: 0 4px;
+        transition: color 0.2s;
+    }
+    
+    .toggle-btn:hover {
+        color: #444;
     }
     
     .kw  { color: #d73a49; }   
@@ -199,8 +211,10 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             color: #2980b9;
             text-decoration: none;
             \">[→]</a>
-            </div>\n",
-            htmlPre (htmlBuildCodeSource (getTreeSourceCode objNode))
+            </div>",
+            "<div class=\"inline-container\"><pre>",
+            htmlBuildCodeSource (getTreeSourceCode objNode),
+            "</pre></div>"
         ]
 
     sem objGetSpecificDoc =
