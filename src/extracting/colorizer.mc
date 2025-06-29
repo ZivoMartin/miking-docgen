@@ -4,7 +4,7 @@
 include "../parsing/token-readers.mc"
 include "./source-code-word.mc"
 
-lang ColorizerInterface
+lang ColorizerInterface = SourceCodeWordKinds
 
     syn ColorizationState =
     | Default {}
@@ -17,13 +17,13 @@ lang ColorizerInterface
     }
 
     sem colorizerEmptyContext : () -> ColorizerContext 
-    sem colorizerEmptyContext = | () -> { word = "", state = Default {} }
+    sem colorizerEmptyContext = | () -> { word = buildCodeWord "" (CodeDefault {}), state = Default {} }
 
-    sem ctxChangeWord : ColorizerContext -> SourceCodeWord -> ColorizerContext  
-    sem ctxChangeWord = | { state = state } -> lam word. { word = word, state = state }
-
-    sem ctxChangeState : ColorizerContext -> SourceCodeWord -> ColorizationState -> ColorizerContext  
-    sem ctxChangeState = | _ -> lam word. lam state. { word = word, state = state }
+    sem ctxChangeWord : ColorizerContext -> String -> SourceCodeWordKind -> ColorizerContext  
+    sem ctxChangeWord = | { state = state } & ctx -> ctxChangeState ctx state
+    
+    sem ctxChangeState : ColorizerContext -> ColorizationState -> String -> SourceCodeWordKind  -> ColorizerContext  
+    sem ctxChangeState = | _ -> lam state. lam word. lam kind.  { word = buildCodeWord word kind, state = state }
 
     sem colorizerNext : (ColorizerContext, String) -> ColorizerContext
 
@@ -32,9 +32,9 @@ end
 lang ColorizerDefault = ColorizerInterface
 
     sem colorizerNext =
-    | ({ word = previous, state = Default {} } & ctx, ("let" | "lam") & token) -> ctxChangeState ctx token (NextIsName {})
-    | ({ word = previous, state = Default {} } & ctx, ("type" | "con" | "lang") & token) -> ctxChangeState ctx token (NextIsType {})
-    | ({ word = previous, state = Default {} } & ctx, token) -> ctxChangeWord ctx token
+    | ({ word = previous, state = Default {} } & ctx, ("let" | "lam") & token) -> ctxChangeState ctx (NextIsName {}) token (CodeKeyword {}) 
+    | ({ word = previous, state = Default {} } & ctx, ("type" | "con" | "lang") & token) -> ctxChangeState ctx (NextIsType {}) token (CodeKeyword {}) 
+    | ({ word = previous, state = Default {} } & ctx, token) -> ctxChangeWord ctx token (CodeDefault {})
 
 end
 
