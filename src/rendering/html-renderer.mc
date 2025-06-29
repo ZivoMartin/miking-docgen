@@ -22,17 +22,16 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 
 let htmlBuildCodeSource : TreeSourceCode -> String = lam tree: TreeSourceCode.
-    recursive let work = lam tree.
+    recursive let work : TreeSourceCode -> String -> { res: String, previous: String } = lam tree: TreeSourceCode. lam previous: String.
         switch tree
         case TreeSourceCodeNode arr then
             let code = concatAll (map work arr) in
-
-            concatAll [
-"<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">", code, "</div>"
-]    
+            let jsDisplay = "<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">" in
+            concatAll [jsDisplay, code, "</div>"]
         case TreeSourceCodeSnippet buffer then concatAll buffer
         end
-    in work tree    
+    in work tree
+
 -- Object pretty-printer with syntax coloring 
 let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
     let span = lam content. lam kind. concatAll ["<span class=\"", kind, "\">", content, "</span>"] in
@@ -212,6 +211,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             text-decoration: none;
             \">[→]</a>
             </div>",
+            htmlPre obj.doc,
             "<div class=\"inline-container\"><pre>",
             htmlBuildCodeSource (getTreeSourceCode objNode),
             "</pre></div>"
