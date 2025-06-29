@@ -9,7 +9,7 @@ lang ColorizerInterface = TokenReader
     syn ColorizationState =
     | Default {}
     | ImportantName {}
-    
+
     type ColorizerContext = {
         word: SourceCodeWord,
         state: ColorizationState
@@ -19,7 +19,12 @@ lang ColorizerInterface = TokenReader
 
 end
 
-lang ColorizerDefault end
+lang ColorizerDefault
+
+
+end
+
+
 lang ColorizerImportantName end   
 
     

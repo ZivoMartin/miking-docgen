@@ -10,7 +10,6 @@
 include "../parsing/doc-tree.mc"
 include "./source-code-word.mc"
 include "./colorizer.mc"
-
 -- Representation of the source code with word's buffer
 type SourceCode = [SourceCodeWord]
 
@@ -23,8 +22,7 @@ let sourceCodeEmpty : () -> SourceCode = lam . []
 -- When entering a `Node`, a new builder context is pushed.
 -- When finishing a node, the buffer is returned and the parent context is restored.
 type SourceCodeBuilder
-con SourceCodeNode : { parent: SourceCodeBuilder, buffer: [SourceCodeWord] } -> SourceCodeBuilder
-con SourceCodeRoot : { buffer: [SourceCodeWord] } -> SourceCodeBuilder
+con SourceCodeNode : { parent: Option SourceCodeBuilder, buffer: [SourceCodeWord] } -> SourceCodeBuilder
     
 -- ## absorbWord
 --
@@ -34,32 +32,29 @@ con SourceCodeRoot : { buffer: [SourceCodeWord] } -> SourceCodeBuilder
 --   and start a fresh buffer for the child node.
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
     use TokenReader in lam builder. lam word.
-    match builder with SourceCodeNode { buffer = buffer } | SourceCodeRoot { buffer = buffer } in
+    match builder with SourceCodeNode { buffer = buffer, parent = parent } in
     let token = (match word with Node { token = token } | Leaf { token = token } in token) in
     switch word
     case Node {} then
         let buffer = cons (None {}) buffer in
-        let parent =
-            match builder with SourceCodeNode { parent = parent} then
-                SourceCodeNode { parent = parent, buffer = buffer}
-            else 
-                SourceCodeRoot { buffer = buffer} in
-        SourceCodeNode { parent = parent, buffer = [Some (lit token)] }
+        let parent = SourceCodeNode { parent = parent, buffer = buffer} in
+        SourceCodeNode { parent = Some parent, buffer = [Some (lit token)] }
     case Leaf {} then
         let buffer = cons (Some (lit token)) buffer in
-        match builder with SourceCodeNode { parent = parent} then
-            SourceCodeNode { parent = parent, buffer = buffer }
-        else 
-            SourceCodeRoot { buffer = buffer}  
+        SourceCodeNode { parent = parent, buffer = buffer }
     end
+
 -- ## finish
 --
 -- Completes the current builder scope and returns:
 -- - the restored parent builder
 -- - the reversed buffer containing the current block's source
 let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: SourceCode } = lam builder.
-    match builder with SourceCodeNode { parent = parent, buffer = buffer } in
+    match builder with SourceCodeNode { parent = Some parent, buffer = buffer } then
         { builder = parent, sourceCode = buffer }
+    else match builder with SourceCodeNode { buffer = buffer } in
+        warn "finish: Builder parent should never be empty at this point";
+        { builder = builder, sourceCode = buffer }
 
 -- Returns a new SourceCodeBuilder
-let newSourceCodeBuilder : () -> SourceCodeBuilder = lam . SourceCodeRoot { buffer = [] }    
+let newSourceCodeBuilder : () -> SourceCodeBuilder = lam . SourceCodeNode { buffer = [], parent = None {} }    
