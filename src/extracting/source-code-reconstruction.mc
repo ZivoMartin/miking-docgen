@@ -31,7 +31,7 @@ let getTreeSourceCode : ObjectTree -> TreeSourceCode = lam tree.
                             a
                 ) { sons = sons, tree = [], buffer = "" } sourceCode in
             switch (foldResult.tree, foldResult.buffer)
-            case ([], buffer) then TreeSourceCodeSnippet buffer
+            case ([], buffer) then TreeSourceCodeNode [TreeSourceCodeSnippet buffer]
             case (tree, "") then TreeSourceCodeNode tree
             case (tree, buffer) then TreeSourceCodeNode (cons (TreeSourceCodeSnippet buffer) tree)
             end
