@@ -3,8 +3,7 @@
 -- This module implements the **HtmlRenderer**, an instance of `RendererInterface`.
 -- It generates HTML pages from the extracted ObjectTree.
 
-
-
+include "../extracting/source-code-word.mc"
 include "renderer-interface.mc"
 include "../extracting/objects.mc"    
 include "../extracting/source-code-reconstruction.mc"
@@ -21,14 +20,28 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 
-let htmlBuildCodeSource : TreeSourceCode -> String = lam tree: TreeSourceCode.
+let htmlBuildCodeSource : TreeSourceCode -> String = use SourceCodeWordKinds in use TokenReader in lam tree: TreeSourceCode.
     recursive let work = lam tree: TreeSourceCode.
         switch tree
         case TreeSourceCodeNode arr then
             let code = concatAll (map work arr) in
             let jsDisplay = "<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">" in
             concatAll [jsDisplay, code, "</div>"]
-        case TreeSourceCodeSnippet buffer then concatAll buffer
+        case TreeSourceCodeSnippet buffer then
+            concatAll (map (lam w.
+            match w with { word = word, kind = kind } in
+            let class = (switch kind
+            case CodeKeyword {} then "kw"
+            case CodeName {} then "var"
+            case CodeType {} then "tp"
+            case CodeDefault {} then
+                switch word
+                case Str {} then "string"
+                case WeakComment {} | Comment {} then "comment"
+                case _ then "default"
+                end
+            end) in
+            concatAll ["<span class=\"", class, "\">", lit word, "</span>"]) buffer)
         end
     in work tree
 
@@ -169,11 +182,15 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     .toggle-btn:hover {
         color: #444;
     }
-    
+
+    .arg { color: #24292e; font-style: italic; }
     .kw  { color: #d73a49; }   
     .var { color: #005cc5; }                      
-    .arg { color: #24292e; font-style: italic; }  
-    .tp  { color: #22863a; }
+    .default { color: #24292e; font-style: italic; }
+    .tp { color: #6f42c1; }    
+    .comment { color: #22863a; }
+    .string { color: #b36f00; }    
+
 
 </style>
 </head>

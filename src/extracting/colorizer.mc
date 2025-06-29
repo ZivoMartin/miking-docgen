@@ -32,7 +32,7 @@ end
 lang ColorizerDefault = ColorizerInterface
 
     sem colorizerNext =
-    | ({ state = Default {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" }) & token) -> ctxChangeWord ctx token (CodeKeyword {})
+    | ({ state = Default {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" | "case" | "if" | "else" }) & token) -> ctxChangeWord ctx token (CodeKeyword {})
     | ({ state = Default {} } & ctx, (Word { content = "let" | "lam" | "sem" }) & token) -> ctxChangeState ctx (NextIsName {}) token (CodeKeyword {}) 
     | ({ state = Default {} } & ctx, (Word { content = "type" | "con" | "lang" | "syn" | "use" }) & token) -> ctxChangeState ctx (NextIsType {}) token (CodeKeyword {})
     
@@ -43,7 +43,7 @@ end
 lang ColorizerNextIsName = ColorizerInterface
     
     sem colorizerNext =
-    | ({ state = NextIsName {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" }) & token) -> ctxChangeState ctx (Default {}) token (CodeKeyword {})
+    | ({ state = NextIsName {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" | "case" | "if" | "else" }) & token) -> ctxChangeState ctx (Default {}) token (CodeKeyword {})
     | ({ state = NextIsName {} } & ctx, (Word { content = "let" | "lam" | "sem" }) & token) -> ctxChangeWord ctx token (CodeKeyword {})
     | ({ state = NextIsName {} } & ctx, (Word { content = "type" | "con" | "lang" | "syn" | "use" }) & token) -> ctxChangeState ctx (NextIsType {}) token (CodeKeyword {})
     
@@ -58,7 +58,7 @@ end
 lang ColorizerNextIsType = ColorizerInterface
 
     sem colorizerNext =
-    | ({ state = NextIsType {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" }) & token) -> ctxChangeState ctx (Default {}) token (CodeKeyword {})
+    | ({ state = NextIsType {} } & ctx, (Word { content = "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" | "case" | "if" | "else" }) & token) -> ctxChangeState ctx (Default {}) token (CodeKeyword {})
     | ({ state = NextIsType {} } & ctx, (Word { content = "let" | "lam" | "sem" }) & token) -> ctxChangeState ctx (NextIsName {}) token (CodeKeyword {}) 
     | ({ state = NextIsType {} } & ctx, (Word { content = "type" | "con" | "lang" | "syn" | "use" }) & token) -> ctxChangeWord ctx token (CodeKeyword {})
     
