@@ -5,16 +5,16 @@ include "../parsing/parser.mc"
 
 type TreeSourceCode
 con TreeSourceCodeNode : [TreeSourceCode] -> TreeSourceCode
-con TreeSourceCodeSnippet : [String] -> TreeSourceCode
+con TreeSourceCodeSnippet : [SourceCodeWord] -> TreeSourceCode
 
 let getTreeSourceCode : ObjectTree -> TreeSourceCode = lam tree.
     recursive let work : ObjectTree -> TreeSourceCode = lam tree.
-        type Arg = { sons: [ObjectTree], tree: [TreeSourceCode], buffer: [String] } in
+        type Arg = { sons: [ObjectTree], tree: [TreeSourceCode], buffer: [SourceCodeWord] } in
         switch tree
         case ObjectNode { sons = sons, obj = { sourceCode = sourceCode } } then
             let sons = objectSonsFilterNodes sons in
             let foldResult = foldl
-                (lam a: Arg. lam word: SourceCodeWord.
+                (lam a: Arg. lam word: Option SourceCodeWord.
                     match word with Some w then
                         { a with buffer = cons w a.buffer }
                     else
@@ -42,8 +42,8 @@ let getTreeSourceCode : ObjectTree -> TreeSourceCode = lam tree.
     work tree
 
     
-let getRawSourceCode : ObjectTree -> String = lam tree.
-    recursive let work : ObjectTree -> String = lam tree.
+let getRawSourceCode : ObjectTree -> SourceCodeWord = lam tree.
+    recursive let work : ObjectTree -> SourceCodeWord = lam tree.
         type Arg = { sons: [ObjectTree], s: String  } in
         switch tree
         case ObjectNode { sons = sons, obj = { sourceCode = sourceCode } } then

@@ -8,16 +8,10 @@
 -- No explicit indexing or backtracking is required.
 
 include "../parsing/doc-tree.mc"
-
--- ## SourceCodeWord
---
--- Represents a single word from the source code.
--- - `Some word` -> an actual token string
--- - `None {}`   -> a placeholder for a child block's source code
-type SourceCodeWord = Option String
-
+include "./source-code-word.mc"
+include "./colorizer.mc"
 -- Representation of the source code with word's buffer
-type SourceCode = [SourceCodeWord]
+type SourceCode = [Option SourceCodeWord]
 
 -- An empty source code
 let sourceCodeEmpty : () -> SourceCode = lam . []
@@ -28,8 +22,7 @@ let sourceCodeEmpty : () -> SourceCode = lam . []
 -- When entering a `Node`, a new builder context is pushed.
 -- When finishing a node, the buffer is returned and the parent context is restored.
 type SourceCodeBuilder
-con SourceCodeNode : { parent: SourceCodeBuilder, buffer: [SourceCodeWord] } -> SourceCodeBuilder
-con SourceCodeRoot : { buffer: [SourceCodeWord] } -> SourceCodeBuilder
+con SourceCodeNode : use Colorizer in { parent: Option SourceCodeBuilder, ctx: ColorizerContext, buffer: SourceCode } -> SourceCodeBuilder
     
 -- ## absorbWord
 --
@@ -38,32 +31,33 @@ con SourceCodeRoot : { buffer: [SourceCodeWord] } -> SourceCodeBuilder
 -- - If the word is a `Node`, we inject a `None {}` into the parent
 --   and start a fresh buffer for the child node.
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
-    use TokenReader in lam builder. lam word.
-    match builder with SourceCodeNode { buffer = buffer } | SourceCodeRoot { buffer = buffer } in
+    use TokenReader in use Colorizer in lam builder. lam word.
+    match builder with SourceCodeNode { buffer = buffer, parent = parent, ctx = ctx } in
+    let token = (match word with Node { token = token } | Leaf { token = token } in token) in
+    let ctx = colorizerNext (ctx, token) in
+    let token = ctx.word in
     switch word
-    case Node { token = token } then
+    case Node {} then
         let buffer = cons (None {}) buffer in
-        let parent =
-            match builder with SourceCodeNode { parent = parent} then
-                SourceCodeNode { parent = parent, buffer = buffer}
-            else 
-                SourceCodeRoot { buffer = buffer} in
-        SourceCodeNode { parent = parent, buffer = [Some (lit token)] }
-    case Leaf { token = token } then
-        let buffer = cons (Some (lit token)) buffer in
-        match builder with SourceCodeNode { parent = parent} then
-            SourceCodeNode { parent = parent, buffer = buffer }
-        else 
-            SourceCodeRoot { buffer = buffer}  
+        let parent = SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx } in
+        SourceCodeNode { parent = Some parent, buffer = [Some token], ctx = ctx }
+    case Leaf {} then
+        let buffer = cons (Some token) buffer in
+        SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx }
     end
+
 -- ## finish
 --
 -- Completes the current builder scope and returns:
 -- - the restored parent builder
 -- - the reversed buffer containing the current block's source
 let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: SourceCode } = lam builder.
-    match builder with SourceCodeNode { parent = parent, buffer = buffer } in
-        { builder = parent, sourceCode = buffer }
+    match builder with SourceCodeNode { parent = Some parent, buffer = buffer, ctx = ctx } then
+        match parent with SourceCodeNode { parent = parent, buffer = parentBuffer  } in
+        { builder = SourceCodeNode { parent = parent, buffer = parentBuffer, ctx = ctx }, sourceCode = buffer }
+    else match builder with SourceCodeNode { buffer = buffer } in
+        warn "finish: Builder parent should never be empty at this point";
+        { builder = builder, sourceCode = buffer }
 
 -- Returns a new SourceCodeBuilder
-let newSourceCodeBuilder : () -> SourceCodeBuilder = lam . SourceCodeRoot { buffer = [] }    
+let newSourceCodeBuilder : () -> SourceCodeBuilder = use Colorizer in lam . SourceCodeNode { buffer = [], parent = None {}, ctx = colorizerEmptyContext () }
