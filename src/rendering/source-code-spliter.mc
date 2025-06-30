@@ -9,7 +9,19 @@ type SourceCodeSplit = { left: [TreeSourceCode], right: [TreeSourceCode], trimme
     
 let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in lam arr.
     let finish = lam left. lam right.
-        { left = left, right = right, trimmed = [] } in
+        let rightRev = reverse right in
+        switch rightRev
+        case [TreeSourceCodeSnippet arr] ++ rightRev then
+            let arr = reverse arr in
+            match splitOnR (lam w. match w with { word = WeakComment {} | Comment {} | Separator {} } then false else true) arr with
+                { left = trimmedRight, right = trimmedLeft } in
+            let trimmedLeft = TreeSourceCodeSnippet (reverse trimmedLeft) in
+            let trimmedRight = TreeSourceCodeSnippet (reverse trimmedRight) in
+            { left = left, right = reverse (cons trimmedLeft rightRev), trimmed = [trimmedRight] }
+        case _ then
+            { left = left, right = right, trimmed = [] }
+        end 
+    in
 
     let mergeAndFinish = lam left. lam right1. lam right2.
         finish [TreeSourceCodeSnippet left] (cons (TreeSourceCodeSnippet right1) right2) in
@@ -18,7 +30,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
         match buffer with [{ word = Word { content = first } } & x1] ++ rest then
     
         let splitAndReturn = lam split: String.
-            match splitOn (lam w. match w with { word = word } in eqString (lit word) split) rest with
+            match splitOnL (lam w. match w with { word = word } in eqString (lit word) split) rest with
                 { left = left, right = rest } in
             mergeAndFinish (cons x1 left) rest right in
         
@@ -28,7 +40,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
         case "use" then finish arr right
         case "utest" | "mexpr" then mergeAndFinish [x1] rest right
         case "lang" then
-            match splitOn (lam w. match w with { word = Word {} } then true else false) rest with
+            match splitOnL (lam w. match w with { word = Word {} } then true else false) rest with
                 { left = left, right = rest } in
             mergeAndFinish (cons x1 left) rest right
             

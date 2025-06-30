@@ -52,12 +52,13 @@ let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordK
     recursive let work = lam tree: TreeSourceCode.
         switch tree
         case TreeSourceCodeNode arr then
-            match sourceCodeSplit arr with { left = codeLeft, right = codeRight } in
+            match sourceCodeSplit arr with { left = codeLeft, right = codeRight, trimmed = codeTrimmed } in
             let codeLeft = concatAll (map work codeLeft) in
             let codeRight = concatAll (map work codeRight) in
+            let codeTrimmed = concatAll (map work codeTrimmed) in
 
-            match codeRight with [] then codeLeft
-            else  concat codeLeft (getHidenCode codeRight)
+            match codeRight with [] then concat codeLeft codeTrimmed
+            else concatAll [codeLeft, (getHidenCode codeRight), codeTrimmed]
         case TreeSourceCodeSnippet buffer then getColorizedSnippet buffer
         end
     in
