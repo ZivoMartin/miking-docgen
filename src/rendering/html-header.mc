@@ -61,7 +61,10 @@ let getHeader = lam title.
         font-size: inherit;
     }
 
-    
+    pre.source {
+        text-color: #24292e;
+    }   
+        
     pre.md {
         font-family: system-ui, sans-serif;
         font-size: 0.95em;
@@ -109,6 +112,15 @@ let getHeader = lam title.
         color: #444;
     }
 
+    .gotoLink {
+        position: absolute;
+        bottom: 0.4em;
+        right: 0.8em;
+        font-size: 0.9em;
+        color: #2980b9;
+        text-decoration: none;
+    }   
+    
     .arg { color: #24292e; font-style: italic; }
     .kw  { color: #d73a49; }   
     .var { color: #005cc5; }                      

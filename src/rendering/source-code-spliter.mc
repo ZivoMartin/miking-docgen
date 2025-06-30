@@ -17,7 +17,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
                 { left = trimmedRight, right = trimmedLeft } in
             let trimmedLeft = TreeSourceCodeSnippet (reverse trimmedLeft) in
             let trimmedRight = TreeSourceCodeSnippet (reverse trimmedRight) in
-            { left = left, right = reverse (cons trimmedLeft rightRev), trimmed = [trimmed] }
+            { left = left, right = reverse (cons trimmedLeft rightRev), trimmed = [trimmedRight] }
         case _ then
             { left = left, right = right, trimmed = [] }
         end 

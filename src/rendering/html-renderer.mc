@@ -42,10 +42,12 @@ let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordK
                 case CodeKeyword {} then "kw"
                 case CodeName {} then "var"
                 case CodeType {} then "tp"
-                case CodeDefault {} then "default"
+                case CodeDefault {} then ""
                 end       
             end) in
-            concatAll ["<span class=\"", class, "\">", lit word, "</span>"]
+            let word = lit word in
+            match class with "" then word else
+            concatAll ["<span class=\"", class, "\">", word, "</span>"]
         end) buffer) in
         
     
@@ -69,7 +71,7 @@ let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordK
         match sourceCodeSplit arr with { left = codeLeft, right = codeRight } in
         let code = concat codeLeft codeRight in
         let code = concatAll (map work code) in
-        concatAll ["<div class=\"inline-container\"><pre>",
+        concatAll ["<div class=\"inline-container\"><pre class=\"source\">",
         getHidenCode (cons '\n' code),
         "</pre></div>"]
                 
@@ -123,18 +125,9 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         concatAll [
         "<div style=\"position: relative;\">\n",
         htmlPre s, "\n",
-        "<a href=\"", if strStartsWith "/" link then "" else "/", link, "\" style=\"
-            position: absolute;
-            bottom: 0.4em;
-            right: 0.8em;
-            font-size: 0.9em;
-            color: #2980b9;
-            text-decoration: none;
-            \">[→]</a>
-            </div>",
-            htmlPre obj.doc,
-            htmlBuildCodeSource obj sons
-        ]
+        "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a></div>",
+        htmlPre obj.doc,
+        htmlBuildCodeSource obj sons]
 
     sem objGetSpecificDoc =
     | (Html {}, { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } & obj, sons ) ->
