@@ -34,16 +34,16 @@ let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordK
         case { word = Include { content = content } } then
             concatAll ["<span class=\"kw\">include</span> <span class=\"string\">\"", content, "\"</span>"]
         case { word = word, kind = kind } then
-            let class = (switch kind
-            case CodeKeyword {} then "kw"
-            case CodeName {} then "var"
-            case CodeType {} then "tp"
-            case CodeDefault {} then
-                switch word
-                case Str {} then "string"
-                case WeakComment {} | Comment {} then "comment"
-                case _ then "default"
-                end
+            let class = (switch word
+            case Str {} then "string"
+            case WeakComment {} | Comment {} then "comment"
+            case _ then
+                switch kind
+                case CodeKeyword {} then "kw"
+                case CodeName {} then "var"
+                case CodeType {} then "tp"
+                case CodeDefault {} then "default"
+                end       
             end) in
             concatAll ["<span class=\"", class, "\">", lit word, "</span>"]
         end) buffer) in
