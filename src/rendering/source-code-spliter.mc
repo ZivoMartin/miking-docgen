@@ -4,32 +4,38 @@
 
 include "../extracting/source-code-reconstruction.mc"
 include "../parsing/token-readers.mc"
+
+type SourceCodeSplit = { left: [TreeSourceCode], right: [TreeSourceCode], trimmed: [TreeSourceCode] }
     
-let sourceCodeSplit : [TreeSourceCode] -> { left: [TreeSourceCode], right: [TreeSourceCode] } = use TokenReader in lam arr.
-    let finish = lam left. lam right1. lam right2.
-        { left = [TreeSourceCodeSnippet left], right = cons (TreeSourceCodeSnippet right1) right2 } in
+let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in lam arr.
+    let finish = lam left. lam right.
+        { left = left, right = right, trimmed = [] } in
+
+    let mergeAndFinish = lam left. lam right1. lam right2.
+        finish [TreeSourceCodeSnippet left] (cons (TreeSourceCodeSnippet right1) right2) in
+
     match arr with [TreeSourceCodeSnippet buffer] ++ right then
         match buffer with [{ word = Word { content = first } } & x1] ++ rest then
     
         let splitAndReturn = lam split: String.
             match splitOn (lam w. match w with { word = word } in eqString (lit word) split) rest with
                 { left = left, right = rest } in
-            finish (cons x1 left) rest right in
+            mergeAndFinish (cons x1 left) rest right in
         
         switch first
         case "let" | "type" | "sem" | "syn" then splitAndReturn "="
         case "con" then splitAndReturn ":"
-        case "use" then { left = arr, right = []}
-        case "utest" | "mexpr" then finish [x1] rest right
+        case "use" then finish arr right
+        case "utest" | "mexpr" then mergeAndFinish [x1] rest right
         case "lang" then
             match splitOn (lam w. match w with { word = Word {} } then true else false) rest with
                 { left = left, right = rest } in
-            finish (cons x1 left) rest right
+            mergeAndFinish (cons x1 left) rest right
             
-        case _ then { left = [], right = arr }
+        case _ then finish [] arr
         end
         else
             warn "Detected an empty SourceCodeSnippet, should never happend.";
-            { left = [], right = arr }
+            finish [] arr
     else 
-        { left = [], right = arr }
+        finish [] arr
