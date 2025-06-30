@@ -281,7 +281,7 @@ lang IncludeTokenReader = TokenReaderInterface
             {
                 token = Include {
                     content = extractedStr.0,
-                    lit = concatAll ["include", extractedSep.0, "\"", extractedStr.0, "\""]
+                    lit = concatAll ["include ", extractedSep.0, "\"", extractedStr.0, "\""]
                 },
                 stream = extractedStr.1
             }
