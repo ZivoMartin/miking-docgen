@@ -4,10 +4,6 @@
 
 include "../extracting/source-code-reconstruction.mc"
 include "../parsing/token-readers.mc"
-
-
--- "type" | "con" | "lang" | "syn" | "use" | "mexpr" | "utest" | "with" | "recursive" | "match" | "end" | "switch" | "in" | "case" | "if" | "else" | "let" | "lam" | "sem"
--- "con" | "lang" | "syn" | "sem"    
     
 let sourceCodeSplit : [TreeSourceCode] -> { left: [TreeSourceCode], right: [TreeSourceCode] } = use TokenReader in lam arr.
     let finish = lam left. lam right1. lam right2.
@@ -15,8 +11,8 @@ let sourceCodeSplit : [TreeSourceCode] -> { left: [TreeSourceCode], right: [Tree
     match arr with [TreeSourceCodeSnippet buffer] ++ right then
         match buffer with [{ word = Word { content = first } } & x1] ++ rest then
     
-        let splitAndReturn = lam split.
-            match splitOn (lam w. match w with { word = Word { content = split } } then true else false) rest with
+        let splitAndReturn = lam split: String.
+            match splitOn (lam w. match w with { word = word } in eqString (lit word) split) rest with
                 { left = left, right = rest } in
             finish (cons x1 left) rest right in
         
