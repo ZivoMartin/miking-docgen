@@ -75,7 +75,7 @@ let extract : DocTree -> ObjectTree =
                 { foldResult.ctx with obj = obj, sourceCodeBuilder = sourceCodeBuilder } in
 
             -- Dispatch by token type + state
-            switch token case Word { content = content } then
+            switch token case Word { content = content } | ProgramToken { content = content } then
             switch state
             case Program {} then
                 recursive
@@ -179,6 +179,6 @@ let extract : DocTree -> ObjectTree =
     in
 
     -- Entry point: tree must be Program node
-    match tree with Node { token = Word { content = content }, state = Program {} } then
+    match tree with Node { token = ProgramToken { content = content }, state = Program {} } then
         (extractRec tree content [] (newSourceCodeBuilder ()) (hashmapEmpty ()) false 0).obj
     else error "Extraction failed: the top node of the output tree should always be a program."

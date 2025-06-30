@@ -288,9 +288,16 @@ lang IncludeTokenReader = TokenReaderInterface
         
 end
 
--- Combine all token readers into a single TokenReader
-lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + IncludeTokenReader
+lang ProgramTokenReader = TokenReaderInterface
+    syn Token =
+        | ProgramToken { content: String }
 
-syn Token =
-    
+    sem lit =
+        | ProgramToken {} -> ""
+
+    sem tokenToString =
+        | ProgramToken {} -> "Program"
 end
+    
+-- Combine all token readers into a single TokenReader
+lang TokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + IncludeTokenReader + ProgramTokenReader end

@@ -30,19 +30,24 @@ let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordK
 
     let getColorizedSnippet = lam buffer.
         concatAll (map (lam w.
-        match w with { word = word, kind = kind } in
-        let class = (switch kind
-        case CodeKeyword {} then "kw"
-        case CodeName {} then "var"
-        case CodeType {} then "tp"
-        case CodeDefault {} then
-            switch word
-            case Str {} then "string"
-            case WeakComment {} | Comment {} then "comment"
-            case _ then "default"
-            end
-        end) in
-        concatAll ["<span class=\"", class, "\">", lit word, "</span>"]) buffer) in
+        switch w
+        case { word = Include { content = content } } then
+            concatAll ["<span class=\"kw\">include</span> <span class=\"string\">\"", content, "\"</span>"]
+        case { word = word, kind = kind } then
+            let class = (switch kind
+            case CodeKeyword {} then "kw"
+            case CodeName {} then "var"
+            case CodeType {} then "tp"
+            case CodeDefault {} then
+                switch word
+                case Str {} then "string"
+                case WeakComment {} | Comment {} then "comment"
+                case _ then "default"
+                end
+            end) in
+            concatAll ["<span class=\"", class, "\">", lit word, "</span>"]
+        end) buffer) in
+        
     
     recursive let work = lam tree: TreeSourceCode.
         switch tree
@@ -62,7 +67,7 @@ let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordK
     case TreeSourceCodeNode arr then
         let code = concatAll (map work arr) in
         concatAll ["<div class=\"inline-container\"><pre>",
-        getHidenCode code,
+        getHidenCode (cons '\n' code),
         "</pre></div>"]
                 
     case TreeSourceCodeSnippet arr then
