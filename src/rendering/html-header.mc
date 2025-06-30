@@ -7,14 +7,23 @@ let getHeader = lam title.
 <title>", title, "</title>
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <style>
+
     body {
         font-family: system-ui, sans-serif;
-        max-width: 900px;
-        margin: auto;
-        padding: 2em;
-        line-height: 1.6;
+        width: 100%;
+        margin: 0;
+        padding: 2em 0;
+        display: flex;
+        justify-content: center;
         background-color: #fdfdfd;
         color: #333;
+    }
+
+    .main-container {
+        width: 100%;
+        max-width: 1200px; /* ou 1000/1100 selon ton goût */
+        padding: 0 2em;
+        box-sizing: border-box;
     }
 
     h1 {
@@ -47,7 +56,7 @@ let getHeader = lam title.
         padding: 1em;
         overflow-x: auto;
         border-radius: 5px;
-        font-size: 0.85em; 
+        font-size: 1.5em; 
         line-height: 1.4;
         margin-bottom: 2em;
     }
@@ -62,12 +71,13 @@ let getHeader = lam title.
     }
 
     pre.source {
+        font-size: 1.5em;
         text-color: #24292e;
     }   
         
     pre.md {
         font-family: system-ui, sans-serif;
-        font-size: 0.95em;
+        font-size: 1.5em;
         line-height: 1.6;
         white-space: pre-wrap;
     }
@@ -76,13 +86,19 @@ let getHeader = lam title.
         background: #fafafa;
         padding: 0.8em 1em;
         border-bottom: 1px solid #ddd;
-        margin-bottom: 2em;
+        margin-bottom: 1em;
         font-size: 0.9em;
         color: #999;
     }
-    
+
+    .ObjectParent {
+        position: relative;
+        padding-top: 1em;
+    }
+        
     .inline-container {
-      display: flex;
+        border-bottom: 1px solid #eee;
+        display: flex;
     }
     
     nav a {
@@ -101,7 +117,7 @@ let getHeader = lam title.
         border: none;
         color: #888;
         font-family: monospace;
-        font-size: 1em;
+        font-size: 0.8em;
         cursor: pointer;
         padding: 0;
         margin: 0 4px;
@@ -116,7 +132,7 @@ let getHeader = lam title.
         position: absolute;
         bottom: 0.4em;
         right: 0.8em;
-        font-size: 0.9em;
+        font-size: 2em;
         color: #2980b9;
         text-decoration: none;
     }   
@@ -133,6 +149,20 @@ let getHeader = lam title.
 </style>
 </head>
 <body>
+<div class=\"main-container\">    
+<script>
+function toggle(btn) {
+    const scrollY = window.scrollY;
+    const div = btn.nextElementSibling; 
+    if (div.style.display === 'none') {
+        div.style.display = 'inline';
+    } else {
+        div.style.display = 'none';
+    }
+    window.scrollTo({ top: scrollY }); // Preventing the screen to move
+}
+</script>
+    
 <nav>
     <a href=\"/\">Home (todo)</a>
     <a href=\"/Lang/\">Modules (todo)</a>

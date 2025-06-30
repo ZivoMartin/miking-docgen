@@ -25,7 +25,7 @@ let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordKinds in use TokenReader in lam obj: Object. lam sons: [ObjectTree].
 
     let getHidenCode = lam code.
-        let jsDisplay = "<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">" in
+        let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
         concatAll [jsDisplay, code, "</div>"] in
 
     let getColorizedSnippet = lam buffer.
@@ -123,7 +123,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         match s with "" then "" else
         let link = objLink obj in
         concatAll [
-        "<div style=\"position: relative;\">\n",
+        "<div class=\"ObjectParent\">\n",
         htmlPre s, "\n",
         "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a></div>",
         htmlPre obj.doc,
@@ -165,7 +165,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             concat (htmlText doc) "\n"
 
     sem objFormatFooter /- (Format, Object) -> String -/ =
-        | (Html {}, _) -> "</body>\n</html>"
+        | (Html {}, _) -> "</div></body>\n</html>"
 end
 
 
