@@ -66,7 +66,9 @@ let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordK
     let tree = getTreeSourceCode (ObjectNode { sons = sons, obj = obj }) in
     switch tree
     case TreeSourceCodeNode arr then
-        let code = concatAll (map work arr) in
+        match sourceCodeSplit arr with { left = codeLeft, right = codeRight } in
+        let code = concat codeLeft codeRight in
+        let code = concatAll (map work code) in
         concatAll ["<div class=\"inline-container\"><pre>",
         getHidenCode (cons '\n' code),
         "</pre></div>"]

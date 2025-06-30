@@ -17,7 +17,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
                 { left = trimmedRight, right = trimmedLeft } in
             let trimmedLeft = TreeSourceCodeSnippet (reverse trimmedLeft) in
             let trimmedRight = TreeSourceCodeSnippet (reverse trimmedRight) in
-            { left = left, right = reverse (cons trimmedLeft rightRev), trimmed = [trimmedRight] }
+            { left = left, right = reverse (cons trimmedLeft rightRev), trimmed = [trimmed] }
         case _ then
             { left = left, right = right, trimmed = [] }
         end 
@@ -46,8 +46,6 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
             
         case _ then finish [] arr
         end
-        else
-            warn "Detected an empty SourceCodeSnippet, should never happend.";
-            finish [] arr
+        else finish [] arr
     else 
         finish [] arr
