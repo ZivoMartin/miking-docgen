@@ -22,6 +22,27 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 
 let htmlBuildCodeSource : TreeSourceCode -> String = use SourceCodeWordKinds in use TokenReader in lam tree: TreeSourceCode.
+
+    let getHidenCode = lam code.
+        let jsDisplay = "<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">" in
+        concatAll [jsDisplay, code, "</div>"] in
+
+    let getColorizedSnippet = lam buffer.
+        concatAll (map (lam w.
+        match w with { word = word, kind = kind } in
+        let class = (switch kind
+        case CodeKeyword {} then "kw"
+        case CodeName {} then "var"
+        case CodeType {} then "tp"
+        case CodeDefault {} then
+            switch word
+            case Str {} then "string"
+            case WeakComment {} | Comment {} then "comment"
+            case _ then "default"
+            end
+        end) in
+        concatAll ["<span class=\"", class, "\">", lit word, "</span>"]) buffer) in
+    
     recursive let work = lam tree: TreeSourceCode.
         switch tree
         case TreeSourceCodeNode arr then
@@ -29,29 +50,19 @@ let htmlBuildCodeSource : TreeSourceCode -> String = use SourceCodeWordKinds in 
             let codeLeft = concatAll (map work codeLeft) in
             let codeRight = concatAll (map work codeRight) in
 
-            match codeRight with [] then
-                codeLeft
-            else 
-                let jsDisplay = "<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">" in
-                concatAll [codeLeft, jsDisplay, codeRight, "</div>"]
-
-        case TreeSourceCodeSnippet buffer then
-            concatAll (map (lam w.
-            match w with { word = word, kind = kind } in
-            let class = (switch kind
-            case CodeKeyword {} then "kw"
-            case CodeName {} then "var"
-            case CodeType {} then "tp"
-            case CodeDefault {} then
-                switch word
-                case Str {} then "string"
-                case WeakComment {} | Comment {} then "comment"
-                case _ then "default"
-                end
-            end) in
-            concatAll ["<span class=\"", class, "\">", lit word, "</span>"]) buffer)
+            match codeRight with [] then codeLeft
+            else  concat codeLeft (getHidenCode codeRight)
+        case TreeSourceCodeSnippet buffer then getColorizedSnippet buffer
         end
-    in work tree
+    in
+    switch tree
+    case TreeSourceCodeNode arr then
+        let code = concatAll (map work arr) in
+        getHidenCode code
+    case TreeSourceCodeSnippet arr then
+        warn "The top level node was a Snippet, should never happend here.";
+        getColorizedSnippet arr
+    end
 
 -- Object pretty-printer with syntax coloring 
 let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
