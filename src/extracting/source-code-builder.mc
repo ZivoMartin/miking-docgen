@@ -10,6 +10,7 @@
 include "../parsing/doc-tree.mc"
 include "./source-code-word.mc"
 include "./colorizer.mc"
+
 -- Representation of the source code with word's buffer
 type SourceCode = [Option SourceCodeWord]
 

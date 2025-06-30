@@ -61,10 +61,10 @@ let splitOn : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. la
         case [] then { left = [], right = [] }
         case [x] ++ rest then
             if f x then
+                { left = [x], right = rest }      
+            else
                 let res = work rest in
                 { res with left = cons x res.left }
-            else
-                { left = [], right = arr }
         end in
     work arr
 

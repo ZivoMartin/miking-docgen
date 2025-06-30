@@ -7,6 +7,7 @@ include "../extracting/source-code-word.mc"
 include "renderer-interface.mc"
 include "../extracting/objects.mc"    
 include "../extracting/source-code-reconstruction.mc"
+include "./source-code-spliter.mc"
 
 -- HTML helpers
 let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
@@ -24,9 +25,16 @@ let htmlBuildCodeSource : TreeSourceCode -> String = use SourceCodeWordKinds in 
     recursive let work = lam tree: TreeSourceCode.
         switch tree
         case TreeSourceCodeNode arr then
-            let code = concatAll (map work arr) in
-            let jsDisplay = "<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">" in
-            concatAll [jsDisplay, code, "</div>"]
+            match sourceCodeSplit arr with { left = codeLeft, right = codeRight } in
+            let codeLeft = concatAll (map work codeLeft) in
+            let codeRight = concatAll (map work codeRight) in
+
+            match codeRight with [] then
+                codeLeft
+            else 
+                let jsDisplay = "<button class=\"toggle-btn\" onclick=\"(function(btn){ const div = btn.nextElementSibling; if (div.style.display === 'none') { div.style.display = 'inline'; } else { div.style.display = 'none'; } })(this)\">...</button><div style=\"display: none;\">" in
+                concatAll [codeLeft, jsDisplay, codeRight, "</div>"]
+
         case TreeSourceCodeSnippet buffer then
             concatAll (map (lam w.
             match w with { word = word, kind = kind } in
