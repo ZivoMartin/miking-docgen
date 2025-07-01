@@ -38,13 +38,13 @@ end
 --   - `mexpr`
 let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
     preprocess obj;
-    let emptyPreview = { left = [], right = [], trimmed = [], obj = obj } in
         
     recursive
     let render : Format -> ObjectTree -> SonRenderingData = lam fmt. lam objTree.
+        let emptyPreview = { left = [], right = [], trimmed = [], obj = objTree } in            
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}}, sons = sons } then emptyPreview
-        case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then render fmt p
+        case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then let res = render fmt p in emptyPreview
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [] } then emptyPreview
         case ObjectNode { obj = { kind = ObjInclude {} } } then warn "Include with more than one son detected"; emptyPreview
         case ObjectNode { obj = obj, sons = sons } then
@@ -89,7 +89,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjUtest {} then { set with Utest = cons son set.Utest }
                             case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj set.LibInclude }
                             case ObjInclude { isStdlib = false } then { set with Include = cons obj set.Include }
-                        end else
+                            end
+                        else
                             warn "Renderer: We should only have ObjectNode at this point.";
                             set) sons
                         case [] then set
@@ -120,7 +121,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 -- Push the footer of the page
                 write (objFormatFooter (fmt, obj));
                 fileWriteClose wc;
-                emptyPreview
+                data
             else
                 warn (concat "Failed to open " path);
                 emptyPreview
