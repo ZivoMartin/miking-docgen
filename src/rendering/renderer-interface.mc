@@ -6,7 +6,6 @@
 
 include "../extracting/objects.mc"
 include "./tree-source-code.mc"
-
     
 lang RendererInterface
 
@@ -35,4 +34,11 @@ lang RendererInterface
 
     -- Render the footer of the page for an object
     sem objFormatFooter : (Format, Object) -> String
+
+    -- Returns a function taking a source code word and returning the formated source code word
+    sem getWordRenderer : Format -> WordRenderer
+
+    -- Returns a function taking a a formated source code, and returned it wrapped into a toggle button
+    sem getWordRenderer : String -> String
+
 end

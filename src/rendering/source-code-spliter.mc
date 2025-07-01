@@ -5,7 +5,11 @@
 include "../parsing/token-readers.mc"
 include "./tree-source-code.mc"
 
-type SourceCodeSplit = { left: [TreeSourceCode], right: [TreeSourceCode], trimmed: [TreeSourceCode] }
+type Trimmed
+con TrimmedFormated : String -> Trimmed
+con TrimmedNotFormated : [SourceCodeWord] -> Trimmed
+
+type SourceCodeSplit = { left: [TreeSourceCode], right: [TreeSourceCode], trimmed: Trimmed }
         
 let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in lam arr.
     let finish = lam left. lam right.
@@ -16,11 +20,11 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
             match splitOnR (lam w. match w with { word = WeakComment {} | Comment {} | Separator {} } then false else true) arr with
                 { left = trimmedRight, right = trimmedLeft } in
             let trimmedLeft = TreeSourceCodeSnippet (reverse trimmedLeft) in
-            let trimmedRight = TreeSourceCodeSnippet (reverse trimmedRight) in
-            { left = left, right = reverse (cons trimmedLeft rightRev), trimmed = [trimmedRight] }
+            let trimmedRight = TrimmedNotFormated (reverse trimmedRight) in
+            { left = left, right = reverse (cons trimmedLeft rightRev), trimmed = trimmedRight }
         case [TreeSourceCodeNode { left = lastLeft, right = lastRight, trimmed = lastTrimmed, obj = obj }] ++ rightRev then
             let right = reverse (cons (TreeSourceCodeNode { left = lastLeft, right = lastRight, trimmed = [], obj = obj }) rightRev) in
-            { left = left, right = right, trimmed = lastTrimmed }
+            { left = left, right = right, trimmed = TrimmedFormated lastTrimmed }
         end 
     in
 

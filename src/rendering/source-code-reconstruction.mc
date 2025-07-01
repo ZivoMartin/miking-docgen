@@ -5,7 +5,7 @@ include "../extracting/source-code-word.mc"
 include "./tree-source-code.mc"
 
     
-let getRenderingData : ObjectTree -> SourceCode -> [SonRenderingData] -> SonRenderingData = lam obj. lam code. lam sons.
+let getRenderingData : ObjectTree -> SourceCode -> [SonRenderingData] -> WordRenderer -> CodeHider ->SonRenderingData  = lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
     type Arg = {
         tree: [TreeSourceCode],
         sons: [SonRenderingData],
@@ -26,4 +26,24 @@ let getRenderingData : ObjectTree -> SourceCode -> [SonRenderingData] -> SonRend
         end) { tree = [], sons = sons, buffer = [] } code in
     let tree = reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet tree.buffer) tree.tree) in
     match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
-    error "todo"    
+
+    let getFormatedStringFromWordBuffer : [SourceCodeWord] -> String = lam code.
+        foldl (lam s. lam w. concat (wordRenderer w) s) "" (reverse code) in
+
+    let getFormatedString : [TreeSourceCode] -> String = lam code.
+        foldl (lam s. lam node.
+            concat (switch node 
+            case TreeSourceCodeNode son then getCodeWithPreview codeHider son
+            case TreeSourceCodeSnippet code then getFormatedStringFromWordBuffer code
+            end) s
+            ) "" (reverse code) in
+    
+    {
+        obj = obj,
+        left = getFormatedString left,
+        right = getFormatedString right,
+        trimmed = switch trimmed
+            case TrimmedFormated s then s
+            case TrimmedNotFormated b then getFormatedStringFromWordBuffer b
+            end
+    }

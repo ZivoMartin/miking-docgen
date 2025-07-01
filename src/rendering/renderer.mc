@@ -46,6 +46,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
         case ObjectNode { obj = { kind = ObjUse {}}, sons = sons } then emptyPreview
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then render fmt p
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [] } then emptyPreview
+        case ObjectNode { obj = { kind = ObjInclude {} } } then warn "Include with more than one son detected"; emptyPreview
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
             let path = concat "doc-gen-output/" (objLink obj) in
@@ -65,10 +66,10 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 let sons: [SonRenderingData] = map (render fmt) sons in
 
                 -- Pushing object documentation using data of the sons to reconstruct the source code
-                let data = getRenderingData objTree obj.sourceCode sons in
+                let data = getRenderingData objTree obj.sourceCode sons (getWordRenderer fmt) (getCodeHider fmt) in
                 
                 write (objGetSpecificDoc (fmt, data));
-            
+
                 -- Ordering objects in a set
                 let set = 
                     recursive

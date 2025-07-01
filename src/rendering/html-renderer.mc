@@ -8,6 +8,7 @@ include "renderer-interface.mc"
 include "../extracting/objects.mc"    
 include "./source-code-spliter.mc"
 include "./html-header.mc"
+include "./source-code-reconstruction.mc"
 
 -- HTML helpers
 let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
@@ -94,6 +95,32 @@ let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
     case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
     end
 
+let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWordKinds in lam w.
+    switch w
+    case { word = Include { content = content } } then
+        concatAll ["<span class=\"kw\">include</span> <span class=\"string\">\"", content, "\"</span>"]
+    case { word = word, kind = kind } then
+        let class = (switch word
+        case Str {} then "string"
+        case WeakComment {} | Comment {} then "comment"
+        case _ then
+            switch kind
+            case CodeKeyword {} then "kw"
+            case CodeName {} then "var"
+            case CodeType {} then "tp"
+            case CodeDefault {} then ""
+            end       
+        end) in
+        let word = lit word in
+        match class with "" then word else
+        concatAll ["<span class=\"", class, "\">", word, "</span>"]
+    end
+
+let codeHider : CodeHider = lam code.
+    let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
+    concatAll [jsDisplay, code, "</div>"] 
+
+    
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface + ObjectKinds
 
@@ -115,7 +142,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     
     sem objFormat =
      | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
-        let code = getCodeWithoutPreview data in
+        let code = getCodeWithoutPreview codeHider data in
         let s = objToStringColorized obj in
         match s with "" then "" else
         let link = objLink obj in
@@ -139,7 +166,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
                 ObjSyn { langName = langName, variants = variants } |
                 ObjSem { langName = langName, variants = variants }
                 )} & obj } } & data ) ->
-        let code = getCodeWithoutPreview data in
+        let code = getCodeWithoutPreview codeHider data in
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
             htmlStrong "From:", "\n", htmlGetLangLink langName, "\n\n",
@@ -149,7 +176,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
          ]
     
     | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
-        let code = getCodeWithoutPreview data in
+        let code = getCodeWithoutPreview codeHider data in
         let s = objToStringColorized obj in
         concatAll [
         match s with "" then "" else 
@@ -166,6 +193,12 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
 
     sem objFormatFooter /- (Format, Object) -> String -/ =
         | (Html {}, _) -> "</div></body>\n</html>"
+
+    sem getWordRenderer =
+        | Html {} -> wordRenderer
+
+    sem getCodeHider =
+        | Html {} -> codeHider
 end
 
 
