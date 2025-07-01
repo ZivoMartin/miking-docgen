@@ -15,7 +15,7 @@ let getRenderingData : ObjectTree -> SourceCode -> [SonRenderingData] -> WordRen
         switch word
         case Some w then { a with buffer = cons w a.buffer}
         case None {} then
-            match sons with [son] ++ sons then
+            match a.sons with [son] ++ sons then
                 match a.buffer with [] then
                     { a with tree = cons (TreeSourceCodeNode son) a.tree, sons = sons }
                 else
@@ -36,7 +36,7 @@ let getRenderingData : ObjectTree -> SourceCode -> [SonRenderingData] -> WordRen
             case TreeSourceCodeNode son then getCodeWithPreview codeHider son
             case TreeSourceCodeSnippet code then getFormatedStringFromWordBuffer code
             end) s
-            ) "" (reverse code) in
+            ) "" code in
     
     {
         obj = obj,

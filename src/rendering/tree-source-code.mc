@@ -16,7 +16,10 @@ let getCodeWithoutPreview : CodeHider -> SonRenderingData -> String = lam hider.
     hider (concat data.left data.right)
     
 let getCodeWithPreview : CodeHider -> SonRenderingData -> String = lam hider. lam data.
-    concatAll [data.left, hider data.right, data.trimmed]
+    match data.right with [] then
+        concatAll [data.left, data.trimmed]
+    else 
+        concatAll [data.left, hider data.right, data.trimmed]
 
 con TreeSourceCodeNode : SonRenderingData -> TreeSourceCode -- Formated code
 con TreeSourceCodeSnippet : [SourceCodeWord] -> TreeSourceCode -- Array of not formated word

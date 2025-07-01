@@ -91,12 +91,13 @@ let getHeader = lam title.
     }
 
     .ObjectParent {
+        border-bottom: 1px solid #eee;
         position: relative;
         padding-top: 1em;
+        padding-bottom: 2em;
     }
         
     .inline-container {
-        border-bottom: 1px solid #eee;
         display: flex;
     }
     

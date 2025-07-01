@@ -4,7 +4,7 @@
 -- extracting: Converts DocTree into an ObjectTree suitable for generating documentation.
 -- rendering: Renders the `ObjectTree` into Markdown pages (HTML support planned).
 
-include "parsing/parser.mc"    
+include "parsing/parser.mc"
 include "extracting/extracter.mc"
 include "rendering/renderer.mc"
 include "options.mc"

@@ -20,63 +20,7 @@ let htmlStrong = lam s. htmlText (htmlBalise s "strong")
 let htmlGetLink = lam l. lam txt. concatAll ["<a href=\"/", l, "\">", txt, "</a>"]
 let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") lng
 
-let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
-
-    -- let getHidenCode = lam code.
-    --     let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
-    --     concatAll [jsDisplay, code, "</div>"] in
-
-    -- let getColorizedSnippet = lam buffer.
-    --     concatAll (map (lam w.
-    --     switch w
-    --     case { word = Include { content = content } } then
-    --         concatAll ["<span class=\"kw\">include</span> <span class=\"string\">\"", content, "\"</span>"]
-    --     case { word = word, kind = kind } then
-    --         let class = (switch word
-    --         case Str {} then "string"
-    --         case WeakComment {} | Comment {} then "comment"
-    --         case _ then
-    --             switch kind
-    --             case CodeKeyword {} then "kw"
-    --             case CodeName {} then "var"
-    --             case CodeType {} then "tp"
-    --             case CodeDefault {} then ""
-    --             end       
-    --         end) in
-    --         let word = lit word in
-    --         match class with "" then word else
-    --         concatAll ["<span class=\"", class, "\">", word, "</span>"]
-    --     end) buffer) in
-        
-    
-    -- recursive let work = lam code: SourceCode.
-    --     switch tree
-    --     case TreeSourceCodeNode arr then
-    --         match sourceCodeSplit arr with { left = codeLeft, right = codeRight, trimmed = codeTrimmed } in
-    --         let codeLeft = concatAll (map work codeLeft) in
-    --         let codeRight = concatAll (map work codeRight) in
-    --         let codeTrimmed = concatAll (map work codeTrimmed) in
-
-    --         match codeRight with [] then concat codeLeft codeTrimmed
-    --         else concatAll [codeLeft, (getHidenCode codeRight), codeTrimmed]
-    --     case TreeSourceCodeSnippet buffer then getColorizedSnippet buffer
-    --     end
-    -- in
-
-    -- let code = obj.code in
-    -- switch tree
-    -- case TreeSourceCodeNode arr then
-    --     match sourceCodeSplit arr with { left = codeLeft, right = codeRight } in
-    --     let code = concat codeLeft codeRight in
-    --     let code = concatAll (map work code) in
-    --     concatAll ["<div class=\"inline-container\"><pre class=\"source\">",
-    --     getHidenCode (cons '\n' code),
-    --     "</pre></div>"]
-                
-    -- case TreeSourceCodeSnippet arr then
-    --     warn "The top level node was a Snippet, should never happend here.";
-    --     getColorizedSnippet arr
-    -- end
+let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]                
 
 -- Object pretty-printer with syntax coloring 
 let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
@@ -116,10 +60,14 @@ let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWordKinds in l
         concatAll ["<span class=\"", class, "\">", word, "</span>"]
     end
 
-let codeHider : CodeHider = lam code.
+let codeHider : Bool -> CodeHider = lam jumpLine. lam code.
     let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
-    concatAll [jsDisplay, code, "</div>"] 
+    concatAll [jsDisplay, if jumpLine then "\n" else "", code, "</div>"] 
 
+let getCodeWithoutPreview = lam code.
+    concatAll ["<div class=\"inline-container\"><pre class=\"source\">", getCodeWithoutPreview (codeHider true) code, "</pre></div>"]
+
+    
     
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface + ObjectKinds
@@ -142,15 +90,15 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     
     sem objFormat =
      | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
-        let code = getCodeWithoutPreview codeHider data in
+        let code = getCodeWithoutPreview data in
         let s = objToStringColorized obj in
         match s with "" then "" else
         let link = objLink obj in
         concatAll [
         "<div class=\"ObjectParent\">\n",
         htmlPre s, "\n",
-        "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a></div>",
-        htmlPre obj.doc, code]
+        "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a>",
+        htmlPre obj.doc, code, "</div>"]
 
     sem objGetSpecificDoc =
     | (Html {}, { obj = ObjectNode { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } } & data ) ->
@@ -166,7 +114,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
                 ObjSyn { langName = langName, variants = variants } |
                 ObjSem { langName = langName, variants = variants }
                 )} & obj } } & data ) ->
-        let code = getCodeWithoutPreview codeHider data in
+        let code = getCodeWithoutPreview data in
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
             htmlStrong "From:", "\n", htmlGetLangLink langName, "\n\n",
@@ -176,7 +124,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
          ]
     
     | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
-        let code = getCodeWithoutPreview codeHider data in
+        let code = getCodeWithoutPreview data in
         let s = objToStringColorized obj in
         concatAll [
         match s with "" then "" else 
@@ -198,7 +146,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         | Html {} -> wordRenderer
 
     sem getCodeHider =
-        | Html {} -> codeHider
+        | Html {} -> codeHider false
 end
 
 

@@ -113,8 +113,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                     iter (lam u. write (objFormat (fmt, u))) (reverse arr)
                 in
 
-                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
-                iter (lam a. displayDefault a.0 a.1)
+                iter (lam a. displayUseInclude a.0 (reverse a.1)) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
+                iter (lam a. displayDefault a.0 (reverse a.1))
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
                 ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr), ("Tests", set.Utest)];
 
