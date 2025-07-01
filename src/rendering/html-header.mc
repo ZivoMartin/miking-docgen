@@ -12,7 +12,6 @@ let getHeader = lam title.
         font-family: system-ui, sans-serif;
         width: 100%;
         margin: 0;
-        padding: 2em 0;
         display: flex;
         justify-content: center;
         background-color: #fdfdfd;
@@ -56,7 +55,7 @@ let getHeader = lam title.
         padding: 1em;
         overflow-x: auto;
         border-radius: 5px;
-        font-size: 1.5em; 
+        font-size: 1em; 
         line-height: 1.4;
         margin-bottom: 2em;
     }
@@ -71,13 +70,13 @@ let getHeader = lam title.
     }
 
     pre.source {
-        font-size: 1.5em;
+        font-size: 1em;
         text-color: #24292e;
     }   
         
     pre.md {
         font-family: system-ui, sans-serif;
-        font-size: 1.5em;
+        font-size: 1em;
         line-height: 1.6;
         white-space: pre-wrap;
     }
@@ -132,7 +131,7 @@ let getHeader = lam title.
         position: absolute;
         bottom: 0.4em;
         right: 0.8em;
-        font-size: 2em;
+        font-size: 1em;
         color: #2980b9;
         text-decoration: none;
     }   
