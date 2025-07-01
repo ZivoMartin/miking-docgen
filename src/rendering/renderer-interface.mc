@@ -5,7 +5,9 @@
 -- Any renderer (MarkdownRenderer, HTMLRenderer, etc.) must implement this interface.
 
 include "../extracting/objects.mc"
+include "./tree-source-code.mc"
 
+    
 lang RendererInterface
 
     -- Different formats supported by mi-doc-gen
@@ -18,9 +20,9 @@ lang RendererInterface
     sem objFormatHeader : (Format, Object) -> String
     
     -- Render an object as child (inside another page)
-    sem objFormat : (Format, Object, [ObjectTree]) -> String
+    sem objFormat : (Format, SonRenderingData) -> String
 
-    sem objGetSpecificDoc : (Format, Object, [ObjectTree]) -> String
+    sem objGetSpecificDoc : (Format, SonRenderingData) -> String
 
     -- Render the title of an object on its page
     sem objFormatedTitle : (Format, Object) -> String

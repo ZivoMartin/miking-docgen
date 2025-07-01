@@ -6,7 +6,6 @@
 include "../extracting/source-code-word.mc"
 include "renderer-interface.mc"
 include "../extracting/objects.mc"    
-include "../extracting/source-code-reconstruction.mc"
 include "./source-code-spliter.mc"
 include "./html-header.mc"
 
@@ -22,63 +21,61 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]
 
-let htmlBuildCodeSource : Object -> [ObjectTree] -> String = use SourceCodeWordKinds in use TokenReader in lam obj: Object. lam sons: [ObjectTree].
+    -- let getHidenCode = lam code.
+    --     let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
+    --     concatAll [jsDisplay, code, "</div>"] in
 
-    let getHidenCode = lam code.
-        let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
-        concatAll [jsDisplay, code, "</div>"] in
-
-    let getColorizedSnippet = lam buffer.
-        concatAll (map (lam w.
-        switch w
-        case { word = Include { content = content } } then
-            concatAll ["<span class=\"kw\">include</span> <span class=\"string\">\"", content, "\"</span>"]
-        case { word = word, kind = kind } then
-            let class = (switch word
-            case Str {} then "string"
-            case WeakComment {} | Comment {} then "comment"
-            case _ then
-                switch kind
-                case CodeKeyword {} then "kw"
-                case CodeName {} then "var"
-                case CodeType {} then "tp"
-                case CodeDefault {} then ""
-                end       
-            end) in
-            let word = lit word in
-            match class with "" then word else
-            concatAll ["<span class=\"", class, "\">", word, "</span>"]
-        end) buffer) in
+    -- let getColorizedSnippet = lam buffer.
+    --     concatAll (map (lam w.
+    --     switch w
+    --     case { word = Include { content = content } } then
+    --         concatAll ["<span class=\"kw\">include</span> <span class=\"string\">\"", content, "\"</span>"]
+    --     case { word = word, kind = kind } then
+    --         let class = (switch word
+    --         case Str {} then "string"
+    --         case WeakComment {} | Comment {} then "comment"
+    --         case _ then
+    --             switch kind
+    --             case CodeKeyword {} then "kw"
+    --             case CodeName {} then "var"
+    --             case CodeType {} then "tp"
+    --             case CodeDefault {} then ""
+    --             end       
+    --         end) in
+    --         let word = lit word in
+    --         match class with "" then word else
+    --         concatAll ["<span class=\"", class, "\">", word, "</span>"]
+    --     end) buffer) in
         
     
-    recursive let work = lam tree: TreeSourceCode.
-        switch tree
-        case TreeSourceCodeNode arr then
-            match sourceCodeSplit arr with { left = codeLeft, right = codeRight, trimmed = codeTrimmed } in
-            let codeLeft = concatAll (map work codeLeft) in
-            let codeRight = concatAll (map work codeRight) in
-            let codeTrimmed = concatAll (map work codeTrimmed) in
+    -- recursive let work = lam code: SourceCode.
+    --     switch tree
+    --     case TreeSourceCodeNode arr then
+    --         match sourceCodeSplit arr with { left = codeLeft, right = codeRight, trimmed = codeTrimmed } in
+    --         let codeLeft = concatAll (map work codeLeft) in
+    --         let codeRight = concatAll (map work codeRight) in
+    --         let codeTrimmed = concatAll (map work codeTrimmed) in
 
-            match codeRight with [] then concat codeLeft codeTrimmed
-            else concatAll [codeLeft, (getHidenCode codeRight), codeTrimmed]
-        case TreeSourceCodeSnippet buffer then getColorizedSnippet buffer
-        end
-    in
-    
-    let tree = getTreeSourceCode (ObjectNode { sons = sons, obj = obj }) in
-    switch tree
-    case TreeSourceCodeNode arr then
-        match sourceCodeSplit arr with { left = codeLeft, right = codeRight } in
-        let code = concat codeLeft codeRight in
-        let code = concatAll (map work code) in
-        concatAll ["<div class=\"inline-container\"><pre class=\"source\">",
-        getHidenCode (cons '\n' code),
-        "</pre></div>"]
+    --         match codeRight with [] then concat codeLeft codeTrimmed
+    --         else concatAll [codeLeft, (getHidenCode codeRight), codeTrimmed]
+    --     case TreeSourceCodeSnippet buffer then getColorizedSnippet buffer
+    --     end
+    -- in
+
+    -- let code = obj.code in
+    -- switch tree
+    -- case TreeSourceCodeNode arr then
+    --     match sourceCodeSplit arr with { left = codeLeft, right = codeRight } in
+    --     let code = concat codeLeft codeRight in
+    --     let code = concatAll (map work code) in
+    --     concatAll ["<div class=\"inline-container\"><pre class=\"source\">",
+    --     getHidenCode (cons '\n' code),
+    --     "</pre></div>"]
                 
-    case TreeSourceCodeSnippet arr then
-        warn "The top level node was a Snippet, should never happend here.";
-        getColorizedSnippet arr
-    end
+    -- case TreeSourceCodeSnippet arr then
+    --     warn "The top level node was a Snippet, should never happend here.";
+    --     getColorizedSnippet arr
+    -- end
 
 -- Object pretty-printer with syntax coloring 
 let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
@@ -117,44 +114,47 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
 
     
     sem objFormat =
-     | (Html {}, obj, sons) ->
+     | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
+        let code = getCodeWithoutPreview data in
         let s = objToStringColorized obj in
-        
         match s with "" then "" else
         let link = objLink obj in
         concatAll [
         "<div class=\"ObjectParent\">\n",
         htmlPre s, "\n",
         "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a></div>",
-        htmlPre obj.doc,
-        htmlBuildCodeSource obj sons]
+        htmlPre obj.doc, code]
 
     sem objGetSpecificDoc =
-    | (Html {}, { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } & obj, sons ) ->
+    | (Html {}, { obj = ObjectNode { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } } & data ) ->
         let parents = map htmlGetLangLink parents in
         concatAll [
         htmlStrong "Stem from:", "\n",
         (strJoin " + " parents), "\n<br>\n",
         htmlStrong "Signature:", "\n",
-        objFormat (Html {}, obj, sons), "\n<br>\n"]
+        objFormat (Html {}, data), "\n<br>\n"]
 
-    | (Html {}, { doc = doc, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } )} & obj, sons) ->
+    | (Html {}, { obj = ObjectNode {
+            obj = { doc = doc, kind = (
+                ObjSyn { langName = langName, variants = variants } |
+                ObjSem { langName = langName, variants = variants }
+                )} & obj } } & data ) ->
+        let code = getCodeWithoutPreview data in
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
             htmlStrong "From:", "\n", htmlGetLangLink langName, "\n\n",
             htmlBalise "Signature" "h2", "\n\n",
             htmlCode (concatAll [objToStringColorized obj, "\n", variants]), "\n",
-            htmlDoc doc, "\n",
-            htmlBuildCodeSource obj sons
+            htmlDoc doc, "\n", code
          ]
     
-    | (Html {}, obj, sons) ->
+    | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
+        let code = getCodeWithoutPreview data in
         let s = objToStringColorized obj in
         concatAll [
         match s with "" then "" else 
             concatAll [htmlBalise "Signature" "h2", "\n\n", (htmlCode s), "\n"],
-            htmlDoc obj.doc, "\n",
-            htmlBuildCodeSource obj sons]
+            htmlDoc obj.doc, "\n", code]
 
 
     sem getFormatedLinkList /- (Format, [Object]) -> String -/ =
