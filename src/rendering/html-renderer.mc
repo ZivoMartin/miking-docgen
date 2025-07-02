@@ -73,15 +73,6 @@ let getCodeWithoutPreview = lam code.
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface + ObjectKinds
 
-    syn Format =
-        | Html {}
-
-    sem formatFromStr =
-        | "html" | "HTML" | "Html" | ".html" -> Some (Html {})
-
-    sem formatToStr =
-        | Html {} -> "Html"
-
     sem objFormatHeader /- (Format, Object) -> String -/ =
         | (Html {}, obj) -> getHeader (objTitle obj)
 

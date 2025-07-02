@@ -34,6 +34,8 @@ include "hashmap.mc"
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
 let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser in lam fileName.
+    parsingLog "Beggining of parsing stage...";
+
     -- Keywords that start new blocks (head snippets)
     -- Using HashSet to improve performances
     let headSnippets =
@@ -141,6 +143,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
         let s = fileReadString rc in
         fileReadClose rc;
         let snippet = parseRec s [({ breakers = [""], state = Program {} }, false)] [] in
+        parsingLog "Parsing is over.";
         Some (Node { sons = snippet.tree, token = ProgramToken { content = fileName }, state = Program {} })
     else
         None {}

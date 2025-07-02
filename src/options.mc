@@ -7,41 +7,44 @@
 --   --format <format>     -> sets output format (`html` or `md`), default is `html`
 --   <file>                -> input file to process
 
-include "rendering/renderer.mc"
-include "./logger.mc"
-    
+include "./format.mc"
+        
 -- Options type holding flags and input file path
-type Options = use Renderer in {
+type Options = use Formats in {
     noOpen: Bool,    -- disable auto-open of output
     fmt: Format,  -- output format: `html` or `md`
-    file: String     -- input file path
+    file: String,     -- input file path
+    debug: Bool,
+    parsingDebug: Bool,
+    extractingDebug: Bool,
+    renderingDebug: Bool
 }
 
 -- Default options
-let optionsDefault : Options = use Renderer in {
+let optionsDefault : Options = use Formats in {
     noOpen = false,
     fmt = defaultFormat (),
-    file = ""
+    file = "",
+    debug = false,
+    parsingDebug = false,
+    extractingDebug = false,
+    renderingDebug = false
 }
-
-let logOpt : Options -> () = use Renderer in lam opt.
-    let msg = concatAll [
-"Running miking-doc-gen with\n",
-"   noOpen: ", bool2string opt.noOpen, "\n",
-"   fmt: ", formatToStr opt.fmt, "\n",
-"   file: ", opt.file] in
-    log "Main" msg
     
 -- Usage message
 let usage = lam x.
-    error "Usage: <program> [--no-open] [--format <html|md>] <file>"
+    error "Usage: <program> [--no-open] [--debug] [--<parsing|extracting|rendering>-debug] [--format <html|md>] <file>"
 
 -- Parse command-line arguments into Options
 let parseOptions : [String] -> Options = lam argv.
     -- Recursive helper to process args
-    recursive let parse : [String] -> Options -> Options = use Renderer in lam args. lam opts.
+    recursive let parse : [String] -> Options -> Options = use Formats in lam args. lam opts.
         switch args
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
+        case ["--debug"] ++ rest then parse rest { opts with debug = true }
+        case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
+        case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }    
+        case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
         case ["--format", fmt] ++ rest then
             match formatFromStr fmt with Some fmt then
                 parse rest { opts with fmt = fmt }
@@ -53,6 +56,6 @@ let parseOptions : [String] -> Options = lam argv.
         end
     in
     -- Skip program name (first argument), start parsing with defaults
-    let opt = parse (tail argv) optionsDefault in
-    logOpt opt;
-    opt
+    parse (tail argv) optionsDefault
+
+let opt: Options = parseOptions argv

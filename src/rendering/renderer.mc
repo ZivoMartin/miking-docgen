@@ -11,13 +11,7 @@ include "html-renderer.mc"
 include "./source-code-reconstruction.mc"
 include "../logger.mc"
     
-lang Renderer = MarkdownRenderer + HtmlRenderer
-
-    -- Returns the default format if nothing is specified in the CLI
-    sem defaultFormat /- () -> Format -/ =
-        | _ -> Html {}
-
-end
+lang Renderer = MarkdownRenderer + HtmlRenderer end
     
 -- ## Render Function
 --
@@ -38,7 +32,7 @@ end
 --   - `mexpr`
 let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
     preprocess obj;
-        
+    renderingLog "Beggining of rendering stage.";
     recursive
     let render : Format -> ObjectTree -> RenderingData = lam fmt. lam objTree.
         let emptyPreview = lam obj. { left = [], right = [], trimmed = [], obj = obj } in            
@@ -50,6 +44,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
             let path = concat "doc-gen-output/" (objLink obj) in
+            renderingLog (concat "Rendering file " path);
+        
             match fileWriteOpen path with Some wc then
                 let write = fileWriteString wc in
 

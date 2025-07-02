@@ -9,15 +9,6 @@ include "../util.mc"
 include "../logger.mc"
     
 lang MarkdownRenderer = RendererInterface + ObjectKinds
-
-    syn Format =
-        | Md {}
-
-    sem formatFromStr =
-        | "md" | "Markdown" | "markdown" | "MARKDOWN" | "MD" | ".md" -> Some (Md {})
-
-    sem formatToStr =
-        | Md {} -> "Markdown"
     
     sem objFormatHeader /- (Format, Object) -> String -/ =
         | (Md {}, _) -> ""

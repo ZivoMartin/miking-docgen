@@ -28,7 +28,8 @@ include "../logger.mc"
 let extract : DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
     lam tree.
-
+    extractingLog "Beggining of extraction...";
+    
     -- HashSet of included files
     type IncludeSet = HashMap String () in
 
@@ -41,6 +42,7 @@ let extract : DocTree -> ObjectTree =
     recursive
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> IncludeSet -> Bool -> Int -> ExtractRecOutput ) =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam includeSet. lam inStdlib. lam utestCount.
+        extractingLog (concat "Extracting on: " namespace);
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         switch tree 
         case Node { sons = sons, token = token, state = state } then
@@ -166,7 +168,6 @@ let extract : DocTree -> ObjectTree =
                     match parse path with Some tree in
                     match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib utestCount with
                         { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } in
-
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
                     { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet  }
             case Separator { content = content } then

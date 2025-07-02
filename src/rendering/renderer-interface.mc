@@ -6,17 +6,9 @@
 
 include "../extracting/objects.mc"
 include "./rendering-types.mc"
-    
-lang RendererInterface
+include "../format.mc"
 
-    -- Different formats supported by mi-doc-gen
-    syn Format =
-
-    -- Parse format string (example: `html` or `md`), returns None if invalid
-    sem formatFromStr : String -> Option Format
-
-    -- Cast format to String
-    sem formatToStr : Format -> String
+lang RendererInterface = Formats
     
     -- Returns the header of the page for an object
     sem objFormatHeader : (Format, Object) -> String
