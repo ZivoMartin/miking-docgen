@@ -10,10 +10,6 @@
 -- - It detects Includes and recursively loads included files
 --
 -- The result can later be rendered as Markdown / HTML files.
-
-include "util.mc"
-include "objects.mc"
-include "source-code-builder.mc"
     
 include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
@@ -21,13 +17,19 @@ include "../parsing/doc-tree.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 
+include "./util.mc"
+include "./objects.mc"
+include "./source-code-builder.mc"
+include "../logger.mc"
+    
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
 let extract : DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
     lam tree.
-
+    extractingLog "Beggining of extraction...";
+    
     -- HashSet of included files
     type IncludeSet = HashMap String () in
 
@@ -40,6 +42,7 @@ let extract : DocTree -> ObjectTree =
     recursive
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> IncludeSet -> Bool -> Int -> ExtractRecOutput ) =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam includeSet. lam inStdlib. lam utestCount.
+        extractingLog (concat "Extracting on: " namespace);
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         switch tree 
         case Node { sons = sons, token = token, state = state } then
@@ -130,7 +133,7 @@ let extract : DocTree -> ObjectTree =
                             match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
                                 extractType (skipUseIn typedef)
                             else
-                                warn (concatAll ["The constructor ", name.word, " is typeless."]);
+                                extractingWarn (concatAll ["The constructor ", name.word, " is typeless."]);
                                 ""
                         in
                         ObjCon { t = t }
@@ -165,7 +168,6 @@ let extract : DocTree -> ObjectTree =
                     match parse path with Some tree in
                     match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib utestCount with
                         { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } in
-
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
                     { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }, includeSet = includeSet  }
             case Separator { content = content } then

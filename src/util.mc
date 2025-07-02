@@ -6,13 +6,11 @@
 
 include "string.mc"
 include "hashmap.mc"
+include "sys.mc"
 
 -- Print a line with newline
-let printLn = lam word. print word; print "\n"
-    
--- Displays a warning message
-let warn : String -> () = lam m. printLn (concat "WARNING: " m)
-    
+let printLn: String -> () = lam word. print word; print "\n"; flushStdout () 
+        
 -- Takes an array of String and concatenates them into one single String
 let concatAll = lam arr. strJoin "" arr
 

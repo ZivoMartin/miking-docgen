@@ -4,6 +4,7 @@ include "../util.mc"
 include "string.mc"
 include "stdlib.mc"
 include "sys.mc"
+include "../logger.mc"
 
 let getNamespace = lam namespace. lam name.
     concatAll [namespace, "/", name]
