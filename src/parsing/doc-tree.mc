@@ -8,7 +8,8 @@
 -- A `Node` holds children (sons), a token, and a state.
 -- The display function prints the hierarchy clearly for debugging or visualization.
 
-include "breaker-choosers.mc"
+include "./breaker-choosers.mc"
+include "../logger.mc"
 
 -- Main DocTree types, will contains Leafs and Nodes
 type DocTree
@@ -40,7 +41,7 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
             -- Skip separators and EOF for cleaner output
             match token with Separator {} | Eof {} then () else 
                 printLn (concatAll [indentString depth, "Leaf (", tokenToString token, "):", lit token])
-        case _ then warn "No-covered variant in DocTree reached during displayTree execution."
+        case _ then parsingWarn "No-covered variant in DocTree reached during displayTree execution."
         end
     in
     

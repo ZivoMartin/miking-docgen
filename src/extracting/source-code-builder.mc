@@ -10,6 +10,7 @@
 include "../parsing/doc-tree.mc"
 include "./source-code-word.mc"
 include "./colorizer.mc"
+include "../logger.mc"
 
 -- Representation of the source code with word's buffer
 type SourceCode = [Option SourceCodeWord]
@@ -57,7 +58,7 @@ let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: Sour
         match parent with SourceCodeNode { parent = parent, buffer = parentBuffer  } in
         { builder = SourceCodeNode { parent = parent, buffer = parentBuffer, ctx = ctx }, sourceCode = buffer }
     else match builder with SourceCodeNode { buffer = buffer } in
-        warn "finish: Builder parent should never be empty at this point";
+        extractingWarn "finish: Builder parent should never be empty at this point";
         { builder = builder, sourceCode = buffer }
 
 -- Returns a new SourceCodeBuilder

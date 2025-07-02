@@ -21,7 +21,7 @@ let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -
                 else
                     { tree = concat [TreeSourceCodeNode son, TreeSourceCodeSnippet a.buffer] a.tree, sons = sons, buffer = [] }
             else
-                warn "Son array should not be empty at this point";
+                renderingWarn "Son array should not be empty at this point";
                 a
         end) { tree = [], sons = sons, buffer = [] } code in
     let tree = reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet tree.buffer) tree.tree) in

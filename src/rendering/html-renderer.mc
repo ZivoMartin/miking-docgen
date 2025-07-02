@@ -9,6 +9,7 @@ include "../extracting/objects.mc"
 include "./source-code-spliter.mc"
 include "./html-header.mc"
 include "./source-code-reconstruction.mc"
+include "../logger.mc"
 
 -- HTML helpers
 let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
@@ -77,6 +78,9 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
 
     sem formatFromStr =
         | "html" | "HTML" | "Html" | ".html" -> Some (Html {})
+
+    sem formatToStr =
+        | Html {} -> "Html"
 
     sem objFormatHeader /- (Format, Object) -> String -/ =
         | (Html {}, obj) -> getHeader (objTitle obj)

@@ -9,6 +9,7 @@ include "../util.mc"
 include "md-renderer.mc"
 include "html-renderer.mc"
 include "./source-code-reconstruction.mc"
+include "../logger.mc"
     
 lang Renderer = MarkdownRenderer + HtmlRenderer
 
@@ -45,7 +46,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then let res = render fmt p in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj } then warn "Include with more than one son detected"; emptyPreview obj
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
             let path = concat "doc-gen-output/" (objLink obj) in
@@ -118,7 +119,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 fileWriteClose wc;
                 data
             else
-                warn (concat "Failed to open " path);
+                renderingWarn (concat "Failed to open " path);
                 emptyPreview obj
         case ObjectLeaf _ then error "You should never try to render an ObjectLeaf." end
         

@@ -8,6 +8,7 @@
 --   <file>                -> input file to process
 
 include "rendering/renderer.mc"
+include "./logger.mc"
     
 -- Options type holding flags and input file path
 type Options = use Renderer in {
@@ -23,6 +24,14 @@ let optionsDefault : Options = use Renderer in {
     file = ""
 }
 
+let logOpt : Options -> () = use Renderer in lam opt.
+    let msg = concatAll [
+"Running miking-doc-gen with\n",
+"   noOpen: ", bool2string opt.noOpen, "\n",
+"   fmt: ", formatToStr opt.fmt, "\n",
+"   file: ", opt.file] in
+    log "Main" msg
+    
 -- Usage message
 let usage = lam x.
     error "Usage: <program> [--no-open] [--format <html|md>] <file>"
@@ -44,4 +53,6 @@ let parseOptions : [String] -> Options = lam argv.
         end
     in
     -- Skip program name (first argument), start parsing with defaults
-    parse (tail argv) optionsDefault
+    let opt = parse (tail argv) optionsDefault in
+    logOpt opt;
+    opt

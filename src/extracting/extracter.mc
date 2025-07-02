@@ -10,10 +10,6 @@
 -- - It detects Includes and recursively loads included files
 --
 -- The result can later be rendered as Markdown / HTML files.
-
-include "util.mc"
-include "objects.mc"
-include "source-code-builder.mc"
     
 include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
@@ -21,6 +17,11 @@ include "../parsing/doc-tree.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 
+include "./util.mc"
+include "./objects.mc"
+include "./source-code-builder.mc"
+include "../logger.mc"
+    
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
@@ -130,7 +131,7 @@ let extract : DocTree -> ObjectTree =
                             match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
                                 extractType (skipUseIn typedef)
                             else
-                                warn (concatAll ["The constructor ", name.word, " is typeless."]);
+                                extractingWarn (concatAll ["The constructor ", name.word, " is typeless."]);
                                 ""
                         in
                         ObjCon { t = t }
