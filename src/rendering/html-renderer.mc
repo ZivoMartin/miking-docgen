@@ -89,7 +89,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
 
     
     sem objFormat =
-     | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
+     | (Html {}, { obj = obj } & data) ->
         let code = getCodeWithoutPreview data in
         let s = objToStringColorized obj in
         match s with "" then "" else
@@ -101,7 +101,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         htmlPre obj.doc, code, "</div>"]
 
     sem objGetSpecificDoc =
-    | (Html {}, { obj = ObjectNode { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } } & data ) ->
+    | (Html {}, { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } & data ) ->
         let parents = map htmlGetLangLink parents in
         concatAll [
         htmlStrong "Stem from:", "\n",
@@ -109,11 +109,10 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         htmlStrong "Signature:", "\n",
         objFormat (Html {}, data), "\n<br>\n"]
 
-    | (Html {}, { obj = ObjectNode {
-            obj = { doc = doc, kind = (
+    | (Html {}, { obj = { doc = doc, kind = (
                 ObjSyn { langName = langName, variants = variants } |
                 ObjSem { langName = langName, variants = variants }
-                )} & obj } } & data ) ->
+                )} & obj } & data ) ->
         let code = getCodeWithoutPreview data in
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
@@ -123,7 +122,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             htmlDoc doc, "\n", code
          ]
     
-    | (Html {}, { obj = ObjectNode { obj = obj } } & data) ->
+    | (Html {}, { obj = obj } & data) ->
         let code = getCodeWithoutPreview data in
         let s = objToStringColorized obj in
         concatAll [

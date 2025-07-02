@@ -40,13 +40,13 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
     preprocess obj;
         
     recursive
-    let render : Format -> ObjectTree -> SonRenderingData = lam fmt. lam objTree.
-        let emptyPreview = { left = [], right = [], trimmed = [], obj = objTree } in            
-        switch objTree
-        case ObjectNode { obj = { kind = ObjUse {}}, sons = sons } then emptyPreview
-        case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then let res = render fmt p in emptyPreview
-        case ObjectNode { obj = { kind = ObjInclude {} }, sons = [] } then emptyPreview
-        case ObjectNode { obj = { kind = ObjInclude {} } } then warn "Include with more than one son detected"; emptyPreview
+    let render : Format -> ObjectTree -> RenderingData = lam fmt. lam objTree.
+        let emptyPreview = lam obj. { left = [], right = [], trimmed = [], obj = obj } in            
+        switch obj
+        case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then let res = render fmt p in emptyPreview obj
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj } then warn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
             let path = concat "doc-gen-output/" (objLink obj) in
@@ -63,10 +63,10 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 let sons = objectSonsFilterNodes sons in
             
                 -- Recursive calls
-                let sons: [SonRenderingData] = map (render fmt) sons in
+                let sons: [RenderingData] = map (render fmt) sons in
 
                 -- Pushing object documentation using data of the sons to reconstruct the source code
-                let data = getRenderingData objTree obj.sourceCode sons (getWordRenderer fmt) (getCodeHider fmt) in
+                let data = getRenderingData obj obj.sourceCode sons (getWordRenderer fmt) (getCodeHider fmt) in
                 
                 write (objGetSpecificDoc (fmt, data));
 
@@ -76,8 +76,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                     let buildSet = lam set. lam sons. 
                         switch sons
                         case [son] ++ sons then buildSet (
-                        match son.obj with ObjectNode { obj = obj } then
-                        switch obj.kind
+                        switch son.obj.kind
                             case ObjUse {} then { set with Use = cons obj set.Use }
                             case ObjLet {} then { set with Let = cons son set.Let }
                             case ObjLang {} then { set with Lang = cons son set.Lang }
@@ -89,10 +88,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjUtest {} then { set with Utest = cons son set.Utest }
                             case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj set.LibInclude }
                             case ObjInclude { isStdlib = false } then { set with Include = cons obj set.Include }
-                            end
-                        else
-                            warn "Renderer: We should only have ObjectNode at this point.";
-                            set) sons
+                            end) sons
                         case [] then set
                         end
                     in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } sons in
@@ -124,7 +120,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 data
             else
                 warn (concat "Failed to open " path);
-                emptyPreview
-        case _ then emptyPreview end
+                emptyPreview obj
+        case ObjectLeaf _ then error "You should never try to render an ObjectLeaf." end
         
     in let res = render fmt obj in ()

@@ -3,7 +3,7 @@
 -- For some nodes, we do not have to split. For exemple with use nodes that are not heavy 
 
 include "../parsing/token-readers.mc"
-include "./tree-source-code.mc"
+include "./rendering-types.mc"
 
 type Trimmed
 con TrimmedFormated : String -> Trimmed

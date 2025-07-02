@@ -5,7 +5,7 @@
 -- Any renderer (MarkdownRenderer, HTMLRenderer, etc.) must implement this interface.
 
 include "../extracting/objects.mc"
-include "./tree-source-code.mc"
+include "./rendering-types.mc"
     
 lang RendererInterface
 
@@ -19,9 +19,9 @@ lang RendererInterface
     sem objFormatHeader : (Format, Object) -> String
     
     -- Render an object as child (inside another page)
-    sem objFormat : (Format, SonRenderingData) -> String
+    sem objFormat : (Format, RenderingData) -> String
 
-    sem objGetSpecificDoc : (Format, SonRenderingData) -> String
+    sem objGetSpecificDoc : (Format, RenderingData) -> String
 
     -- Render the title of an object on its page
     sem objFormatedTitle : (Format, Object) -> String

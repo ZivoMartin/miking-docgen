@@ -20,7 +20,7 @@ lang MarkdownRenderer = RendererInterface + ObjectKinds
     
     -- Markdown formatted display for an object    
     sem objFormat =
-        | (Md {}, { obj = ObjectNode { obj = obj } }) ->
+        | (Md {}, { obj = obj }) ->
             let s = objToString obj.kind obj.name in
             match s with "" then "" else concatAll ["```\n", s, "\n```\n\n[-](/", objLink obj, ")\n\n"]
 
@@ -29,18 +29,18 @@ lang MarkdownRenderer = RendererInterface + ObjectKinds
     -- - Sem / Syn shows language + variants
     -- - Let shows args
     sem objGetSpecificDoc =
-    | ( Md {}, { obj = ObjectNode { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } } & data ) ->
+    | ( Md {}, { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } & data ) ->
         let parents = map (lam p. concatAll ["[", p, "](/", getLangLink p, ".lang)"]) parents in
         concatAll ["**Stem from:**  \n", (strJoin " + " parents), objFormat (Md {}, data), "\n\n", doc, "\n\n"]
 
-    | (Md {}, { obj = ObjectNode { obj = { name = name, doc = doc, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind } } } ) ->
+    | (Md {}, { obj = { name = name, doc = doc, kind = ( ObjSyn { langName = langName, variants = variants } | ObjSem { langName = langName, variants = variants } ) & kind  } } ) ->
         let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
         concatAll [
             "From ", "[", langName, "](/", getLangLink langName, ".lang)  \n",
             "```\n", getFirstWord kind, " ", name, "\n", variants, "```\n\n", doc, "\n\n"
          ]
     
-    | ( Md {}, { obj = ObjectNode { obj = obj } } ) ->
+    | ( Md {}, { obj = obj } ) ->
         let s = objToString obj.kind obj.name in
         match s with "" then "" else concatAll ["```\n", s, "\n```\n\n", obj.doc, "\n\n"]
 

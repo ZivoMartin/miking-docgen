@@ -2,13 +2,13 @@ include "./renderer-interface.mc"
 include "./source-code-spliter.mc"
 include "../extracting/source-code-builder.mc"
 include "../extracting/source-code-word.mc"    
-include "./tree-source-code.mc"
+include "./rendering-types.mc"
 
     
-let getRenderingData : ObjectTree -> SourceCode -> [SonRenderingData] -> WordRenderer -> CodeHider ->SonRenderingData  = lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
+let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -> CodeHider ->RenderingData  = lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
     type Arg = {
         tree: [TreeSourceCode],
-        sons: [SonRenderingData],
+        sons: [RenderingData],
         buffer: [SourceCodeWord]
     } in
     let tree = foldl (lam a: Arg. lam word: Option SourceCodeWord.
