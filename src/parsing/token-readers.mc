@@ -17,19 +17,33 @@ include "hashmap.mc"
 
 -- Interface definition for a generic TokenReader
 lang TokenReaderInterface
-    type NextResult = {token : Token, stream : String}
-
+    
+    type Pos = { x: Int, y: Int }
+    type NextResult = { token : Token, stream : String, pos: Pos }
+    
     -- Abstract token type to be implemented by concrete readers
     syn Token =
-        
+
+    sem actualisePos: Pos -> Token -> Pos
+    sem actualisePos =
+    | pos -> lam token.
+        recursive let work : String -> Pos -> Pos = lam s. lam pos.
+            switch s 
+            case "" then pos
+            case ['\n'] ++ s then work s { x = 0, y = addi pos.y 1 }
+            case [_] ++ s then work s { pos with x = addi pos.x 1 }
+            end
+        in work (lit token) pos
+
+    
     -- Returns the original literal text of the token
-    sem lit /- Token -> String -/ =
+    sem lit : Token -> String
     
     -- Produces the next token from the input stream
-    sem next /- : String -> NextTokenResult -/ =
+    sem next : String -> Pos -> NextResult
     
     -- Converts the token to a human-readable string
-    sem tokenToString /- Token -> String -/ =
+    sem tokenToString : Token -> String
     
     -- For debugging: print the literal
     sem display =
@@ -49,7 +63,7 @@ lang WeakCommentTokenReader = TokenReaderInterface
         | WeakComment {} -> "WeakComment"
     
     sem next =
-        | "/-" ++ str  ->
+        | "/-" ++ str -> lam pos.
             recursive
             let extract =
             lam str.
@@ -62,11 +76,13 @@ lang WeakCommentTokenReader = TokenReaderInterface
                     ("", "")
             in
             let extracted = extract str in
-            {
-                token = WeakComment {
+            let token = WeakComment {
                     content = extracted.0,
                     lit = concat (concat "/-" extracted.0) "-/"
-                },
+            } in
+            {
+                token = token,
+                pos = actualisePos pos token,
                 stream = extracted.1
             }
 end
@@ -84,7 +100,7 @@ lang CommentTokenReader = TokenReaderInterface
         | Comment {} -> "Comment"
     
     sem next =
-        | "--" ++ str  ->
+        | "--" ++ str -> lam pos.
             recursive
             let extract =
             lam str.
@@ -97,11 +113,10 @@ lang CommentTokenReader = TokenReaderInterface
                     ("", "")
             in
             let extracted = extract str in
+            let token = Comment { content = extracted.0, lit = concatAll ["--", extracted.0, "\n"] } in
             {
-                token = Comment {
-                    content = extracted.0,
-                    lit = concatAll ["--", extracted.0, "\n"]
-                },
+                token = token,
+                pos = actualisePos pos token,
                 stream = extracted.1
             }
 end
@@ -118,7 +133,7 @@ lang StrTokenReader = TokenReaderInterface
         | Str {} -> "Str"
     
     sem next /- : String -> NextResult -/ =
-        | "\"" ++ str  ->
+        | "\"" ++ str -> lam pos.
             recursive
             let extract =
             lam str. lam previous.
@@ -131,11 +146,11 @@ lang StrTokenReader = TokenReaderInterface
                 else ("", "")
             in
             let extracted =  extract str '-' in
+            let token = Str { content = cons '\"' extracted.0 } in
             {
-                token = Str {
-                    content = cons '\"' extracted.0
-                },
-                stream = extracted.1
+                token = token,
+                stream = extracted.1,
+                pos = actualisePos pos token
             }
 end
 
@@ -163,13 +178,17 @@ lang WordTokenReader = TokenReaderInterface
     sem tokenToString =
         | Word {} -> "Word"
     
-    sem next /- : String -> NextResult -/ =
-        | str ->
-            match str with [x] then { token = Word { content = [x] }, stream = "" } else
+    sem next =
+        | str -> lam pos.
+            match str with [x] then
+                let token = Word { content = [x] } in
+                { token = token, stream = "", pos = actualisePos pos token } else
             if isSep [head str] then
-                { token = Word { content = [head str] }, stream = tail str }
+                let token = Word { content = [head str] } in
+                { token = token, stream = tail str, pos = actualisePos pos token }
             else let arr = [head str, head (tail str)] in if isSep arr then
-                { token = Word { content = arr }, stream = tail (tail str) }
+                let token = Word { content = arr } in
+                { token = token, stream = tail (tail str), pos = actualisePos pos token }
             else
                 recursive
                 let extract =
@@ -189,8 +208,10 @@ lang WordTokenReader = TokenReaderInterface
                     end
                 in
                 let extracted =  extract str '-' in
+                let token = Word { content = extracted.0 } in
                 {
-                    token = Word { content = extracted.0 },
+                    token = token,
+                    pos = actualisePos pos token,
                     stream = extracted.1
                 }
 end
@@ -207,7 +228,7 @@ lang SeparatorTokenReader = TokenReaderInterface
         | Separator {} -> "Separator"
     
     sem next =
-        | [(' ' | '\t' | '\n' ) & c] ++ str  ->
+        | [(' ' | '\t' | '\n' ) & c] ++ str -> lam pos.
             recursive
             let extract =
             lam str.
@@ -217,8 +238,10 @@ lang SeparatorTokenReader = TokenReaderInterface
                 else ("", str)
             in
             let extracted =  extract str in
+            let token = Separator { content = cons c extracted.0 } in
             {
-                token = Separator { content = cons c extracted.0 },
+                token = token,
+                pos = actualisePos pos token,    
                 stream = extracted.1
             }
 end
@@ -235,10 +258,11 @@ lang EofTokenReader = TokenReaderInterface
         | Eof {} -> ""
     
     sem next =
-        | ""  ->
+        | ""  -> lam pos.
             {
                 token = Eof {},
-                stream = ""
+                stream = "",
+                pos = pos
             }
 end
     
@@ -254,7 +278,7 @@ lang IncludeTokenReader = TokenReaderInterface
         | Include {} -> "Include"    
     
     sem next =
-        | "include " ++ str ->
+        | "include " ++ str -> lam pos.
             recursive
             let extractSep =
             lam str.
@@ -278,11 +302,10 @@ lang IncludeTokenReader = TokenReaderInterface
             
             let extractedSep =  extractSep str in
             let extractedStr =  extractStr (tail extractedSep.1) '-' in
+            let token = Include { content = extractedStr.0, lit = concatAll ["include ", extractedSep.0, "\"", extractedStr.0, "\""] } in
             {
-                token = Include {
-                    content = extractedStr.0,
-                    lit = concatAll ["include ", extractedSep.0, "\"", extractedStr.0, "\""]
-                },
+                token = token,
+                pos = actualisePos pos token,
                 stream = extractedStr.1
             }
         
