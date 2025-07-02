@@ -67,16 +67,16 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
             let buildSnippet : (NextResult -> [(Breaker, Bool)] -> [DocTree] -> Snippet) = lam word. lam breakers. lam treeAcc.
                 let lword = lit word.token in
                 let oldState = topState breakers in
-                let breakers = cons ((choose (oldState, lword)), false) breakers in
+                let breakers = cons ((choose (oldState, lword, pos)), false) breakers in
                 let newState = topState breakers in
 
                 -- Parse the snippet content
                 let snippet = parseRec word.stream word.pos  breakers [] in
 
                 -- Handle continue case (normal exit)
-                if continue (newState, snippet.breaker) then
+                if continue (newState, snippet.breaker, snippet.pos) then
                     let last = next snippet.stream snippet.pos in
-                    let result = if and (not snippet.absorbed) (absorbIt (newState, lit last.token)) then
+                    let result = if and (not snippet.absorbed) (absorbIt (newState, lit last.token, snippet.pos)) then
                         let leaf = Leaf { token = last.token, state = newState } in
                         let docNode = Node { sons = (concat snippet.tree [leaf]), token = word.token, state = newState } in
                         { stream = last.stream, pos = last.pos, docNode = docNode }
@@ -90,7 +90,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                     -- Handle hard break
                     let docNode = Node {
                         sons = snippet.tree, token = word.token,
-                        state = topVersion newState } in
+                        state = topVersion (newState, snippet.pos) } in
                     let concatToAdd = cons docNode snippet.toAdd in
                     let isHardTest = isHard (newState, snippet.breaker) in
                     {
@@ -113,7 +113,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                 if (head breakers).1 then
                     parseRec word.stream word.pos (tail breakers) (cons (Leaf { token = word.token, state = state }) treeAcc)
                 else
-                    let absorb = absorbIt (state, lword) in
+                    let absorb = absorbIt (state, lword, pos) in
                     {
                         tree = reverse (if absorb then
                                             cons (Leaf { token = word.token, state = state }) treeAcc
