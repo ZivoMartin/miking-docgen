@@ -67,7 +67,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
             let buildSnippet : (NextResult -> [(Breaker, Bool)] -> [DocTree] -> Snippet) = lam word. lam breakers. lam treeAcc.
                 let lword = lit word.token in
                 let oldState = topState breakers in
-                let breakers = cons ((choose (oldState, lword, pos)), false) breakers in
+                let breakers = cons ((choose (oldState, lword, word.pos)), false) breakers in
                 let newState = topState breakers in
 
                 -- Parse the snippet content

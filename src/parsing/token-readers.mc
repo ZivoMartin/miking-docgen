@@ -31,6 +31,7 @@ lang TokenReaderInterface
             switch s 
             case "" then pos
             case ['\n'] ++ s then work s { x = 0, y = addi pos.y 1 }
+            case ['\t'] ++ s then work s { pos with x = addi pos.x 4 }
             case [_] ++ s then work s { pos with x = addi pos.x 1 }
             end
         in work (lit token) pos
