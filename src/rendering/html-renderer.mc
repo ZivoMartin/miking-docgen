@@ -147,6 +147,3 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     sem getCodeHider =
         | Html {} -> codeHider false
 end
-
-
-    

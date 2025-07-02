@@ -5,7 +5,6 @@
 
 include "preprocessor.mc"
 include "../extracting/objects.mc"
-include "util.mc"
 include "../util.mc"    
 include "md-renderer.mc"
 include "html-renderer.mc"
@@ -42,7 +41,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
     recursive
     let render : Format -> ObjectTree -> RenderingData = lam fmt. lam objTree.
         let emptyPreview = lam obj. { left = [], right = [], trimmed = [], obj = obj } in            
-        switch obj
+        switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then let res = render fmt p in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
@@ -50,7 +49,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
             let path = concat "doc-gen-output/" (objLink obj) in
-            match createAndOpen path  with Some wc then
+            match fileWriteOpen path with Some wc then
                 let write = fileWriteString wc in
 
                 -- Push header of the output file
