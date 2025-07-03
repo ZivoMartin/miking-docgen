@@ -65,7 +65,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
             --
             -- Builds a snippet when a head snippet token is encountered
             let buildSnippet : (NextResult -> [(Breaker, Bool)] -> [DocTree] -> Snippet) = lam word. lam breakers. lam treeAcc.
-                let lword = lit word.token in
+                let lword = content word.token in
                 let oldState = topState breakers in
                 let breakers = cons ((choose (oldState, lword, word.pos)), false) breakers in
                 let newState = topState breakers in
@@ -76,7 +76,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                 -- Handle continue case (normal exit)
                 if continue (newState, snippet.breaker, snippet.pos) then
                     let last = next snippet.stream snippet.pos in
-                    let result = if and (not snippet.absorbed) (absorbIt (newState, lit last.token, snippet.pos)) then
+                    let result = if and (not snippet.absorbed) (absorbIt (newState, content last.token, snippet.pos)) then
                         let leaf = Leaf { token = last.token, state = newState } in
                         let docNode = Node { sons = (concat snippet.tree [leaf]), token = word.token, state = newState } in
                         { stream = last.stream, pos = last.pos, docNode = docNode }
@@ -105,7 +105,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
 
             -- Next token
             let word = next stream pos in
-            let lword = lit word.token in
+            let lword = content word.token in
             let state = topState breakers in
 
             -- If current token is a breaker

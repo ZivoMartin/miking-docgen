@@ -29,6 +29,7 @@ lang BreakerChooserInterface = TokenReader
         | Program {}
         | TopLet {}
         | Let {}
+        | Rec {}
         | Lang {}
         | TopType {}
         | Type {}
@@ -48,6 +49,7 @@ lang BreakerChooserInterface = TokenReader
         | TopLet {} -> "TopLet"
         | Let {} -> "Let"
         | Lang {} -> "Lang"
+        | Rec {} -> "Rec"
         | TopType {} -> "TopType"
         | Type {} -> "Type"
         | Sem {} -> "Sem"
@@ -104,9 +106,7 @@ lang ProgramBreakerChooser = BreakerChooserInterface
     
     sem choose =
         | (Program {}, "let", pos) -> build letBreak (TopLet {})
-        | (Program {}, "recursive", pos) -> build letBreak (TopLet {})
         | (Program {}, "utest", pos) -> build letBreak (TopUtest {})
-
         | (Program {}, "lang", pos) -> build ["end"] (Lang {})
         | (Program {}, "mexpr", pos) -> build ["lang", "mexpr"] (Mexpr {})
         | (Program {}, "type", pos) -> build topBreak (TopType {})
@@ -121,11 +121,13 @@ lang ProgramBreakerChooser = BreakerChooserInterface
 
 end
 
+
+
 lang MexprTopLetUtestBreakerChooser = BreakerChooserInterface
     
     sem choose =
         | (Mexpr {} | TopLet {} | TopUtest {}, "let", pos) -> build fullLetBreak (Let {})
-        | (Mexpr {} | TopLet {} | TopUtest {}, "recursive", pos) -> build fullLetBreak (Let {})
+        | (Mexpr {} | TopLet {} | TopUtest {}, "recursive", pos) -> build fullLetBreak (Rec {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "utest", pos) -> build fullLetBreak (Utest {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "con", pos) -> build fullTopBreak (Con {})
@@ -142,12 +144,34 @@ lang MexprTopLetUtestBreakerChooser = BreakerChooserInterface
 
 end
 
-        
+lang RecBreakerChooser = BreakerChooserInterface
+
+    sem choose =
+        | (Rec {}, "let", pos) -> build fullLetBreak (Let {})
+        | (Rec {}, "recursive", pos) -> build fullLetBreak (Rec {})
+        | (Rec {}, "utest", pos) -> build fullTopBreak (Utest {})
+        | (Rec {}, "type", pos) -> build fullTopBreak (Type {})
+        | (Rec {}, "con", pos) -> build fullTopBreak (Con {})
+        | (Rec {}, "use", pos) -> build ["in"] (Use {})    
+
+    sem continue =
+        | (Rec {}, ("in"), pos) -> true
+        | (Rec {}, _, pos) -> false
+
+    sem isHard =
+        | (Rec {}, _) -> false
+    
+    sem absorbIt =
+        | (Rec {}, "in", pos) -> true
+        | (Rec {}, word, pos) -> false
+
+end
+            
 lang LetUtestBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Let {} | Utest {}, "let", pos) -> build fullLetBreak (Let {})
-        | (Let {} | Utest {}, "recursive", pos) -> build fullLetBreak (Let {})
+        | (Let {} | Utest {}, "recursive", pos) -> build fullLetBreak (Rec {})
         | (Let {} | Utest {}, "utest", pos) -> build fullTopBreak (Utest {})
         | (Let {} | Utest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Let {} | Utest {}, "con", pos) -> build fullTopBreak (Con {})
@@ -234,7 +258,7 @@ lang SemBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Sem {}, "let", pos) -> build ["in"] (Let {})
-        | (Sem {}, "recursive", pos) -> build ["in"] (Let {})
+        | (Sem {}, "recursive", pos) -> build ["in"] (Rec {})
         | (Sem {}, "utest", pos) -> build ["in"] (Utest {})
 
         | (Sem {}, "type", pos) -> build langFullBreakIn (Type {})
@@ -302,4 +326,4 @@ end
 
 
     
-lang BreakerChooser = ProgramBreakerChooser + MexprTopLetUtestBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end
+lang BreakerChooser = ProgramBreakerChooser + RecBreakerChooser + MexprTopLetUtestBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end

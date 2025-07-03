@@ -432,5 +432,51 @@ utest (next "recursive\n\tlet" pos0).pos with { x = 7, y = 1 } in
 
 -- EOF position should remain unchanged
 utest (next "" pos0).pos with { x = 0, y = 0 } in
-    
+
+-- WeakComment
+utest (next "/- a -/next" pos0).stream with "next" in
+
+-- Line comment
+utest (next "-- line comment\nnext" pos0).stream with "next" in
+
+-- String
+utest (next "\"hello\" rest" pos0).stream with " rest" in
+
+-- Word
+utest (next "word next" pos0).stream with " next" in
+
+-- Separator (single space)
+utest (next " \nnext" pos0).stream with "next" in
+
+-- Separator (multiple spaces and tabs)
+utest (next " \t  \nnext" pos0).stream with "next" in
+
+-- Eof (empty input)
+utest (next "" pos0).stream with "" in
+
+-- Include directive
+utest (next "include \"file.mc\" next" pos0).stream with " next" in
+
+-- Recursive let
+utest (next "recursive \t\nlet next" pos0).stream with " next" in
+
+-- Word followed by separator
+utest (next "abc;" pos0).stream with ";" in
+
+-- Separator followed by word
+utest (next " \tfoo" pos0).stream with "foo" in
+
+-- String followed by separator
+utest (next "\"a\";" pos0).stream with ";" in
+
+-- Comment followed by string
+utest (next "-- comment\n\"string\"" pos0).stream with "\"string\"" in
+
+-- Weak comment followed by recursive let
+utest (next "/- c -/recursive let" pos0).stream with "recursive let" in
+
+-- Include with newline then word
+utest (next "include\n\"lib\"\nmain" pos0).stream with "\nmain" in
+
+      
 ()
