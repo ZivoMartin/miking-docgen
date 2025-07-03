@@ -25,9 +25,9 @@
 include "doc-tree.mc"
 include "../util.mc"
 
-include "ext/file-ext.mc"
 include "seq.mc"
 include "hashmap.mc"
+include "ext/file-ext.mc"
     
 -- # The parse function
 -- - Takes in input a String representing a Miking program.
@@ -149,3 +149,152 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
         Some (Node { sons = snippet.tree, token = ProgramToken { content = fileName }, state = Program {} })
     else
         None {}
+
+
+
+mexpr use BreakerChooser in
+
+-- 1. Basic single block parsing
+
+utest parse "let x = 1 in" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons =
+    [Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Leaf { token = Word { content = "x" }, state = Let {} },
+      Leaf { token = Word { content = "=" }, state = Let {} },
+      Leaf { token = Word { content = "1" }, state = Let {} },
+      Leaf { token = Word { content = "in" }, state = Let {} }
+    ]}]
+  }) in
+
+utest parse "lang end" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons =
+    [Node { token = Word { content = "lang" }, state = Lang {}, sons = [
+      Leaf { token = Word { content = "end" }, state = Lang {} }
+    ]}]
+  }) in
+
+
+-- 2. Nested snippet structure
+
+utest parse "let lang end in" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Node { token = Word { content = "lang" }, state = Lang {}, sons = [
+        Leaf { token = Word { content = "end" }, state = Lang {} }
+      ]},
+      Leaf { token = Word { content = "in" }, state = Let {} }
+    ]}
+  ]}) in
+
+
+-- 3. Absorbed vs non-absorbed breakers
+
+utest parse "let x = 1 in" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Leaf { token = Word { content = "x" }, state = Let {} },
+      Leaf { token = Word { content = "=" }, state = Let {} },
+      Leaf { token = Word { content = "1" }, state = Let {} },
+      Leaf { token = Word { content = "in" }, state = Let {} }
+    ]}
+  ]}) in
+
+utest parse "mexpr let x = 1 in" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Node { token = Word { content = "mexpr" }, state = Mexpr {}, sons = [
+      Node { token = Word { content = "let" }, state = Let {}, sons = [
+        Leaf { token = Word { content = "x" }, state = Let {} },
+        Leaf { token = Word { content = "=" }, state = Let {} },
+        Leaf { token = Word { content = "1" }, state = Let {} }
+      ]}
+    ]}
+  ]}) in
+
+
+-- 4. Hard break handling
+
+utest parse "let x = let y = 2 lang end" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Leaf { token = Word { content = "x" }, state = Let {} },
+      Leaf { token = Word { content = "=" }, state = Let {} }
+    ]},
+    Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Leaf { token = Word { content = "y" }, state = Let {} },
+      Leaf { token = Word { content = "=" }, state = Let {} },
+      Leaf { token = Word { content = "2" }, state = Let {} },
+      Node { token = Word { content = "lang" }, state = Lang {}, sons = [
+        Leaf { token = Word { content = "end" }, state = Lang {} }
+      ]}
+    ]}
+  ]}) in
+
+
+-- 5. End of file handling
+
+utest parse "" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Leaf { token = Eof {}, state = Program {} }
+  ]}) in
+
+utest parse "let x = 1" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Leaf { token = Word { content = "x" }, state = Let {} },
+      Leaf { token = Word { content = "=" }, state = Let {} },
+      Leaf { token = Word { content = "1" }, state = Let {} },
+      Leaf { token = Eof {}, state = Let {} }
+    ]}
+  ]}) in
+
+
+-- 6. Extra breakers
+
+utest parse "switch x then end" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Leaf { token = Word { content = "switch" }, state = Program {} },
+    Leaf { token = Word { content = "x" }, state = Program {} },
+    Leaf { token = Word { content = "then" }, state = Program {} },
+    Leaf { token = Word { content = "end" }, state = Program {} }
+  ]}) in
+
+
+-- 7. Token-state correctness
+
+utest parse "let x = 1 in" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Leaf { token = Word { content = "x" }, state = Let {} },
+      Leaf { token = Word { content = "=" }, state = Let {} },
+      Leaf { token = Word { content = "1" }, state = Let {} },
+      Leaf { token = Word { content = "in" }, state = Let {} }
+    ]}
+  ]}) in
+
+
+-- 8. Deep nesting
+
+utest parse "let x = lang sem let y = match y then in end in x" with Some
+  (Node { token = ProgramToken {}, state = Program {}, sons = [
+    Node { token = Word { content = "let" }, state = TopLet {}, sons = [
+      Leaf { token = Word { content = "x" }, state = Let {} },
+      Leaf { token = Word { content = "=" }, state = Let {} },
+      Node { token = Word { content = "lang" }, state = Lang {}, sons = [
+        Node { token = Word { content = "sem" }, state = Sem {}, sons = [
+          Node { token = Word { content = "let" }, state = Let {}, sons = [
+            Leaf { token = Word { content = "y" }, state = Let {} },
+            Leaf { token = Word { content = "=" }, state = Let {} },
+            Leaf { token = Word { content = "match" }, state = Let {} },
+            Leaf { token = Word { content = "y" }, state = Let {} },
+            Leaf { token = Word { content = "then" }, state = Let {} },
+            Leaf { token = Word { content = "in" }, state = Let {} }
+          ]}
+        ]},
+        Leaf { token = Word { content = "end" }, state = Lang {} }
+      ]},
+      Leaf { token = Word { content = "in" }, state = Let {} },
+      Leaf { token = Word { content = "x" }, state = Let {} }
+    ]}
+  ]}) in
+
+()
