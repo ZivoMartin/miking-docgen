@@ -72,16 +72,22 @@ lang WeakCommentTokenReader = TokenReaderInterface
         | "/-" ++ str -> lam pos.
             recursive
             let extract =
-            lam str.
-                match str with "-/" ++ xs then
-                    ("", xs)                    
-                else match str with [x] ++ xs then
-                    let extracted = extract xs in
+            lam str. lam stack.
+                switch (str, stack)
+                case ("-/" ++ xs, 0) then ("", xs)
+                case ("-/" ++ xs, stack) then
+                    let extracted = extract xs (subi stack 1) in
+                    (concat "-/" extracted.0, extracted.1)
+                case ("/-" ++ xs, stack) then
+                    let extracted = extract xs (addi stack 1) in
+                    (concat "/-" extracted.0, extracted.1)
+                case ([x] ++ xs, stack) then
+                    let extracted = extract xs stack in
                     (cons x extracted.0, extracted.1)
-                else
-                    ("", "")
+                case _ then ("", "")
+                end
             in
-            let extracted = extract str in
+            let extracted = extract str 0 in
             buildResult (WeakComment {
                     content = extracted.0,
                     lit = concat (concat "/-" extracted.0) "-/"
@@ -266,9 +272,11 @@ lang CommAndSepSkiper = SimpleWordTokenReader
     
     sem skip : String -> { skiped: String, stream: String, newToken: Token }
     sem skip =
-    | str -> lam pos.
-            switch next str pos
-            case { token = (Separator {} | Comment {} | WeakComment {}) & s, stream = stream } then concat (lit s) (skip stream pos)
+    | str ->
+        let pos = { x = 0, y = 0 } in
+        switch next str pos 
+            case { token = (Separator {} | Comment {} | WeakComment {}) & s, stream = stream } then
+            let res = skip stream in { res with skiped = concat (lit s) res.skiped }
             case { token = token, stream = stream } then { stream = stream, skiped = "", newToken = token }
             end
 end
@@ -286,8 +294,8 @@ lang IncludeTokenReader = CommAndSepSkiper
 
     sem includeNext =
         | str -> lam pos. lam firstSep.
-            match skip str pos with { newToken = Str { content = str }, stream = stream, skiped = skiped } then
-                let token = Include { content = str, lit = concatAll ["include", firstSep, skiped, "\"", str, "\""] } in
+            match skip str with { newToken = Str { content = str }, stream = stream, skiped = skiped } then
+                let token = Include { content = subsequence str 1 (subi (length str) 2), lit = concatAll ["include", firstSep, skiped, str] } in
                 buildResult token pos stream
             else
                 parsingWarn "During lexing, was waiting for an Str after `include `.";
@@ -297,7 +305,7 @@ lang IncludeTokenReader = CommAndSepSkiper
         | "include " ++ str -> lam pos. includeNext str pos " "
         | "include\n" ++ str -> lam pos. includeNext str pos "\n"
         | "include\t" ++ str -> lam pos. includeNext str pos "\t"
-        | "include\"" ++ str -> lam pos. includeNext (cons "\"" str) pos ""    
+        | "include\"" ++ str -> lam pos. includeNext (cons '\"' str) pos ""    
 end
 
 -- Specifically reads `recursive let` sequence of word
@@ -318,7 +326,7 @@ lang RecursiveTokenReader = CommAndSepSkiper
 
     sem recNext =
     | str -> lam pos. lam firstSep.
-        match skip str pos with { newToken = Word { content = "let" }, stream = stream, skiped = skiped } then
+        match skip str with { newToken = Word { content = "let" }, stream = stream, skiped = skiped } then
             let token = Recursive { lit = concatAll ["recursive", firstSep, skiped, "let"] } in
             buildResult token pos stream
         else
@@ -331,9 +339,98 @@ lang RecursiveTokenReader = CommAndSepSkiper
         | "recursive\t" ++ str -> lam pos. recNext str pos "\t"    
 end
 
-    
 
 lang ComposedWordTokenReader = RecursiveTokenReader + IncludeTokenReader end
         
 -- Combine all token readers into a single TokenReader
 lang TokenReader = ComposedWordTokenReader end
+
+
+mexpr use TokenReader in
+
+let pos0 = { x = 0, y = 0 } in
+
+-- WeakComment tests
+utest (next "/- hello -/" pos0).token with WeakComment { lit = "/- hello -/", content = " hello "} in
+utest (next "/- /- nested -/ -/" pos0).token with WeakComment { lit = "/- /- nested -/ -/", content = " /- nested -/ "} in
+
+-- Comment tests
+utest (next "-- a comment\n" pos0).token with Comment { lit = "-- a comment\n", content = " a comment"} in
+utest (next "--\n" pos0).token with Comment { lit = "--\n", content = ""} in
+
+-- String tests
+utest (next "\"hello world\"" pos0).token with Str { content = "\"hello world\""} in
+utest (next "\"escaped \\\" quote\"" pos0).token with Str { content = "\"escaped \\\" quote\""} in
+
+-- Word tests
+utest next "hello(" pos0 with { token = Word { content = "hello"}, stream = "(", pos = { x = 5, y = 0 } } in
+utest (next "x1_y2" pos0).token with Word { content = "x1_y2" } in
+utest (next "includeX" pos0).token with Word { content = "includeX" } in
+utest (next "recursivelet" pos0).token with Word { content = "recursivelet" } in    
+
+-- Separator tests
+utest (next " " pos0).token with Separator { content = " " } in
+utest (next "\n" pos0).token with Separator { content = "\n" } in
+utest (next "\t" pos0).token with Separator { content = "\t" } in
+utest (next "(" pos0).token with Word { content = "(" } in
+utest (next "++" pos0).token with Word { content = "++" } in
+utest (next "->" pos0).token with Word { content = "->" } in
+
+-- EOF test
+utest (next "" pos0).token with Eof {} in
+
+-- Include tests
+utest (next "include \"file.mc\"" pos0).token with Include { lit = "include \"file.mc\"", content = "file.mc" } in
+utest (next "include\t\"lib.miking\"" pos0).token with Include { lit = "include\t\"lib.miking\"", content = "lib.miking" } in
+utest (next "include\n\"abc\"" pos0).token with Include { lit = "include\n\"abc\"", content = "abc" } in
+
+-- Recursive tests
+utest (next "recursive let" pos0).token with Recursive { lit = "recursive let" } in
+utest (next "recursive \n\t let" pos0).token with Recursive { lit = "recursive \n\t let" } in
+
+-- Complex mixed test
+utest (next "/- a comment -/ include \"x.mc\"" pos0).token with WeakComment { lit = "/- a comment -/", content = " a comment " } in
+
+
+-- Position after a simple word
+utest (next "hello" pos0).pos with { x = 5, y = 0 } in
+
+-- Position after weak comment
+utest (next "/- hi -/" pos0).pos with { x = 8, y = 0 } in
+
+-- Position after line comment with newline
+utest (next "-- line\n" pos0).pos with { x = 0, y = 1 } in
+
+-- Position after multi-line separator
+utest (next "   \n\t" pos0).pos with { x = 4, y = 1 } in  -- space(3) + \n (y++) + tab(x+=4)
+
+-- Position after string
+utest (next "\"abc\"" pos0).pos with { x = 5, y = 0 } in
+
+-- Position after include "lib.mc"
+utest (next "include \"lib.mc\"" pos0).pos with { x = 16, y = 0 } in  -- include + space + quoted string
+
+-- Position after recursive let
+utest (next "recursive let" pos0).pos with { x = 13, y = 0 } in
+
+-- String with newline inside — should be tokenized as one line (not split)
+utest (next "\"line1\\nline2\"" pos0).pos with { x = 14, y = 0 } in
+
+-- Separator with multiple newlines
+utest (next "\n\n" pos0).pos with { x = 0, y = 2 } in
+
+-- Word stopped by separator
+utest (next "abc;" pos0).token with Word { content = "abc" } in
+utest (next "abc;" pos0).pos with { x = 3, y = 0 } in
+
+-- Include directive with newline before quote
+utest (next "include\n\"x\"" pos0).token with Include { lit = "include\n\"x\"", content = "x" } in
+utest (next "include\n\"x\"" pos0).pos with { x = 3, y = 1 } in
+
+-- Recursive let with newline and tab
+utest (next "recursive\n\tlet" pos0).pos with { x = 7, y = 1 } in 
+
+-- EOF position should remain unchanged
+utest (next "" pos0).pos with { x = 0, y = 0 } in
+    
+()
