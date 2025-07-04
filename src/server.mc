@@ -4,7 +4,7 @@
 -- 
 -- It embeds a Python script (`pythonScript`) which:
 -- - starts a local HTTP server on port 3000
--- - serves the generated Markdown files as HTML (using Python’s `markdown` module)
+-- - serves the generated outputs as HTML (using Python’s `markdown` module if output is markdown)
 -- - auto-opens the browser
 -- 
 -- ## How it works:
@@ -14,10 +14,6 @@
 --   ```bash
 --   python3 script.py <doc-gen-output dir> <initial object>
 --   ```
--- - The server uses `markdown.markdown()` to convert `.md` on the fly
--- 
--- **Dependencies:** Python 3 + markdown (`pip install markdown`).
-
 
 include "extracting/objects.mc"
 include "rendering/renderer.mc"
