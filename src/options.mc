@@ -63,42 +63,27 @@ let usage = lam x.
 
 -- Parses a list of command-line arguments and builds a fully populated `Options` value.
 let parseOptions : [String] -> Options = lam argv.
-
-    -- A recursive helper that walks through CLI args one by one
-    -- and updates the options record accordingly.
+    -- Recursive helper to process args
     recursive let parse : [String] -> Options -> Options = use Formats in lam args. lam opts.
         switch args
-
-        case ["--no-open"] ++ rest then 
-            parse rest { opts with noOpen = true }
-
-        case ["--debug"] ++ rest then 
-            parse rest { opts with debug = true }
-
-        case ["--parsing-debug"] ++ rest then 
-            parse rest { opts with parsingDebug = true }
-
-        case ["--extracting-debug"] ++ rest then 
-            parse rest { opts with extractingDebug = true }
-
-        case ["--rendering-debug"] ++ rest then 
-            parse rest { opts with renderingDebug = true }
-
+        case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
+        case ["--debug"] ++ rest then parse rest { opts with debug = true }
+        case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
+        case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }    
+        case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
         case ["--format", fmt] ++ rest then
-            match formatFromStr fmt with 
-            | Some fmt -> parse rest { opts with fmt = fmt }
-            | None     -> usage ()
-
-        case [s] ++ rest then
-            if eqString opts.file "" then 
-                parse rest { opts with file = s }
+            match formatFromStr fmt with Some fmt then
+                parse rest { opts with fmt = fmt }
             else usage ()
-
+        case [s] ++ rest then
+            if eqString opts.file "" then parse rest { opts with file = s }
+            else usage ()
         case [] then opts
         end
     in
+    -- Skip program name (first argument), start parsing with defaults
+    parse (tail argv) optionsDefault    
 
-    parse (tail argv) optionsDefault
 
 -- Global `Options` instance parsed from `argv`.
 -- This value is used throughout the application to control rendering behavior.
