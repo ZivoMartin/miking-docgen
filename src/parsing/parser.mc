@@ -3,15 +3,20 @@
 -- This module defines a parser that reads a file and produces a `DocTree`, a hierarchical
 -- structure of tokens annotated with formatting state.
 --
--- The parsing logic supports **breakers** (see breaker-choosers.mc)
--- and implements three behaviors:
+-- We are trying to segment the code using a markup system. Certain specific words open nodes in the tree, and some words close nodes.
+-- Take the example ```let x = 3 * 8 in```. Here, let opens a node—more precisely, a node of type let. At the moment the node is opened,
+-- we need to decide which word will close this block.
+-- In Miking's syntax, several words can potentially close a let: in, lang, mexpr, and many others.
+-- In our example, when the parser encounters in, it recognizes ```in``` as one of the breaker and therefore closes the block.
+--
+-- The detection of opening words is handled in the parser, while the selection of breakers based on the current context is done in breaker-choosers.mc.
 --
 -- When a break occurs, there are three possible behaviors:
 -- 1. Local break: we simply finish the current block.
 --    Example: lang ... end -> 'end' only terminates the 'lang' block.
 --
 -- 2. Global break: we terminate not just the current block, but also one or more parent blocks.
---    Example: lang ... sem ... end -> 'end' closes both 'sem' and 'lang'.
+--    Example: lang ... sem ... end -> 'end' here is the breaker of lang, but also breaks sem.
 --
 -- 3. Hard break: a new keyword forces us to reinterpret a previous assumption.
 --    Example: let ... let ... lang
