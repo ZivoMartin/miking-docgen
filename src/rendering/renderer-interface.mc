@@ -34,6 +34,6 @@ lang RendererInterface = Formats
     sem getWordRenderer : Format -> WordRenderer
 
     -- Returns a function taking a a formated source code, and returned it wrapped into a toggle button
-    sem getWordRenderer : String -> String
+    sem getCodeHider : Format -> CodeHider
 
 end

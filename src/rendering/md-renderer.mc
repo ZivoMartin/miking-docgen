@@ -52,8 +52,15 @@ lang MarkdownRenderer = RendererInterface + ObjectKinds
     sem getFormatedLinkList /- (Format, [Object]) -> String -/ =
     | (Md {}, objects) ->
         let doc = map (lam u. concatAll ["[", objTitle u, "](/", objLink u, ")"]) objects in
-        concat (strJoin ", " (reverse doc)) "\n\n"
+        concat (strJoin ", " (reverse doc)) "  \n\n"
 
     sem objFormatFooter /- (Format, Object) -> String -/ =
         | (Md {}, _) -> ""
+
+    sem getWordRenderer =
+        | Md {} -> lam. ""
+
+    sem getCodeHider =
+        | Md {} -> lam. ""
+
 end
