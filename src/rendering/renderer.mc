@@ -73,7 +73,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                         switch sons
                         case [son] ++ sons then buildSet (
                         switch son.obj.kind
-                            case ObjUse {} then { set with Use = cons obj set.Use }
+                            case ObjUse {} then { set with Use = cons son.obj set.Use }
                             case ObjLet {} then { set with Let = cons son set.Let }
                             case ObjLang {} then { set with Lang = cons son set.Lang }
                             case ObjSem {} then { set with Sem = cons son set.Sem }
@@ -82,8 +82,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjMexpr {} then { set with Mexpr = cons son set.Mexpr }
                             case ObjType {} then { set with Type = cons son set.Type }
                             case ObjUtest {} then { set with Utest = cons son set.Utest }
-                            case ObjInclude { isStdlib = true } then { set with LibInclude = cons obj set.LibInclude }
-                            case ObjInclude { isStdlib = false } then { set with Include = cons obj set.Include }
+                            case ObjInclude { isStdlib = true } then { set with LibInclude = cons son.obj set.LibInclude }
+                            case ObjInclude { isStdlib = false } then { set with Include = cons son.obj set.Include }
                             end) sons
                         case [] then set
                         end

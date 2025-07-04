@@ -42,7 +42,6 @@ let extract : DocTree -> ObjectTree =
     recursive
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> IncludeSet -> Bool -> Int -> ExtractRecOutput ) =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam includeSet. lam inStdlib. lam utestCount.
-        extractingLog (concat "Extracting on: " namespace);
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         switch tree 
         case Node { sons = sons, token = token, state = state } then
@@ -78,7 +77,7 @@ let extract : DocTree -> ObjectTree =
                 { foldResult.ctx with obj = obj, sourceCodeBuilder = sourceCodeBuilder } in
 
             -- Dispatch by token type + state
-            switch token case Word { content = content } | ProgramToken { content = content } then
+            switch token case Word { content = content } | Recursive { lit = content } | ProgramToken { content = content } then
             switch state
             case Program {} then
                 recursive
@@ -118,13 +117,14 @@ let extract : DocTree -> ObjectTree =
 
                 let name = getName sons in
                 let kind = switch state
-                    case (Let {} | TopLet {}) then
+                    case (Let {} | TopLet {} | Rec {} | TopRec {}) then
+                        let rec = match state with Let {} | TopLet {} then false else true in
                         let sons = goToEqual sons in
                         let sons = skipUseIn sons in
 
                         -- Extract params if any
                         let args = extractParams sons in
-                        ObjLet { rec = false, args = args }
+                        ObjLet { rec = rec, args = args }
                     case Sem {} then ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
                     case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
                     case Lang {} then ObjLang { parents = reverse (extractParents name.rest) }
@@ -143,10 +143,12 @@ let extract : DocTree -> ObjectTree =
                                 Some (extractType typedef) else None {} in
                         ObjType { t = t }
 
-                end in
+                    end in
                 process sons name.word (getNamespace namespace name.word) doc kind utestCount
-             end end
-
+                end
+            case _ then
+                error (concat "Not covered: " (toString state))
+            end
         case Leaf { token = token, state = state } then
             let w = ObjectLeaf (lit token) in
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = w, includeSet = includeSet, utestCount = utestCount } in
@@ -160,12 +162,12 @@ let extract : DocTree -> ObjectTree =
                 match goHere (dirname namespace) content with { path = path, isStdlib = isStdlib } in
                 let isStdlib = or inStdlib isStdlib in
                 let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content }, name = path, namespace = path }, sons = [] } in
-    
                 if hmMem path includeSet then
                     { defaultRes with obj = emptyInclude }
                 else
                     let newIncludeSet = hmInsert path () includeSet in
                     match parse path with Some tree in
+                    extractingLog (concat "Extracting on: " path);
                     match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib utestCount with
                         { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } in
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in

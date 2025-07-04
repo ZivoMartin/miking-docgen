@@ -138,16 +138,20 @@ lang StrTokenReader = TokenReaderInterface
         | "\"" ++ str -> lam pos.
             recursive
             let extract =
-            lam str. lam previous.
-              match str with [x] ++ xs then
-                    if (and (eqc x '\"') (not (eqc previous '\\'))) then
+                lam str. 
+                    switch str
+                    case ['\\', x] ++ xs then
+                        let extracted = extract xs in
+                        (concat ['\\', x] extracted.0, extracted.1)
+                    case ['\"'] ++ xs then
                         ("\"", xs)
-                    else
-                        let extracted = extract xs x in
+                    case [x] ++ xs then
+                        let extracted = extract xs in
                         (cons x extracted.0, extracted.1)
-                else ("", "")
-            in
-            let extracted =  extract str '-' in
+                    case _ then ("", "")
+                    end
+                in
+            let extracted =  extract str in
             buildResult (Str { content = cons '\"' extracted.0 }) pos extracted.1
 end
 

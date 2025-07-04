@@ -34,7 +34,7 @@ include "ext/file-ext.mc"
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
 let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser in lam fileName.
-    parsingLog "Beggining of parsing stage...";
+    parsingLog (concat "Beggining of parsing stage on " fileName);
 
     -- Keywords that start new blocks (head snippets)
     -- Using HashSet to improve performances
@@ -42,7 +42,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
         foldl
         (lam m. lam k. hmInsert k () m)
         (hashmapEmpty ())
-        ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use", "utest"] in
+        ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use", "utest", "recursive"] in
 
     -- Extra breakers (manually added).
     -- We would like to ignore `switch` keyword, but we cant becauses it ends with then end keyword. It may break a lang block in some situations.
@@ -71,12 +71,17 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                 let newState = topState breakers in
 
                 -- Parse the snippet content
-                let snippet = parseRec word.stream word.pos  breakers [] in
-
+                let isTop = eqi 2 (length breakers) in
+                let snippet = parseRec word.stream word.pos breakers [] in
+                let reStructureTest = reStructureTree (newState, snippet.breaker) in
+                let continueTest = or isTop (continue (newState, snippet.breaker)) in
+                let newState = switchVersion (newState, snippet.breaker) in
+    
                 -- Handle continue case (normal exit)
-                if continue (newState, snippet.breaker, snippet.pos) then
+                if continueTest then
                     let last = next snippet.stream snippet.pos in
-                    let result = if and (not snippet.absorbed) (absorbIt (newState, content last.token, snippet.pos)) then
+                    
+                    let result = if and (not snippet.absorbed) (absorbIt (newState, content last.token)) then
                         let leaf = Leaf { token = last.token, state = newState } in
                         let docNode = Node { sons = (concat snippet.tree [leaf]), token = word.token, state = newState } in
                         { stream = last.stream, pos = last.pos, docNode = docNode }
@@ -90,13 +95,12 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                     -- Handle hard break
                     let docNode = Node {
                         sons = snippet.tree, token = word.token,
-                        state = topVersion (newState, snippet.pos) } in
+                        state = newState } in
                     let concatToAdd = cons docNode snippet.toAdd in
-                    let isHardTest = isHard (newState, snippet.breaker) in
                     {
                         snippet with
-                        toAdd = if isHardTest then concatToAdd else [],
-                        tree = if isHardTest then
+                        toAdd = if reStructureTest then concatToAdd else [],
+                        tree = if reStructureTest then
                                 reverse treeAcc
                                else
                                 reverse (concat concatToAdd treeAcc)
@@ -113,7 +117,7 @@ let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser i
                 if (head breakers).1 then
                     parseRec word.stream word.pos (tail breakers) (cons (Leaf { token = word.token, state = state }) treeAcc)
                 else
-                    let absorb = absorbIt (state, lword, pos) in
+                    let absorb = absorbIt (state, lword) in
                     {
                         tree = reverse (if absorb then
                                             cons (Leaf { token = word.token, state = state }) treeAcc

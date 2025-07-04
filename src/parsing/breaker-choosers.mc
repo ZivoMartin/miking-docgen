@@ -8,9 +8,9 @@
 -- - When a token is seen, the BreakerChooser decides:
 --     * Does this token start a new block? (choose)
 --     * Does parsing continue in this block? (continue)
---     * Is this a hard break? (isHard)
+--     * Is this a hard break? (reStructureTree)
 --     * Should this breaker be absorbed? (absorbIt)
---     * What is the top version of this state? (topVersion)
+--     * What is the top version of this state? (switchVersion)
 --
 -- Each concrete BreakerChooser implements this logic for one state:  
 -- Program, Let, Lang, Type, Sem, Syn, Con, Use, Mexpr, etc.
@@ -29,6 +29,7 @@ lang BreakerChooserInterface = TokenReader
         | Program {}
         | TopLet {}
         | Let {}
+        | TopRec {}
         | Rec {}
         | Lang {}
         | TopType {}
@@ -49,6 +50,7 @@ lang BreakerChooserInterface = TokenReader
         | TopLet {} -> "TopLet"
         | Let {} -> "Let"
         | Lang {} -> "Lang"
+        | TopRec {} -> "TopRec"    
         | Rec {} -> "Rec"
         | TopType {} -> "TopType"
         | Type {} -> "Type"
@@ -71,23 +73,24 @@ lang BreakerChooserInterface = TokenReader
       | (state, word, pos) -> error (concatAll [crashMessage pos, "You cannot have the word ", word, " inside a ", (toString state), " block."])
 
     -- Determine if for a given breaker, the tokenisation should continue for the parent state
-    sem continue : (State, String, Pos) -> Bool
+    sem continue : (State, String) -> Bool
     sem continue =
-        | (state, word, pos) -> error (concatAll [crashMessage pos, word, " should not be a breaker of ", (toString state), "."])
+        | (state, word) -> true
 
     -- Determine for a given context if the block become hard or no
-    sem isHard: (State, String) -> Bool
-    sem isHard =
+    sem reStructureTree: (State, String) -> Bool
+    sem reStructureTree =
+        | (_, _) -> false
 
     -- Determine if the breaker should be part of the current block, or should remain in the stream.
-    sem absorbIt : (State, String, Pos) -> Bool
+    sem absorbIt : (State, String) -> Bool
     sem absorbIt  =
-        | (state, word, pos) -> error (concatAll [crashMessage pos, word, " should not call absorbIt in ", (toString state), " state."])
+        | (state, word) -> false
 
-    -- TopVersion if possible the given state to it's top version, crash otherwise.
-    sem topVersion : (State, Pos) -> State
-    sem topVersion =
-        | (state, pos) -> error (concatAll [crashMessage pos, "There is no top version of ", toString state])
+    -- SwitchVersion if possible the given state to it's top version, crash otherwise.
+    sem switchVersion : (State, String) -> State
+    sem switchVersion =
+        | (state, _) -> state
 
     sem build : [String] -> State -> Breaker
     sem build =
@@ -99,8 +102,9 @@ end
 let topBreak = ["let", "recursive", "con", "lang", "sem", "syn", "type", "mexpr", "utest"]
 let fullTopBreak = cons "in" topBreak
 
-let letBreak = ["lang", "mexpr"]
+let letBreak = ["lang", "mexpr", "sem", "syn"]
 let fullLetBreak = cons "in" letBreak
+let fullRecBreak = ["in", "end", "lang", "mexpr", "sem", "syn"]    
     
 lang ProgramBreakerChooser = BreakerChooserInterface
     
@@ -111,86 +115,98 @@ lang ProgramBreakerChooser = BreakerChooserInterface
         | (Program {}, "mexpr", pos) -> build ["lang", "mexpr"] (Mexpr {})
         | (Program {}, "type", pos) -> build topBreak (TopType {})
         | (Program {}, "con", pos) -> build topBreak (TopCon {})
+        | (Program {}, "recursive", pos) -> build ["end"] (TopRec {})
 
     sem continue =
-        | (Program {}, "", pos) -> false
-        | (Program {}, _, pos) -> true
+        | (Program {}, "") -> false
 
     sem absorbIt =
-        | (Program {}, word, pos) -> true
+        | (Program {}, word) -> true
 
 end
 
 
 
-lang MexprTopLetUtestBreakerChooser = BreakerChooserInterface
+lang TopBreakerChooser = BreakerChooserInterface
     
     sem choose =
         | (Mexpr {} | TopLet {} | TopUtest {}, "let", pos) -> build fullLetBreak (Let {})
-        | (Mexpr {} | TopLet {} | TopUtest {}, "recursive", pos) -> build fullLetBreak (Rec {})
+        | (Mexpr {} | TopLet {} | TopUtest {}, "recursive", pos) -> build fullRecBreak (TopRec {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "utest", pos) -> build fullLetBreak (Utest {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "con", pos) -> build fullTopBreak (Con {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "use", pos) -> build ["in"] (Use {})
-    
-    sem continue =
-        | (Mexpr {} | TopLet {} | TopUtest {}, _, pos) -> true
-
-    sem isHard =
-        | (Mexpr {} | TopLet {} | TopUtest {}, _) -> false
-
-    sem absorbIt =
-        | (Mexpr {} | TopLet {} | TopUtest {}, word, pos) -> false
 
 end
 
+lang TopRecBreakerChooser = BreakerChooserInterface
+    
+    sem choose =
+        | (TopRec {}, "let", pos) -> build fullLetBreak (Let {})
+        | (TopRec {}, "recursive", pos) -> build fullRecBreak (Rec {})
+        | (TopRec {}, "utest", pos) -> build fullLetBreak (Utest {})
+        | (TopRec {}, "type", pos) -> build fullTopBreak (Type {})
+        | (TopRec {}, "con", pos) -> build fullTopBreak (Con {})
+        | (TopRec {}, "use", pos) -> build ["in"] (Use {})
+
+    -- in: Downgrade et continuer le parent
+    -- Lang: Downgrade ET finir le parent
+    -- end: Restructurer l'arbre ET finir le parent
+    
+    sem continue =
+        | (TopRec {}, "lang" | "mexpr" | "end") -> false
+
+    sem reStructureTree =
+        | (TopRec {}, "end") -> true
+
+    sem absorbIt =
+        | (TopRec {}, "end") -> true
+
+    sem switchVersion =
+        | (TopRec {}, "in" | "mexpr" | "lang") -> Rec {}
+end
+
+
+    
 lang RecBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Rec {}, "let", pos) -> build fullLetBreak (Let {})
-        | (Rec {}, "recursive", pos) -> build fullLetBreak (Rec {})
+        | (Rec {}, "recursive", pos) -> build fullRecBreak (Rec {})
         | (Rec {}, "utest", pos) -> build fullTopBreak (Utest {})
         | (Rec {}, "type", pos) -> build fullTopBreak (Type {})
         | (Rec {}, "con", pos) -> build fullTopBreak (Con {})
         | (Rec {}, "use", pos) -> build ["in"] (Use {})    
 
     sem continue =
-        | (Rec {}, ("in"), pos) -> true
-        | (Rec {}, _, pos) -> false
-
-    sem isHard =
-        | (Rec {}, _) -> false
+        | (Rec {}, !"in") -> false
     
     sem absorbIt =
-        | (Rec {}, "in", pos) -> true
-        | (Rec {}, word, pos) -> false
-
+        | (Rec {}, "in") -> true
 end
             
 lang LetUtestBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Let {} | Utest {}, "let", pos) -> build fullLetBreak (Let {})
-        | (Let {} | Utest {}, "recursive", pos) -> build fullLetBreak (Rec {})
+        | (Let {} | Utest {}, "recursive", pos) -> build fullRecBreak (TopRec {})
         | (Let {} | Utest {}, "utest", pos) -> build fullTopBreak (Utest {})
         | (Let {} | Utest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Let {} | Utest {}, "con", pos) -> build fullTopBreak (Con {})
         | (Let {} | Utest {}, "use", pos) -> build ["in"] (Use {})    
 
     sem continue =
-        | (Let {} | Utest {}, ("in"), pos) -> true
-        | (Let {} | Utest {}, _, pos) -> false
+        | (Let {} | Utest {}, !"in") -> false
 
-    sem isHard =
-        | (Let {} | Utest {}, _) -> true
+    sem reStructureTree =
+        | (Let {} | Utest {}, !"in") -> true
     
     sem absorbIt =
-        | (Let {} | Utest {}, "in", pos) -> true
-        | (Let {} | Utest {}, word, pos) -> false
+        | (Let {} | Utest {}, "in") -> true
 
-    sem topVersion =
-        | (Utest {}, pos) -> TopUtest {}
-        | (Let {}, pos) -> TopLet {}
+    sem switchVersion =
+        | (Utest {}, !"in") -> TopUtest {}
+        | (Let {}, !"in") -> TopLet {}
 
 end
     
@@ -198,15 +214,6 @@ lang TopTypeConBreakerChooser = BreakerChooserInterface
     
     sem choose =
         | (TopType {} | TopCon {}, "use", pos) -> build ["in"] (Use {})
-
-    sem continue =
-        | (TopType {} | TopCon {}, _, pos) -> true
-
-    sem isHard =
-        | (TopType {} | TopCon {}, _) -> false
-
-    sem absorbIt =
-        | (TopType {} | TopCon {}, word, pos) -> false
 
 end
 
@@ -216,19 +223,17 @@ lang TypeConBreakerChooser = BreakerChooserInterface
         | (Type {} | Con {}, "use", pos) -> build ["in"] (Use {})
 
     sem continue =
-        | (Type {} | Con {}, "in", pos) -> true
-        | (Type {} | Con {}, word, pos) -> false
+        | (Type {} | Con {}, !"in") -> false
 
-    sem isHard =
-        | (Type {} | Con {}, _) -> true
+    sem reStructureTree =
+        | (Type {} | Con {}, !"in") -> true
 
     sem absorbIt =
-        | (Type {} | Con {}, "in", pos) -> true
-        | (Type {} | Con {}, word, pos) -> false
+        | (Type {} | Con {}, "in") -> true
 
-    sem topVersion =
-        | (Type {}, pos) -> TopType {}
-        | (Con {}, pos) -> TopCon {}
+    sem switchVersion =
+        | (Type {}, !"in") -> TopType {}
+        | (Con {}, !"in") -> TopCon {}
 
 end
 
@@ -246,11 +251,7 @@ lang LangBreakerChooser = BreakerChooserInterface
         | (Lang {}, "sem", pos) -> build langBreak (Sem {})
     
     sem absorbIt =
-        | (Lang {}, word, pos) -> true
-
-    sem continue =
-        | (Lang {}, word, pos) -> true
-
+        | (Lang {}, word) -> true
 
 end
 
@@ -258,7 +259,7 @@ lang SemBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Sem {}, "let", pos) -> build ["in"] (Let {})
-        | (Sem {}, "recursive", pos) -> build ["in"] (Rec {})
+        | (Sem {}, "recursive", pos) -> build ["in", "end", "syn", "sem"] (Rec {})
         | (Sem {}, "utest", pos) -> build ["in"] (Utest {})
 
         | (Sem {}, "type", pos) -> build langFullBreakIn (Type {})
@@ -268,17 +269,7 @@ lang SemBreakerChooser = BreakerChooserInterface
         | (Sem {}, "use", pos) -> build ["in"] (Use {})        
 
     sem continue =
-        | (Sem {}, "end", pos) -> false
-        | (Sem {}, _, pos) -> true
-
-    sem isHard =
-        | (Sem {}, _) -> false
-    
-    sem absorbIt =
-        | (Sem {}, word, pos) -> false
-
-    sem topVersion =
-        | (Sem {}, pos) -> Sem {}
+        | (Sem {}, "end") -> false
 
 end
 
@@ -290,18 +281,8 @@ lang SynBreakerChooser = BreakerChooserInterface
         | (Syn {}, "use", pos) -> build ["in"] (Use {})    
 
     sem continue =
-        | (Syn {}, "end", pos) -> false
-        | (Syn {}, _, pos) -> true
-
-    sem isHard =
-        | (Syn {}, _) -> false
+        | (Syn {}, "end") -> false
     
-    sem absorbIt =
-        | (Syn {}, word, pos) -> false
-
-    sem topVersion =
-        | (Syn {}, pos) -> Syn {}
-
 end
 
 lang UseBreakerChooser = BreakerChooserInterface
@@ -309,21 +290,10 @@ lang UseBreakerChooser = BreakerChooserInterface
     sem choose =
         | (Use {}, "use", pos) -> build ["in"] (Use {})
 
-    sem continue =
-        | (Use {}, word, pos) -> true
-
-    sem isHard =
-        | (Use {}, _) -> false
-
     sem absorbIt =
-        | (Use {}, "in", pos) -> true
-        | (Use {}, word, pos) -> false
-
-    sem topVersion : (State, Pos) -> State
-    sem topVersion =
-        | (Use {}, pos) -> Use {}
+        | (Use {}, "in") -> true
 end
 
 
     
-lang BreakerChooser = ProgramBreakerChooser + RecBreakerChooser + MexprTopLetUtestBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end
+lang BreakerChooser = ProgramBreakerChooser + RecBreakerChooser + TopRecBreakerChooser + TopBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end
