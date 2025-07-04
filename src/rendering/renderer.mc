@@ -7,7 +7,7 @@ include "preprocessor.mc"
 include "../extracting/objects.mc"
 include "../util.mc"    
 include "md-renderer.mc"
-include "html-renderer.mc"
+include "./html-rendering/renderer.mc"
 include "./source-code-reconstruction.mc"
 include "../logger.mc"
     
