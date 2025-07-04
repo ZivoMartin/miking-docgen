@@ -1,19 +1,29 @@
 -- # BreakerChooser system: choosing breakers and managing parse state
 --
--- This module defines a set of "BreakerChoosers", one per parsing state.
+-- This module defines a set of `BreakerChoosers`, one per parsing state.
 --
--- The core idea is that parsing is guided by a "state machine":  
--- - The current **state** determines which tokens can appear next  
--- - A "breaker" is a token that closes one or more blocks  
--- - When a token is seen, the BreakerChooser decides:
---     * Does this token start a new block? (choose)
---     * Does parsing continue in this block? (continue)
---     * Is this a hard break? (reStructureTree)
+-- This file defines the automaton of our parser. The idea is that, depending on the current state, when reading an opener, we don't want to choose the same breakers or transition into the same states.
+--
+-- For example, if we are in the Lang {} state, we want `end` to be considered a type breaker.
+-- Whereas if we are in the Program state, it's unnecessary to consider `end` as a type breaker—even though doing so wouldn't affect the parser's validity.
+--
+-- The core idea is that parsing is guided by a state machine:
+-- - The current **state** determines what the parent node is
+-- - A `breaker` is a token that closes one or more blocks
+-- - When a token is seen, the BreakerChooser can decide:
+--     * What are the breakers of this new block? (choose)
+--     * Should parsing continue under the same parent node? (continue)
+--       For instance, if we have `lang sem A = sem B = end`,
+--       the second `sem` will break the first `sem`, but we want to continue parsing under the `lang` parent.
+--       On the other hand, when we see `end`, it will break the second `sem`, and we don't want to continue parsing under the `lang` parent.
 --     * Should this breaker be absorbed? (absorbIt)
---     * What is the top version of this state? (switchVersion)
---
--- Each concrete BreakerChooser implements this logic for one state:  
--- Program, Let, Lang, Type, Sem, Syn, Con, Use, Mexpr, etc.
+--       If we take the previous example, the second `sem` will not absorb its breaker, because it belongs to the parent block.
+--       In contrast, the `Lang {}` block will absorb this `end`. The automaton decides whether a block in a given state is allowed to absorb its breaker.
+--     * Is this a hard break? (reStructureTree)
+--       We decide whether a given break is hard using the automaton. For this, we need the original breaker.
+--       For instance, if a `let` is broken by a `lang` keyword, then we need to restructure the tree by saying that the `let` was actually a `TopLet`.
+--     * What is the alternate version of this state? (switchVersion)
+--       Finally, we need a function to decide, when switching states (e.g., from `Let` to `TopLet`), what the new state should be.
 --
 -- The whole system is composed at the bottom into one `BreakerChooser`.
 
