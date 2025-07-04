@@ -42,11 +42,23 @@ let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
     end
 
 recursive let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWordKinds in lam w.
+
+    recursive let characterReplacer = lam s.
+        switch s
+        case "&" ++ s then concat "&amp;" (characterReplacer s)
+        case "<" ++ s then concat "&lt;" (characterReplacer s)
+        case ">" ++ s then concat "&gt;" (characterReplacer s)    
+        case [x] ++ s then cons x (characterReplacer s)
+        case "" then ""
+        end
+    in
+
     let renderSkiped: [Token] -> String = lam skiped.
         concatAll (map (lam s. wordRenderer ( { word = s, kind = CodeDefault {} } )) skiped) in
+
     switch w
     case { word = Include { content = content, skiped = skiped } } then
-        concatAll [kw "include", renderSkiped skiped, st content]    
+        concatAll [kw "include", renderSkiped skiped, st (characterReplacer content)]    
     case { word = Recursive { skiped = skiped } } then
         concatAll [kw "recursive", renderSkiped skiped, kw "let"]
     case { word = word, kind = kind } then
@@ -61,7 +73,7 @@ recursive let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWord
             case CodeDefault {} then ""
             end       
         end) in
-        let word = lit word in
+        let word = characterReplacer (lit word) in
         match class with "" then word else span word class
     end
 end
