@@ -13,7 +13,7 @@ include "./server.mc"
 mexpr
     logOpt opt;
 
-    switch parse opt.file
+    switch parseFile opt.file
     case Some result then
                 
         let obj = extract result in

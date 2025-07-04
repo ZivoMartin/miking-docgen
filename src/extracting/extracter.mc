@@ -166,7 +166,7 @@ let extract : DocTree -> ObjectTree =
                     { defaultRes with obj = emptyInclude }
                 else
                     let newIncludeSet = hmInsert path () includeSet in
-                    match parse path with Some tree in
+                    match parseFile path with Some tree in
                     extractingLog (concat "Extracting on: " path);
                     match extractRec tree path [] sourceCodeBuilder newIncludeSet isStdlib utestCount with
                         { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree), includeSet = includeSet } in
