@@ -36,13 +36,13 @@ The tool is composed of several cleanly separated modules:
 ## Current features
 
 - Parse complex Miking source files  
-- Handle `use`, `include`, `type`, `con`, `lang`, `sem`, `syn`, `let`, `mexpr`  
 - Extract comments and preserve them  
 - Support project includes and standard library paths  
 - Generate clean Markdown pages  
 - CLI interface  
 - HTML renderer  
 - Local server to browse docs  
+- Source code view from the documentation page
 
 ---
 
