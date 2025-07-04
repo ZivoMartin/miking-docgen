@@ -96,8 +96,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         let link = objLink obj in
         concatAll [
         "<div class=\"ObjectParent\">\n",
-        htmlPre s, "\n",
-        "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a>",
+        htmlPre s, 
+        "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a>", "\n",
         htmlPre obj.doc, code, "</div>"]
 
     sem objGetSpecificDoc =
