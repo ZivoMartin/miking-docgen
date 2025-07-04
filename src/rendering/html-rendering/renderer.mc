@@ -3,31 +3,14 @@
 -- This module implements the **HtmlRenderer**, an instance of `RendererInterface`.
 -- It generates HTML pages from the extracted ObjectTree.
 
-include "../extracting/source-code-word.mc"
-include "renderer-interface.mc"
-include "../extracting/objects.mc"    
-include "./source-code-spliter.mc"
-include "./html-header.mc"
-include "./source-code-reconstruction.mc"
-include "../logger.mc"
-
--- HTML helpers
-let htmlBalise = lam s. lam b. concatAll ["<", b, ">\n", s, "\n</", b, ">"]
-let htmlText = lam s. htmlBalise s "p"
-let htmlPre = lam s. concatAll ["<pre>", s, "</pre>"]
-let htmlCode = lam s. concatAll ["<pre class=code>", s, "</pre>"]
-let htmlStrong = lam s. htmlText (htmlBalise s "strong")
-
-let htmlGetLink = lam l. lam txt. concatAll ["<a href=\"/", l, "\">", txt, "</a>"]
-let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") lng
-
-let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]                
-
-let span = lam content. lam kind. concatAll ["<span class=\"", kind, "\">", content, "</span>"]
-let kw = lam content. span content "kw"
-let var = lam content. span content "var"
-let tp = lam content. span content "tp"
-let st = lam content. span content "string"
+include "../../extracting/source-code-word.mc"
+include "../renderer-interface.mc"
+include "../../extracting/objects.mc"    
+include "../source-code-spliter.mc"
+include "./header.mc"
+include "../source-code-reconstruction.mc"
+include "../../logger.mc"
+include "./utils.mc"
 
 -- Object pretty-printer with syntax coloring 
 let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
@@ -85,7 +68,6 @@ let codeHider : Bool -> CodeHider = lam jumpLine. lam code.
 let getCodeWithoutPreview = lam code.
     concatAll ["<div class=\"inline-container\"><pre class=\"source\">", getCodeWithoutPreview (codeHider true) code, "</pre></div>"]
 
-    
     
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface + ObjectKinds
