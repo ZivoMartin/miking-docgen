@@ -55,17 +55,15 @@ let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentL
 let removeComments = use TokenReader in
     lam sons. filter (lam s. match s with Leaf { token = Comment {} } then false else true) sons
 
-let nthWord = use TokenReader in lam sons. lam n.
-    recursive
-    let nthWord = lam sons. lam n.
-        switch sons
-        case [Leaf { token = (Word { content = word } | Str { content = word }) }] ++ rest then
-            if eqi n 0 then Some { word = word, rest = rest }
-            else nthWord rest (subi n 1)
-        case [_] ++ rest then nthWord rest n
-        case [] then None {}
-        end in
-    nthWord sons n
+recursive let nthWord = use TokenReader in lam sons. lam n.
+    switch sons
+    case [Leaf { token = (Word { content = word } | Str { content = word }) }] ++ rest then
+        if eqi n 0 then Some { word = word, rest = rest }
+        else nthWord rest (subi n 1)
+    case [_] ++ rest then nthWord rest n
+    case [] then None {}
+    end
+end
 
 -- Get first word in sons
 let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] } 
@@ -74,7 +72,7 @@ let getName = lam sons. match nthWord sons 0 with Some r then r else { word = ""
     
 let strExtractType = use TokenReader in lam typedef.
     recursive let strExtractType = lam typedef.
-        switch typedef
+     switch typedef
         case [] | ["in"] then ""
         case [x, "in"] | [x] then x
         case [current] ++ rest then
@@ -85,7 +83,7 @@ let strExtractType = use TokenReader in lam typedef.
             case (current, _) then concatAll [current, " ", res]
             end
         end in strExtractType (reverse typedef)
-    
+
 
 let extractType = use TokenReader in lam typedef.
     strExtractType (foldl
@@ -95,27 +93,27 @@ let extractType = use TokenReader in lam typedef.
          ) [] typedef)
 
     
-let extractParents = lam words.
-    recursive let extractParents = lam words.
-        match nthWord words 0 with Some { word = w, rest = words } then
-            switch w
-            case "end" | "type" | "sem" | "syn" | "con" then []
-            case "=" | "+" then extractParents words
-            case name then cons name (extractParents words)
-            end
-        else [] in extractParents words
+recursive let extractParents = lam words.
+    match nthWord words 0 with Some { word = w, rest = words } then
+        switch w
+        case "end" | "type" | "sem" | "syn" | "con" then []
+        case "=" | "+" then extractParents words
+        case name then cons name (extractParents words)
+        end
+    else [] 
+end
 
 -- Skip all the use name in pattern and returns the stream.
-let skipUseIn : [DocTree] -> [DocTree] = lam sons.
-    recursive let skipUseIn = lam sons.
-        match nthWord sons 0 with
-        Some { word = "use", rest = sons } then
-            match (nthWord sons 1) with Some { rest = sons } then
-                skipUseIn sons
-            else
-                warn "The last word of the stream is a use without any name after.";
-                []
-        else sons in skipUseIn sons
+recursive let skipUseIn : [DocTree] -> [DocTree] = lam sons.
+    match nthWord sons 0 with
+    Some { word = "use", rest = sons } then
+        match (nthWord sons 1) with Some { rest = sons } then
+            skipUseIn sons
+        else
+            warn "The last word of the stream is a use without any name after.";
+            []
+    else sons
+end
 
 -- Takes a stream and returns the list of variant.
 -- If the input is :
@@ -138,23 +136,23 @@ let extractVariants : [DocTree] -> [String] = lam stream.
     in extractVariants stream (None {})
 
 -- Extract all the arguments name, returns empty list if no argument.
-let extractParams = lam sons.
-    recursive let extractParams = lam sons.
-        switch nthWord sons 0 
-        case Some { word = "lam", rest = rest } then
-            let res = switch getName rest
-            case { word = ".", rest = rest} then { word = "_", rest = rest }
-            case { word = word, rest = rest} then
-                recursive let goToPoint = lam sons.
-                    switch nthWord sons 0
-                    case Some { rest = rest, word = "." } then rest
-                    case Some { rest = rest } then goToPoint rest
-                    case None {} then
-                        warn "While extracting the let arguments, we detected a pointless lamda function declaration.";
-                        []
-                    end in
-                { word = word, rest = goToPoint rest }
-            end in
-            cons res.word (extractParams res.rest)
-        case _ then []
-        end in extractParams sons
+recursive let extractParams = lam sons.
+    switch nthWord sons 0 
+    case Some { word = "lam", rest = rest } then
+        let res = switch getName rest
+        case { word = ".", rest = rest} then { word = "_", rest = rest }
+        case { word = word, rest = rest} then
+            recursive let goToPoint = lam sons.
+                switch nthWord sons 0
+                case Some { rest = rest, word = "." } then rest
+                case Some { rest = rest } then goToPoint rest
+                case None {} then
+                    warn "While extracting the let arguments, we detected a pointless lamda function declaration.";
+                    []
+                end in
+            { word = word, rest = goToPoint rest }
+        end in
+        cons res.word (extractParams res.rest)
+    case _ then []
+    end
+end
