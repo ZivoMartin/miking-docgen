@@ -30,7 +30,7 @@ include "hashmap.mc"
 include "ext/file-ext.mc"
     
 -- # The parse function
--- - Takes in input a String representing a Miking program.
+-- - Takes in input a path to a Miking file
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
 let parse : (String -> Option DocTree) = use TokenReader in use BreakerChooser in lam fileName.

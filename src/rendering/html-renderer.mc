@@ -23,13 +23,14 @@ let htmlGetLangLink = lam lng. htmlGetLink (concat (getLangLink lng) ".lang") ln
 
 let htmlDoc = lam doc. concatAll ["<pre class=md>", doc, "</pre>"]                
 
+let span = lam content. lam kind. concatAll ["<span class=\"", kind, "\">", content, "</span>"]
+let kw = lam content. span content "kw"
+let var = lam content. span content "var"
+let tp = lam content. span content "tp"
+let st = lam content. span content "string"
+
 -- Object pretty-printer with syntax coloring 
 let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
-    let span = lam content. lam kind. concatAll ["<span class=\"", kind, "\">", content, "</span>"] in
-    let kw = lam content. span content "kw" in
-    let var = lam content. span content "var" in
-    let tp = lam content. span content "tp" in
-
     switch obj.kind
     case ObjLet { rec = rec, args = args } then concatAll [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " ", strJoin " " (map var args)]
     case ObjType { t = t } then concatAll [kw "type", " ", var obj.name, match t with Some t then concat " : " (tp t) else ""]
@@ -40,10 +41,14 @@ let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
     case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
     end
 
-let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWordKinds in lam w.
+recursive let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWordKinds in lam w.
+    let renderSkiped: [Token] -> String = lam skiped.
+        concatAll (map (lam s. wordRenderer ( { word = s, kind = CodeDefault {} } )) skiped) in
     switch w
-    case { word = Include { content = content } } then
-        concatAll ["<span class=\"kw\">include</span> <span class=\"string\">\"", content, "\"</span>"]
+    case { word = Include { content = content, skiped = skiped } } then
+        concatAll [kw "include", renderSkiped skiped, st content]    
+    case { word = Recursive { skiped = skiped } } then
+        concatAll [kw "recursive", renderSkiped skiped, kw "let"]
     case { word = word, kind = kind } then
         let class = (switch word
         case Str {} then "string"
@@ -57,9 +62,9 @@ let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWordKinds in l
             end       
         end) in
         let word = lit word in
-        match class with "" then word else
-        concatAll ["<span class=\"", class, "\">", word, "</span>"]
+        match class with "" then word else span word class
     end
+end
 
 let codeHider : Bool -> CodeHider = lam jumpLine. lam code.
     let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in

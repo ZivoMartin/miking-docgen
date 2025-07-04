@@ -274,21 +274,24 @@ lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + WeakCommentTo
 
 lang CommAndSepSkiper = SimpleWordTokenReader
     
-    sem skip : String -> { skiped: String, stream: String, newToken: Token }
+    sem skip : String -> String -> { skiped: [Token], stream: String, newToken: Token }
     sem skip =
-    | str ->
+    | str -> lam first.
         let pos = { x = 0, y = 0 } in
+        let firstSkiped = match first with "" then [] else [Separator { content = first }] in
         switch next str pos 
-            case { token = (Separator {} | Comment {} | WeakComment {}) & s, stream = stream } then
-            let res = skip stream in { res with skiped = concat (lit s) res.skiped }
-            case { token = token, stream = stream } then { stream = stream, skiped = "", newToken = token }
+            case { token = (Separator {} | Comment {} | WeakComment {}) & token, stream = stream } then
+                let res = skip stream "" in
+                let skiped = concat firstSkiped (cons token res.skiped) in
+                { res with skiped = skiped }
+            case { token = token, stream = stream } then { stream = stream, skiped = firstSkiped, newToken = token }
             end
 end
     
 -- Reader for include directives ( include "file" )
 lang IncludeTokenReader = CommAndSepSkiper
     syn Token =
-        | Include { content: String, lit: String }
+        | Include { content: String, lit: String, skiped: [Token] }
 
     sem lit =
         | Include { content = content, lit = lit } -> lit
@@ -298,8 +301,8 @@ lang IncludeTokenReader = CommAndSepSkiper
 
     sem includeNext =
         | str -> lam pos. lam firstSep.
-            match skip str with { newToken = Str { content = str }, stream = stream, skiped = skiped } then
-                let token = Include { content = subsequence str 1 (subi (length str) 2), lit = concatAll ["include", firstSep, skiped, str] } in
+            match skip str firstSep with { newToken = Str { content = str }, stream = stream, skiped = skiped } then
+                let token = Include { content = subsequence str 1 (subi (length str) 2), lit = concatAll ["include", concatAll (map lit skiped), str], skiped = skiped } in
                 buildResult token pos stream
             else
                 parsingWarn "During lexing, was waiting for an Str after `include `.";
@@ -309,14 +312,16 @@ lang IncludeTokenReader = CommAndSepSkiper
         | "include " ++ str -> lam pos. includeNext str pos " "
         | "include\n" ++ str -> lam pos. includeNext str pos "\n"
         | "include\t" ++ str -> lam pos. includeNext str pos "\t"
-        | "include\"" ++ str -> lam pos. includeNext (cons '\"' str) pos ""    
+        | "include\"" ++ str -> lam pos. includeNext (cons '\"' str) pos ""
+        | "include--" ++ str -> lam pos. includeNext (cons '\"' str) pos ""
+        | "include/-" ++ str -> lam pos. includeNext (cons '\"' str) pos ""            
 end
 
 -- Specifically reads `recursive let` sequence of word
 -- When `recursive` and `let` are spearated by any separator
 lang RecursiveTokenReader = CommAndSepSkiper
       syn Token =
-      | Recursive { lit: String }
+      | Recursive { lit: String, skiped: [Token] }
 
     sem lit =
         | Recursive { lit = lit } -> lit
@@ -330,8 +335,8 @@ lang RecursiveTokenReader = CommAndSepSkiper
 
     sem recNext =
     | str -> lam pos. lam firstSep.
-        match skip str with { newToken = Word { content = "let" }, stream = stream, skiped = skiped } then
-            let token = Recursive { lit = concatAll ["recursive", firstSep, skiped, "let"] } in
+        match skip str firstSep with { newToken = Word { content = "let" }, stream = stream, skiped = skiped } then
+            let token = Recursive { lit = concatAll ["recursive", concatAll (map lit skiped), "let"], skiped = skiped } in
             buildResult token pos stream
         else
             parsingWarn "During lexing, was waiting for a let word after `recursive`.";
@@ -340,7 +345,9 @@ lang RecursiveTokenReader = CommAndSepSkiper
     sem next =
         | "recursive " ++ str -> lam pos. recNext str pos " "
         | "recursive\n" ++ str -> lam pos. recNext str pos "\n"
-        | "recursive\t" ++ str -> lam pos. recNext str pos "\t"    
+        | "recursive\t" ++ str -> lam pos. recNext str pos "\t"
+        | "recursive--" ++ str -> lam pos. recNext str pos ""
+        | "recursive-/" ++ str -> lam pos. recNext str pos ""            
 end
 
 
@@ -384,13 +391,13 @@ utest (next "->" pos0).token with Word { content = "->" } in
 utest (next "" pos0).token with Eof {} in
 
 -- Include tests
-utest (next "include \"file.mc\"" pos0).token with Include { lit = "include \"file.mc\"", content = "file.mc" } in
-utest (next "include\t\"lib.miking\"" pos0).token with Include { lit = "include\t\"lib.miking\"", content = "lib.miking" } in
-utest (next "include\n\"abc\"" pos0).token with Include { lit = "include\n\"abc\"", content = "abc" } in
+utest (next "include \"file.mc\"" pos0).token with Include { lit = "include \"file.mc\"", content = "file.mc", skiped = [Separator { content = " "}] } in
+utest (next "include\t\"lib.miking\"" pos0).token with Include { lit = "include\t\"lib.miking\"", content = "lib.miking", skiped = [Separator { content = "\t"}] } in
+utest (next "include\n\"abc\"" pos0).token with Include { lit = "include\n\"abc\"", content = "abc", skiped = [Separator { content = "\n"}] } in
 
 -- Recursive tests
-utest (next "recursive let" pos0).token with Recursive { lit = "recursive let" } in
-utest (next "recursive \n\t let" pos0).token with Recursive { lit = "recursive \n\t let" } in
+utest (next "recursive /- hello -/ let" pos0).token with Recursive { lit = "recursive /- hello -/ let", skiped = [Separator { content = " "}, WeakComment { content = " hello ", lit = "/- hello -/" }, Separator { content = " " }] } in
+utest (next "recursive \n\t let" pos0).token with Recursive { lit = "recursive \n\t let", skiped = [Separator { content = " " }, Separator { content = "\n\t "}] } in
 
 -- Complex mixed test
 utest (next "/- a comment -/ include \"x.mc\"" pos0).token with WeakComment { lit = "/- a comment -/", content = " a comment " } in
@@ -428,7 +435,7 @@ utest (next "abc;" pos0).token with Word { content = "abc" } in
 utest (next "abc;" pos0).pos with { x = 3, y = 0 } in
 
 -- Include directive with newline before quote
-utest (next "include\n\"x\"" pos0).token with Include { lit = "include\n\"x\"", content = "x" } in
+utest (next "include\n\"x\"" pos0).token with Include { lit = "include\n\"x\"", content = "x", skiped = [ Separator { content = "\n" } ] } in
 utest (next "include\n\"x\"" pos0).pos with { x = 3, y = 1 } in
 
 -- Recursive let with newline and tab

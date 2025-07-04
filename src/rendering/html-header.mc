@@ -98,7 +98,7 @@ let getHeader = lam title.
     }
         
     .inline-container {
-        display: flex;
+        display: block;
     }
     
     nav a {
