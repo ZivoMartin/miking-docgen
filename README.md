@@ -46,7 +46,7 @@ The tool is composed of several cleanly separated modules:
 
 ---
 
-## 🚀 Usage
+## Usage
 
 ```bash
 make
