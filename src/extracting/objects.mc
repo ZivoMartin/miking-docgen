@@ -55,8 +55,7 @@ let toTruncate = addi 1 (length stdlibLoc)
 -- Get display title for an object
 let objTitle : Object -> String = use ObjectKinds in lam obj.
     switch obj
-    case { namespace = namespace, kind = ObjProgram { isStdlib = true } } then
-        strTruncate namespace toTruncate
+    case { namespace = namespace, kind = ObjProgram { isStdlib = true } } then strTruncate namespace toTruncate
     case { kind = ObjInclude { pathInFile = pathInFile } } then pathInFile
     case { kind = ObjUtest {} } then "utest"
     case _ then obj.name
