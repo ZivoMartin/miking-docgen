@@ -8,13 +8,17 @@ include "string.mc"
 include "hashmap.mc"
 include "sys.mc"
 
--- Print a line with newline
-let printLn: String -> () = lam word. print word; print "\n"; flushStdout () 
-        
--- Takes an array of String and concatenates them into one single String
+-- Print a line followed by a newline to stdout.
+let printLn: String -> () = lam word. print word; print "\n"; flushStdout ()
+
+-- Concatenates all strings in an array into a single string.
+-- Example: concatAll ["a", "b", "c"] => "abc"
 let concatAll = lam arr. strJoin "" arr
 
--- Check if an array of strings contains lword
+utest concatAll ["foo", "bar", "baz"] with "foobarbaz"
+utest concatAll [] with ""
+
+-- Checks if a given string `lword` is present in the array of strings `arr`.
 recursive let contains = lam arr. lam lword.
     match arr with [] then
         false
@@ -22,29 +26,45 @@ recursive let contains = lam arr. lam lword.
         or (eqString (head arr) lword) (contains (tail arr) lword)
 end
 
--- Check if string s contains character c
+utest contains ["a", "b", "c"] "b" with true
+utest contains ["a", "b", "c"] "d" with false
+utest contains [] "x" with false
+
+-- Returns true if character `c` is found in string `s`.
 let strContains = lam s. lam c. match find (lam x. eqc c x) s with Some _ then true else false
 
--- Repeat string s, n times (returns an array)
+utest strContains "hello" 'e' with true
+utest strContains "hello" 'z' with false
 
+-- Repeats the string `s`, `n` times, and returns the result as a list.
+-- Example: repeat "a" 3 => ["a", "a", "a"]
 recursive let repeat = lam s. lam n.
     if eqi n 0 then []
     else cons s (repeat s (subi n 1))
 end
 
--- Change the extension of a filename
+utest concatAll (repeat "x" 5) with "xxxxx"
+utest repeat "a" 0 with []
+
+-- Changes the extension of a file.
+-- If the file has an extension, it's replaced; if not, the extension is added.
+-- Example: changeExt "test.txt" "md" => "test.md"
 let changeExt : (String -> String -> String) = lam fileName. lam ext.
     match findiLast (eqc '.') fileName with Some i then
         concat (subsequence fileName 0 (addi 1 i)) ext
     else
         concat fileName (cons '.' ext)
 
--- Flip arguments of a function
+utest changeExt "file.txt" "md" with "file.md"
+utest changeExt "noext" "md" with "noext.md"
+
+-- Reverses the order of arguments for a binary function.
+-- Example: flip (lam a. lam b. a - b) 3 10 => 7
 let flip : all a. all b. all c. (a -> b -> c) -> (b -> a -> c) =
     lam f. lam b. lam a. f a b
 
--- Truncate the first n characters from a string
-
+-- Truncates the first `n` characters of a string.
+-- If n exceeds the length, returns the remaining string.
 recursive let strTruncate = lam str. lam n.
     match str with [_] ++ s then
         if eqi n 0 then str
@@ -52,6 +72,11 @@ recursive let strTruncate = lam str. lam n.
     else str
 end
 
+utest strTruncate "abcdef" 2 with "cdef"
+utest strTruncate "hi" 0 with "hi"
+
+-- Splits an array `arr` into { left, right } at the first element matching predicate `f`.
+-- The matched element goes in `right`.
 let splitOnL : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. lam arr.
     recursive let work = lam arr.
         switch arr
@@ -64,7 +89,13 @@ let splitOnL : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. l
                 { res with left = cons x res.left }
         end in
     work arr
+
+utest splitOnL (lam x. eqi x 3) [1,2,3,4,5] with { left = [1,2,3], right = [4,5] }
+utest splitOnL (lam x. eqi x 9) [1,2,3] with { left = [1,2,3], right = [] }
+utest splitOnL (lam x. true) [1,2,3] with { left = [1], right = [2,3] }
     
+-- Splits an array `arr` into { left, right } just before the first element matching predicate `f`.
+-- The matched element stays in `right`.
 let splitOnR : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. lam arr.
     recursive let work = lam arr.
         switch arr
@@ -78,8 +109,9 @@ let splitOnR : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. l
         end in
     work arr
 
-    
--- HashMap helpers for String-based maps
+utest splitOnR (lam x. eqi x 3) [1,2,3,4,5] with { left = [1,2], right = [3,4,5] }
+utest splitOnR (lam x. eqi x 9) [1,2,3] with { left = [1,2,3], right = [] }
+utest splitOnR (lam x. true) [1,2,3] with { left = [], right = [1,2,3] }
 
 let hmTraits = hashmapStrTraits
 let hmInsert = lam x. hashmapInsert hmTraits x

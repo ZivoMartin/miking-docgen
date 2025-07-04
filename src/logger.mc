@@ -1,3 +1,8 @@
+-- # Logger Module
+--
+-- This module defines a small logging framework with support for namespaced logging
+-- (e.g., `Parsing`, `Extracting`, `Rendering`) and conditional output based on debug flags.
+
 include "util.mc"
 include "options.mc"
 include "format.mc"
@@ -7,7 +12,7 @@ let message : String -> String -> String -> () = lam kind. lam namespace. lam me
 -- Displays a warning message
 let warn : String -> String -> () = message "WARNING"
 
--- Displays a warning message
+-- Displays a info message
 let log : String -> String -> () = message "INFO"
 
 let parsingLog : String -> () =  lam m.

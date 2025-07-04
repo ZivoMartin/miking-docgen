@@ -1,14 +1,5 @@
 -- # Token Readers Library
 -- 
--- This module defines several `TokenReader` implementations, each reading a different kind of token:
--- - Weak comments ( /* ... */ style )
--- - Line comments ( -- ... )
--- - Strings ( "..." )
--- - Words (arbitrary sequences of characters)
--- - Separators (punctuation, spaces, etc.)
--- - End-of-file markers
--- - Include directives
---
 -- All token readers implement a common interface: `TokenReaderInterface`.
 -- The module ends with the composition of all these token readers into one combined `TokenReader`.
 
@@ -25,6 +16,7 @@ lang TokenReaderInterface
     -- Abstract token type to be implemented by concrete readers
     syn Token =
 
+    -- Generate the new position in the stream from the litteral of the given token
     sem actualisePos: Pos -> Token -> Pos
     sem actualisePos =
     | pos -> lam token.
@@ -41,6 +33,7 @@ lang TokenReaderInterface
     -- Returns the original literal text of the token
     sem lit : Token -> String
 
+    -- Is used by the parser to get a representation of the token.
     sem content : Token -> String
     sem content =
     | t -> lit t
@@ -49,6 +42,7 @@ lang TokenReaderInterface
     -- Produces the next token from the input stream
     sem next : String -> Pos -> NextResult
 
+    -- Utility function to build a NextResult
     sem buildResult : Token -> Pos -> String -> NextResult 
     sem buildResult token pos = | stream ->  { token = token, pos = actualisePos pos token, stream = stream }
     
@@ -257,7 +251,7 @@ lang EofTokenReader = TokenReaderInterface
             }
 end
 
-
+-- This token is not readable but is at the root of a DocTree, the content is the name of the file.
 lang ProgramTokenReader = TokenReaderInterface
     syn Token =
         | ProgramToken { content: String }
@@ -268,10 +262,11 @@ lang ProgramTokenReader = TokenReaderInterface
     sem tokenToString =
         | ProgramToken {} -> "Program"
 end
-
+    
+-- This lexer only support fundamental words.
 lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + ProgramTokenReader end
 
-
+-- Contains skip utility function allowing to jump all the comments and separator until the next important token
 lang CommAndSepSkiper = SimpleWordTokenReader
     
     sem skip : String -> String -> { skiped: [Token], stream: String, newToken: Token }
@@ -318,7 +313,7 @@ lang IncludeTokenReader = CommAndSepSkiper
 end
 
 -- Specifically reads `recursive let` sequence of word
--- When `recursive` and `let` are spearated by any separator
+-- When `recursive` and `let` are spearated by any separator / comments
 lang RecursiveTokenReader = CommAndSepSkiper
       syn Token =
       | Recursive { lit: String, skiped: [Token] }

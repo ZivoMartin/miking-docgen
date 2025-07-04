@@ -1,7 +1,8 @@
--- ## Rendering Module
--- This module provides the core logic to render Markdown documentation from an `ObjectTree`.
--- It goes through each nodes and generates all the pages
--- following an ordered display of definitions (use/include, types, constructors, language definitions, etc.).
+-- # Global Rendering Pipeline
+--
+-- This module defines the entry point for rendering an object tree into formatted output.
+-- It traverses the parsed object structure, organizes its children,
+-- reconstructs source code, and writes formatted files to disk.
 
 include "preprocessor.mc"
 include "../extracting/objects.mc"
@@ -10,26 +11,28 @@ include "md-renderer.mc"
 include "./html-rendering/renderer.mc"
 include "./source-code-reconstruction.mc"
 include "../logger.mc"
-    
+
+-- Combines the Markdown and HTML renderers via language composition.    
 lang Renderer = MarkdownRenderer + HtmlRenderer end
-    
--- ## Render Function
+
+
+-- ## render
 --
--- The main function that generates a Markdown file from an `ObjectTree`.
--- Takes in input the objects and returns unit.  
+-- Entrypoint to rendering. This function traverses the entire `ObjectTree` and writes
+-- structured documentation for each object node.
+--
+-- ### Parameters:
+-- - `fmt`: The rendering format (`Html`, `Markdown`, etc.)
+-- - `obj`: The root `ObjectTree` to render
 --
 -- ### Behavior:
--- - Opens the Markdown output file (under `doc-gen-output/` directory)
--- - Writes the global title and top documentation
--- - Recursively go through each son to generate all the pages
--- - Sorts and displays the sub-objects in the following order:
---   - `use` / `include`
---   - `type`
---   - `con`
---   - `lang`
---   - `syn`
---   - `let` / `sem`
---   - `mexpr`
+-- - Preprocesses the object tree
+-- - Defines a recursive `render` function that:
+--     - Filters children
+--     - Recursively renders them
+--     - Organizes them by type
+--     - Writes formatted output to file
+--     - Returns `RenderingData` for each node    
 let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
     preprocess obj;
     renderingLog "Beggining of rendering stage.";

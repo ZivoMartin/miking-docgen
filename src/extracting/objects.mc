@@ -46,7 +46,7 @@ end
 -- Object structure
 type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode }
 
-
+-- The position of where the program started
 let basePosition : String = concat (sysGetCwd ()) "/"
 
 -- Prefix length to truncate stdlib paths
@@ -105,4 +105,5 @@ type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 con ObjectLeaf : String -> ObjectTree
 
+-- Extract all the `ObjectNode`s in an array of ObjectTree
 let objectSonsFilterNodes : [ObjectTree] -> [ObjectTree] = lam sons. filter (lam s. match s with ObjectNode {} then true else false) sons

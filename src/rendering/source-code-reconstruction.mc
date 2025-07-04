@@ -1,10 +1,39 @@
+-- # Source code reconstruction
+--
+-- This module provides a function to generate `RenderingData` from:
+-- - A source `Object`
+-- - The source code as a list of optional `SourceCodeWord`s
+-- - A list of precomputed child `RenderingData`
+-- - A word-to-string renderer
+-- - A code hider (used to preview/hide code blocks)
+--
+-- It transforms a linearly structured source code into structured, displayable text by:
+-- - Grouping source words and injected child blocks into a tree
+-- - Splitting the tree at semantically meaningful points (`=`, `:`)
+-- - Formatting both sides into renderable strings
+
 include "./renderer-interface.mc"
 include "./source-code-spliter.mc"
 include "../extracting/source-code-builder.mc"
 include "../extracting/source-code-word.mc"    
 include "./rendering-types.mc"
 
-    
+
+-- ## getRenderingData
+--
+-- Converts one object and its associated parsed source into a single `RenderingData` node.
+-- It stitches together `SourceCodeWord`s and child `RenderingData` into a tree,
+-- splits the tree, formats both parts, and returns a structured rendering object.
+--
+-- ### Parameters:
+-- - `obj`: the current AST object
+-- - `code`: list of `Option SourceCodeWord` (`Some` for tokens, `None` for block markers)
+-- - `sons`: rendering results of the object’s children
+-- - `wordRenderer`: function to convert a `SourceCodeWord` to string
+-- - `codeHider`: renderer for child blocks
+--
+-- ### Returns:
+-- - A `RenderingData` record with `left`, `right`, and `trimmed` segments as strings    
 let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -> CodeHider ->RenderingData  = lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
     type Arg = {
         tree: [TreeSourceCode],

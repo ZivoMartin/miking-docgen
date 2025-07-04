@@ -1,3 +1,7 @@
+-- # Path and Syntax Utilities
+-- This module provides a collection of utility functions used for: path manipulation and syntax tree processing, many functions operate on `DocTree` nodes
+-- These functions are essentialy used in the extracting.mc file.
+
 include "../parsing/doc-tree.mc"
 include "../parsing/token-readers.mc"
 include "../util.mc"
@@ -6,13 +10,27 @@ include "stdlib.mc"
 include "sys.mc"
 include "../logger.mc"
 
+
+-- Concatenates a namespace and a name with a slash between them.
+-- Example: getNamespace "foo/bar" "baz" returns "foo/bar/baz"
 let getNamespace = lam namespace. lam name.
     concatAll [namespace, "/", name]
 
+utest getNamespace "foo" "bar" with "foo/bar"
+utest getNamespace "" "bar" with "/bar"
+utest getNamespace "ns" "" with "ns/"
+
+-- Extracts the last segment of a namespace (split by '/').
+-- Example: extractLastNamespaceElement "foo/bar/baz" returns "baz"
 let extractLastNamespaceElement = lam namespace.
     match strSplit "/" namespace with ([_] ++ _) & namespace then head (reverse namespace) else ""
 
+utest extractLastNamespaceElement "a/b/c" with "c"
+utest extractLastNamespaceElement "onlyone" with "onlyone"
+utest extractLastNamespaceElement "" with ""
 
+-- Normalizes a file path by resolving '.', '..', and redundant slashes.
+-- Supports both absolute and relative paths.
 let normalizePath = lam path.
     let isAbsolute = match path with "/" ++ s then true else false in
     let components = strSplit "/" path in
@@ -20,7 +38,7 @@ let normalizePath = lam path.
         switch comps
         case [] then stack
         case ["."] ++ rest then process rest stack
-        case [""] ++ rest then process rest stack  -- skip multiple slashes
+        case [""] ++ rest then process rest stack
         case [".."] ++ rest then
             (switch stack
              case ([] | [".."] ++ _) then process rest (cons ".." stack)
@@ -38,23 +56,24 @@ utest normalizePath "../../repo2" with "../../repo2"
 utest normalizePath "./a/./b/../c" with "a/c"
 utest normalizePath "/a/b/../../c" with "/c"
 
-        
--- Takes in input the current location on the file system and a target path.
--- If the target is absolute, the function returns the target
--- Otherwise, will normalize the path, if the file exists it returns the fusion of current location and target
--- If the file doesnt exists, returns the target with the isStdlib as true.
+-- Resolves a path based on current location and target.
+-- If the target is absolute, it is returned normalized.
+-- If the file exists at the concatenated location, it's returned.
+-- Otherwise, the target is assumed to be from the standard library.
 let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentLoc. lam target.
     let path = if strStartsWith "/" target then target
                else concatAll [currentLoc, "/", target] in
     if sysFileExists path then
         { path = normalizePath path, isStdlib = false }
     else
-        { path = concatAll [stdlibLoc, "/", target], isStdlib = true }        
+        { path = concatAll [stdlibLoc, "/", target], isStdlib = true }
 
-        
+-- Removes all comment tokens from a list of syntax tree nodes.
 let removeComments = use TokenReader in
     lam sons. filter (lam s. match s with Leaf { token = Comment {} } then false else true) sons
 
+-- Returns the nth word in the list of syntax tree nodes.
+-- Ignores non-word tokens.
 recursive let nthWord = use TokenReader in lam sons. lam n.
     switch sons
     case [Leaf { token = (Word { content = word } | Str { content = word }) }] ++ rest then
@@ -65,11 +84,10 @@ recursive let nthWord = use TokenReader in lam sons. lam n.
     end
 end
 
--- Get first word in sons
-let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] } 
+-- Returns the first word in the syntax tree nodes or empty if none.
+let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] }
 
-
-    
+-- Extracts the type signature from a reversed list of string tokens.
 let strExtractType = use TokenReader in lam typedef.
     recursive let strExtractType = lam typedef.
      switch typedef
@@ -84,7 +102,7 @@ let strExtractType = use TokenReader in lam typedef.
             end
         end in strExtractType (reverse typedef)
 
-
+-- Extracts the type signature from a list of syntax tree nodes.
 let extractType = use TokenReader in lam typedef.
     strExtractType (foldl
         (lam a. lam w.
@@ -92,7 +110,8 @@ let extractType = use TokenReader in lam typedef.
             else a
          ) [] typedef)
 
-    
+-- Extracts parent names from a list of syntax tree nodes.
+-- Stops when encountering 'end', 'type', or a few other keywords.
 recursive let extractParents = lam words.
     match nthWord words 0 with Some { word = w, rest = words } then
         switch w
@@ -103,7 +122,7 @@ recursive let extractParents = lam words.
     else [] 
 end
 
--- Skip all the use name in pattern and returns the stream.
+-- Skips any 'use' declarations in the syntax tree and returns the remaining nodes.
 recursive let skipUseIn : [DocTree] -> [DocTree] = lam sons.
     match nthWord sons 0 with
     Some { word = "use", rest = sons } then
@@ -115,12 +134,8 @@ recursive let skipUseIn : [DocTree] -> [DocTree] = lam sons.
     else sons
 end
 
--- Takes a stream and returns the list of variant.
--- If the input is :
---  | x .... | y ... | z
--- The function will return [x, y, z].
--- Here ... involves anything, and the space between | and variant name can be any separator / comment
--- The input stream should be valid and have as first word '|', empty list is returned otherwise
+-- Extracts variant names from a stream of syntax tree nodes starting with '|'.
+-- Returns a list of the variants as strings.
 let extractVariants : [DocTree] -> [String] = lam stream.
     recursive let extractVariants : [DocTree] -> Option [String] -> [String] = lam stream. lam typeAcc.
         switch (nthWord stream 0, typeAcc)
@@ -135,7 +150,8 @@ let extractVariants : [DocTree] -> [String] = lam stream.
         
     in extractVariants stream (None {})
 
--- Extract all the arguments name, returns empty list if no argument.
+-- Extracts argument names from a lambda expression represented as syntax tree nodes.
+-- Returns a list of parameter names.
 recursive let extractParams = lam sons.
     switch nthWord sons 0 
     case Some { word = "lam", rest = rest } then
