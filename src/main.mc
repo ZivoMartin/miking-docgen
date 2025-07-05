@@ -9,10 +9,20 @@ include "./extracting/extracter.mc"
 include "./rendering/renderer.mc"
 include "./options.mc"
 include "./server.mc"
+include "./main/compile.mc"
 
 mexpr
     logOpt opt;
 
+     let ast = parseParseMCoreFile {
+        keepUtests = false,
+        pruneExternalUtests = true,
+        pruneExternalUtestsWarning = true,
+        findExternalsExclude = true,
+        eliminateDeadCode = true,
+        keywords = mexprExtendedKeywords
+      } opt.file  in 
+    
     switch parseFile opt.file
     case Some result then
                 
