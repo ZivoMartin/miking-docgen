@@ -9,21 +9,21 @@ include "./extracting/extracter.mc"
 include "./rendering/renderer.mc"
 include "./options.mc"
 include "./server.mc"
-include "./type-tree/generate-ttree.mc"
+-- include "./type-tree/generate-ttree.mc"
 
 mexpr
     
-    generateTypeTree "src/main.mc"
+--    generateTypeTree "src/main.mc";
 
-    -- logOpt opt;
+    logOpt opt;
     
-    -- switch parseFile opt.file
-    -- case Some result then
+    switch parseFile opt.file
+    case Some result then
                 
-    --     let obj = extract result in
-    --     render opt.fmt obj;
-    --     match obj with ObjectNode { obj = obj } then
-    --         if opt.noOpen then () else startServer obj opt.fmt
-    --     else error "Extraction failed: `extract` should always return a tree with a Program root."
-    -- case _ then usage ()
-    -- end
+        let obj = extract result in
+        render opt.fmt obj;
+        match obj with ObjectNode { obj = obj } then
+            if opt.noOpen then () else startServer obj opt.fmt
+        else error "Extraction failed: `extract` should always return a tree with a Program root."
+    case _ then usage ()
+    end

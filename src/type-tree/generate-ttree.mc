@@ -85,4 +85,11 @@ let generateTypeTree = use PMExprDemote in use BootParser in lam file.
     let ast = makeKeywords ast in
     let ast = demoteParallel ast in
     let ast = symbolize ast in
+    let ast =
+      removeMetaVarExpr
+        (typeCheckExpr
+           {typcheckEnvDefault with
+            disableConstructorTypes = true}
+           ast)
+    in
     displayAst ast
