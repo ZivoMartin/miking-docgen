@@ -10,13 +10,14 @@
 
 include "./breaker-choosers.mc"
 include "../logger.mc"
+include "./types-stream.mc"
 
 -- Main DocTree types, will contains Leafs and Nodes
 type DocTree
 -- A single token with formatting state
 con Leaf : use TokenReader in use BreakerChooser in { token: Token, state: State } -> DocTree
 -- A node with children, token and state
-con Node : use TokenReader in use BreakerChooser in { sons: [DocTree], token: Token, state: State} -> DocTree
+con Node : use TokenReader in use BreakerChooser in use TypeStream in { sons: [DocTree], ty: Option Type, token: Token, state: State} -> DocTree
 -- A node representing an include, contains the DocTree of the file.
 con IncludeNode : use TokenReader in use BreakerChooser in { token: Token, tree: Option DocTree, state: State, path : String, isStdlib : Bool } -> DocTree
 

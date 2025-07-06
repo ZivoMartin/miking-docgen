@@ -9,10 +9,8 @@ include "./extracting/extracter.mc"
 include "./rendering/renderer.mc"
 include "./options.mc"
 include "./server.mc"
--- include "./type-tree/generate-ttree.mc"
 
 mexpr
-    --    generateTypeTree "src/main.mc";
     logOpt opt;
     let tree = parseFile opt.file in
     let obj = extract tree in
