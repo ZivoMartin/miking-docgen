@@ -12,18 +12,12 @@ include "./server.mc"
 -- include "./type-tree/generate-ttree.mc"
 
 mexpr
-    
---    generateTypeTree "src/main.mc";
-
+    --    generateTypeTree "src/main.mc";
     logOpt opt;
-    
-    switch parseFile opt.file
-    case Some result then
-                
-        let obj = extract result in
-        render opt.fmt obj;
-        match obj with ObjectNode { obj = obj } then
-            if opt.noOpen then () else startServer obj opt.fmt
-        else error "Extraction failed: `extract` should always return a tree with a Program root."
-    case _ then usage ()
-    end
+    let tree = parseFile opt.file in
+    let obj = extract tree in
+    render opt.fmt obj;
+    match obj with ObjectNode { obj = obj } then
+        if opt.noOpen then () else startServer obj opt.fmt
+    else error "Extraction failed: `extract` should always return a tree with a Program root."
+

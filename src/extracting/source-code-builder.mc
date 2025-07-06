@@ -35,7 +35,7 @@ con SourceCodeNode : use Colorizer in { parent: Option SourceCodeBuilder, ctx: C
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
     use TokenReader in use Colorizer in lam builder. lam word.
     match builder with SourceCodeNode { buffer = buffer, parent = parent, ctx = ctx } in
-    let token = (match word with Node { token = token } | Leaf { token = token } in token) in
+    let token = (match word with Node { token = token } | Leaf { token = token } | IncludeNode { token = token } in token) in
     let ctx = colorizerNext (ctx, token) in
     let token = ctx.word in
     switch word
@@ -43,7 +43,7 @@ let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
         let buffer = cons (None {}) buffer in
         let parent = SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx } in
         SourceCodeNode { parent = Some parent, buffer = [Some token], ctx = ctx }
-    case Leaf {} then
+    case Leaf {} | IncludeNode {} then
         let buffer = cons (Some token) buffer in
         SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx }
     end

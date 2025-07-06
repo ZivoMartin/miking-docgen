@@ -17,6 +17,8 @@ type DocTree
 con Leaf : use TokenReader in use BreakerChooser in { token: Token, state: State } -> DocTree
 -- A node with children, token and state
 con Node : use TokenReader in use BreakerChooser in { sons: [DocTree], token: Token, state: State} -> DocTree
+-- A node representing an include, contains the DocTree of the file.
+con IncludeNode : use TokenReader in use BreakerChooser in { token: Token, tree: Option DocTree, state: State, path : String, isStdlib : Bool } -> DocTree
 
 -- Print the document tree with indentation
 let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam tree.

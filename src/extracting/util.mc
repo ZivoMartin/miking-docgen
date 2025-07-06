@@ -29,44 +29,7 @@ utest extractLastNamespaceElement "a/b/c" with "c"
 utest extractLastNamespaceElement "onlyone" with "onlyone"
 utest extractLastNamespaceElement "" with ""
 
--- Normalizes a file path by resolving '.', '..', and redundant slashes.
--- Supports both absolute and relative paths.
-let normalizePath = lam path.
-    let isAbsolute = match path with "/" ++ s then true else false in
-    let components = strSplit "/" path in
-    recursive let process = lam comps. lam stack.
-        switch comps
-        case [] then stack
-        case ["."] ++ rest then process rest stack
-        case [""] ++ rest then process rest stack
-        case [".."] ++ rest then
-            (switch stack
-             case ([] | [".."] ++ _) then process rest (cons ".." stack)
-             case [_] ++ tl then process rest tl end)
-        case [comp] ++ rest then process rest (cons comp stack) end
-    in
-    let cleaned = reverse (process components []) in
-    let result = strJoin "/" cleaned in
-    if isAbsolute then cons '/'  result
-    else result
 
-utest normalizePath "repo1/../repo2" with "repo2"
-utest normalizePath "/repo1/../repo2" with "/repo2"
-utest normalizePath "../../repo2" with "../../repo2"
-utest normalizePath "./a/./b/../c" with "a/c"
-utest normalizePath "/a/b/../../c" with "/c"
-
--- Resolves a path based on current location and target.
--- If the target is absolute, it is returned normalized.
--- If the file exists at the concatenated location, it's returned.
--- Otherwise, the target is assumed to be from the standard library.
-let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentLoc. lam target.
-    let path = if strStartsWith "/" target then target
-               else concatAll [currentLoc, "/", target] in
-    if sysFileExists path then
-        { path = normalizePath path, isStdlib = false }
-    else
-        { path = concatAll [stdlibLoc, "/", target], isStdlib = true }
 
 -- Removes all comment tokens from a list of syntax tree nodes.
 let removeComments = use TokenReader in
