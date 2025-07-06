@@ -83,7 +83,6 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                 -- Handle continue case (normal exit)
                 if continueTest then
                     let last = next snippet.stream snippet.pos in
-                    
                     let result = if and (not snippet.absorbed) (absorbIt (newState, content last.token)) then
                         let leaf = Leaf { token = last.token, state = newState } in
                         let docNode = Node { sons = (concat snippet.tree [leaf]), token = word.token, state = newState } in
