@@ -1,12 +1,18 @@
 include "mexpr/ast.mc"
+include "mexpr/uncurried.mc"
+include "mexpr/type-check.mc"
+include "mexpr/type-lift.mc"
+include "ocaml/ast.mc"
 include "../logger.mc"
 include "../util.mc"
+include "mlang/ast.mc"
+include "mexpr/info.mc"
 
-lang TypeColorizerInterface = MExprAst
+lang TypeColorizerInterface = MExprAst + UncurriedAst + PprintTyAnnot + TyWildAst + ReprTypeAst + ReprSubstAst + VariantNameTypeAst + OCamlTypeAst + TyUseAst
 
     sem typeColorize : Type -> String
     sem typeColorize =
-    | t -> renderingWarn "Type is not yet supported by the colorizer."; "?"
+    | t -> error (infoErrorString (infoTy t) "")
     
     sem formatTypeName : String -> String
     sem unknownDisplay : () -> String
@@ -99,7 +105,7 @@ end
 
 lang AllTypeColorizer = TypeColorizerInterface
   sem typeColorize =
-  | TyAll { ident = i, kind  = k, ty = ty} -> error "all"
+  | TyAll {} -> error "all"
 
 
 end
@@ -117,6 +123,42 @@ lang AliasTypeColorizer = TypeColorizerInterface
     
 end
 
+lang TyUncurriedArrowColorizer = TypeColorizerInterface
 
-lang TypeColorizerTemplate = UnknownTypeColorizer + BoolTypeColorizer + IntTypeColorizer + FloatTypeColorizer + CharTypeColorizer + FunTypeColorizer + SeqTypeColorizer + TensorTypeColorizer + RecordTypeColorizer + VariantTypeColorizer + ConTypeColorizer + DataTypeColorizer + VarTypeColorizer + AllTypeColorizer + AppTypeColorizer + AliasTypeColorizer end
+   sem typeColorize =
+  | TyUncurriedArrow {} -> error "uncurried"
+
+
+end
+
+lang FakeTypeColorizer = TypeColorizerInterface
+
+   sem typeColorize =
+  | FakeType {} -> error "fake"
+  | TyRepr {} -> error "repr"
+  | TyWild {} -> error "wild"
+  | TySubst {} -> error "subs"
+  | TyVariantName {} -> error "variant"
+  | OTyList {} -> error "ocaml"
+  | OTyArray {} -> error "ocaml"
+  | OTyTuple {} -> error "ocaml"
+  | OTyBigarrayGenarray {} -> error "ocaml"
+  | OTyBigarrayArray {} -> error "ocaml"
+  | OTyBigarrayFloat64Elt {} -> error "ocaml"
+  | OTyBigarrayIntElt {} -> error "ocaml"
+  | OTyBigarrayClayout {} -> error "ocaml"
+  | OTyLabel {} -> error "ocaml"
+  | OTyVar {} -> error "ocaml"
+  | OTyVarExt {} -> error "ocaml"
+  | OTyParam {} -> error "ocaml"
+  | OTyRecord {} -> error "ocaml"
+  | OTyRecordExt {} -> error "ocaml"
+  | OTyString {} -> error "ocaml"
+  | OTyInlinedRecord {} -> error "ocaml"
+  | TyUse {} -> error "use"
+
+
+end
+    
+lang TypeColorizerTemplate = UnknownTypeColorizer + BoolTypeColorizer + IntTypeColorizer + FloatTypeColorizer + CharTypeColorizer + FunTypeColorizer + SeqTypeColorizer + TensorTypeColorizer + RecordTypeColorizer + VariantTypeColorizer + ConTypeColorizer + DataTypeColorizer + VarTypeColorizer + AllTypeColorizer + AppTypeColorizer + AliasTypeColorizer + FakeTypeColorizer + TyUncurriedArrowColorizer end
 

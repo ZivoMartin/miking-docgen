@@ -6,12 +6,11 @@ include "pmexpr/demote.mc"
 include "mexpr/boot-parser.mc"
 include "ocaml/external.mc"
 include "mexpr/type-check.mc"
+include "mexpr/utest-generate.mc"
 include "map.mc"
 include "../logger.mc"
 
 lang TypeStreamInterface = MExprAst
-
-    
     
     type TypeStreamContext = { stack: [Expr] }
     type TypeStreamNextResult = { ctx: TypeStreamContext, t: Option Type }
@@ -27,7 +26,8 @@ end
 -- TmLet --
 lang LetTypeStream = TypeStreamInterface
   sem typeStreamNext =
-  | { stack = [TmLet { body = body, inexpr = inexpr }] ++ stack } & ctx -> { t = Some (tyTm body), ctx = { ctx with stack = concat [body, inexpr] stack } }
+  | { stack = [TmLet { body = body, ident = ident, inexpr = inexpr }] ++ stack } & ctx ->
+        { t = Some (tyTm body), ctx = { ctx with stack = concat [body, inexpr] stack } }
 
 end
 
@@ -99,10 +99,11 @@ lang SimpleSkip = TypeStreamInterface
         | TmExt { inexpr = inexpr }] ++ stack } & ctx -> typeStreamNext { ctx with stack = cons inexpr stack }
 
 end
+    
+
+lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser + MExprUtestGenerate
 
     
-lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser
-
     sem buildTypeStream : String -> TypeStreamContext
     sem buildTypeStream = | file ->
         let externalsExclude = mapKeys (externalGetSupportedExternalImpls ()) in
@@ -125,7 +126,6 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
                ast)
         in
         { stack = [ast] }
-
 
 end 
     
