@@ -5,6 +5,7 @@
 
 include "../../extracting/source-code-word.mc"
 include "../renderer-interface.mc"
+include "../type-colorizer.mc"
 include "../../extracting/objects.mc"    
 include "../source-code-spliter.mc"
 include "./header.mc"
@@ -12,15 +13,30 @@ include "../source-code-reconstruction.mc"
 include "../../logger.mc"
 include "./utils.mc"
 
+lang TypeColorizer = TypeColorizerTemplate
+
+    sem formatTypeName =
+    | t -> tp t
+
+    sem unknownDisplay =
+    | () -> "?"
+end
+    
 -- Object pretty-printer with syntax coloring 
-let objToStringColorized : Object -> String = use ObjectKinds in lam obj.
+let objToStringColorized : Object -> String = use ObjectKinds in use TypeColorizer in lam obj.
     switch obj.kind
-    case ObjLet { rec = rec, args = args } then concatAll [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " ", strJoin " " (map var args)]
+    case ObjLet { rec = rec, args = args, ty = ty } then
+        let t = match ty with Some t then typeColorize t else "?" in
+        let args = strJoin " " (map var args) in
+        concatAll [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " : ", args, t]
     case ObjType { t = t } then concatAll [kw "type", " ", var obj.name, match t with Some t then concat " : " (tp t) else ""]
     case ObjCon { t = t } then concatAll [kw "con", " ", var obj.name, " : ", tp t]
     case (ObjMexpr {} | ObjUtest {}) & kind then kw (getFirstWord kind)
     case ObjLang {} then concatAll [kw "lang", " ", tp obj.name]
     case ObjProgram {} then ""
+    case ObjSem { ty = ty } then
+        let t = match ty with Some t then typeColorize t else "?" in
+        concatAll ["sem ", obj.name, " : ", t]
     case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
     end
 
