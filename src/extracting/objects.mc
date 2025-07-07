@@ -9,18 +9,19 @@
 
 include "../util.mc"
 include "./source-code-builder.mc"
+include "../parsing/types-stream.mc"
 include "util.mc"
     
-lang ObjectKinds
+lang ObjectKinds = MExprAst
 
     -- All possible object kinds
     syn ObjectKind = 
     | ObjProgram { isStdlib: Bool }
-    | ObjLet { rec : Bool, args : [String] }
+    | ObjLet { rec : Bool, args : [String], ty: Option Type }
     | ObjLang { parents : [String] }
     | ObjType { t: Option String }
     | ObjUse {}
-    | ObjSem { langName: String, variants: [String] }
+    | ObjSem { langName: String, variants: [String], ty: Option Type }
     | ObjSyn { langName: String, variants: [String] }
     | ObjCon { t: String }
     | ObjMexpr {}

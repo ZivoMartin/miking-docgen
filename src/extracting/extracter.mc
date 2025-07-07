@@ -42,7 +42,7 @@ let extract : DocTree -> ObjectTree =
     
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         switch tree 
-        case Node { sons = sons, token = token, state = state } then
+        case Node { sons = sons, token = token, state = state, ty = ty } then
 
             -- Builds doc string from comments
             let buildDoc : [String] -> String = lam commentBuffer.
@@ -119,11 +119,13 @@ let extract : DocTree -> ObjectTree =
                         let rec = match state with Let {} | TopLet {} then false else true in
                         let sons = goToEqual sons in
                         let sons = skipUseIn sons in
-
+                        (match ty with None {} then extractingWarn "Let is supposed to have a type" else ());
                         -- Extract params if any
                         let args = extractParams sons in
-                        ObjLet { rec = rec, args = args }
-                    case Sem {} then ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
+                        ObjLet { rec = rec, args = args, ty = ty }
+                    case Sem {} then
+                        (match ty with None {} then extractingWarn "Sem is supposed to have a type" else ());
+                        ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons), ty = ty }
                     case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
                     case Lang {} then ObjLang { parents = reverse (extractParents name.rest) }
                     case (Con {} | TopCon {}) then

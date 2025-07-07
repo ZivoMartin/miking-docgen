@@ -7,6 +7,7 @@ include "mexpr/boot-parser.mc"
 include "ocaml/external.mc"
 include "mexpr/type-check.mc"
 include "map.mc"
+include "../logger.mc"
 
 lang TypeStreamInterface = MExprAst
 

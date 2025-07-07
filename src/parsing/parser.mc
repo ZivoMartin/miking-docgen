@@ -102,7 +102,10 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                 let newState = topState breakers in
                 let needType = needType lword in
 
-                match (if needType then let res = typeStreamNext ctx in (res.t, res.ctx) else (None {}, ctx)) with (ty, ctx) in
+                match (if needType then
+                    let res = typeStreamNext ctx in
+                    (match res.t with None {} then parsingWarn "Running out of type in the ast.." else ());
+                    (res.t, res.ctx) else (None {}, ctx)) with (ty, ctx) in
     
                 -- Parse the snippet content
                 let isTop = eqi 2 (length breakers) in
