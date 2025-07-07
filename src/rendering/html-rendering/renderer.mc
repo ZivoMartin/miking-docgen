@@ -28,7 +28,7 @@ let objToStringColorized : Object -> String = use ObjectKinds in use TypeColoriz
     case ObjLet { rec = rec, args = args, ty = ty } then
         let t = match ty with Some t then typeColorize t else "?" in
         let args = strJoin " " (map var args) in
-        concatAll [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " : ", args, t]
+        concatAll [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " ", args, " : ", t]
     case ObjType { t = t } then concatAll [kw "type", " ", var obj.name, match t with Some t then concat " : " (tp t) else ""]
     case ObjCon { t = t } then concatAll [kw "con", " ", var obj.name, " : ", tp t]
     case (ObjMexpr {} | ObjUtest {}) & kind then kw (getFirstWord kind)

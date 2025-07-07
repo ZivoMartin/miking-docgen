@@ -27,7 +27,7 @@ end
 -- TmLet --
 lang LetTypeStream = TypeStreamInterface
   sem typeStreamNext =
-  | { stack = [TmLet { ty = ty, body = body, inexpr = inexpr }] ++ stack } & ctx -> { t = Some ty, ctx = { ctx with stack = concat [body, inexpr] stack } }
+  | { stack = [TmLet { body = body, inexpr = inexpr }] ++ stack } & ctx -> { t = Some (tyTm body), ctx = { ctx with stack = concat [body, inexpr] stack } }
 
 end
 
