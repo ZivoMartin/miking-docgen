@@ -168,7 +168,8 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
             let word = next stream pos in
             let lword = content word.token in
             let state = topState breakers in
-
+            printLn (concatAll [lword, " ", toString state]);
+        
             match word.token with Include { content = content } then
                 match goHere (dirname loc) content with { path = path, isStdlib = isStdlib } in
                 match (if hmMem path includeSet then (None {}, includeSet) else

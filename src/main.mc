@@ -13,7 +13,6 @@ include "./server.mc"
 mexpr
     logOpt opt;
     let tree = parseFile opt.file in
-    displayTree tree;
     let obj = extract tree in
     render opt.fmt obj;
     match obj with ObjectNode { obj = obj } then
