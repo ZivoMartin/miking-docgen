@@ -200,7 +200,7 @@ lang LetUtestBreakerChooser = BreakerChooserInterface
     sem choose =
         | (Let {} | Utest {}, "let", pos) -> build fullLetBreak (Let {})
         | (Let {} | Utest {}, "recursive", pos) -> build fullRecBreak (TopRec {})
-        | (Let {} | Utest {}, "utest", pos) -> build fullTopBreak (Utest {})
+        | (Let {} | Utest {}, "utest", pos) -> build fullLetBreak (Utest {})
         | (Let {} | Utest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Let {} | Utest {}, "con", pos) -> build fullTopBreak (Con {})
         | (Let {} | Utest {}, "use", pos) -> build ["in"] (Use {})    

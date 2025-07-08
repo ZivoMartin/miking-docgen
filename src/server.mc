@@ -110,7 +110,6 @@ finally:
 ]    
 let startServer = lam obj. lam fmt.
     let file = sysTempFileMake () in
-    printLn file;
     match fileWriteOpen file with Some wc then
         let write = fileWriteString wc in
         write (pythonScript fmt);
