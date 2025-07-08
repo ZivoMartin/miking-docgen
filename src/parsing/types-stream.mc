@@ -78,12 +78,8 @@ end
 lang UtestTypeStream = TypeStreamInterface
     
   sem typeStreamNext =
-  | { stack = [TmUtest { test = test, expected = expected, next = next, tusing = tusing, tonfail = tonfail }] ++ stack }  ->
-    typeStreamNext { stack = concat [test, expected, next] (concat (switch (tusing, tonfail)
-    case (None {}, None {}) then []
-    case (Some a, Some b) then [a, b]    
-    case (Some a, None {}) | (None {}, Some a) then [a]
-    end) stack) }
+  | { stack = [TmUtest { next = next }] ++ stack }  ->
+    typeStreamNext { stack = cons next stack }
 
 end    
     

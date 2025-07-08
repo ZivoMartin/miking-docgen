@@ -44,6 +44,9 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
             -- Skip separators and EOF for cleaner output
             match token with Separator {} | Eof {} then () else 
                 printLn (concatAll [indentString depth, "Leaf (", tokenToString token, "):", lit token])
+        case IncludeNode { tree = tree, token = token, state = state, path = path } then
+            printLn (concatAll [indentString depth, "Include \"", path, "\" (", toString state, ")"]);
+            match tree with Some tree then displayTreeIndented tree (addi depth 1) else ()
         case _ then parsingWarn "No-covered variant in DocTree reached during displayTree execution."
         end
     in
