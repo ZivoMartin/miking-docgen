@@ -25,7 +25,8 @@ lang ObjectKinds = MExprAst
     | ObjSyn { langName: String, variants: [String] }
     | ObjCon { t: String }
     | ObjMexpr {}
-    | ObjUtest {}    
+    | ObjUtest {}
+    | ObjRecursiveBlock {}
     | ObjInclude { isStdlib: Bool, pathInFile: String }
 
     -- First keyword associated to this object kind (for printing / links)
@@ -39,8 +40,10 @@ lang ObjectKinds = MExprAst
     | ObjCon {} -> "con"
     | ObjMexpr {} -> "mexpr"
     | ObjInclude {} -> "include"
-    | ObjUtest {} -> "utest"    
+    | ObjUtest {} -> "utest"
+    | ObjRecursiveBlock {} -> "recursive"
     | ObjProgram {} -> ""
+    | _ -> warn "All object kinds are not supported in getFirstWord sementic"; ""
   
 end
 
@@ -105,6 +108,3 @@ let objToString = use ObjectKinds in lam kind. lam name.
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 con ObjectLeaf : String -> ObjectTree
-
--- Extract all the `ObjectNode`s in an array of ObjectTree
-let objectSonsFilterNodes : [ObjectTree] -> [ObjectTree] = lam sons. filter (lam s. match s with ObjectNode {} then true else false) sons

@@ -62,7 +62,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
 
     let arr = reverse arr in
     match arr with [TreeSourceCodeSnippet buffer] ++ right then
-        match buffer with [{ word = Word {} | Recursive {} } & x1] ++ rest then
+        match buffer with [{ word = Word {} } & x1] ++ rest then
     
         let splitAndReturn = lam split: String.
             match splitOnL (lam w. match w with { word = word } in eqString (lit word) split) rest with

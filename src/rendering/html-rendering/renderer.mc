@@ -58,8 +58,6 @@ recursive let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWord
     switch w
     case { word = Include { content = content, skiped = skiped } } then
         concatAll [kw "include", renderSkiped skiped, st (characterReplacer content)]    
-    case { word = Recursive { skiped = skiped } } then
-        concatAll [kw "recursive", renderSkiped skiped, kw "let"]
     case { word = word, kind = kind } then
         let class = (switch word
         case Str {} then "string"

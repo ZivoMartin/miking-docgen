@@ -16,6 +16,24 @@ include "../logger.mc"
 lang Renderer = MarkdownRenderer + HtmlRenderer end
 
 
+
+-- Extract all the `ObjectNode`s in an array of ObjectTree
+let objectSonsFilterNodes : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
+    foldl (lam sons. lam son.
+        switch son
+        case ObjectNode { obj = { kind = ObjRecursiveBlock {} }, sons = blockSons } then
+            let blockSons = foldl (lam acc. lam son.
+                switch son
+                case ObjectNode { obj = { kind = ObjLet {} } } then cons son acc
+                case ObjectNode {} then renderingWarn "We should only have let node at this stage."; cons son acc
+                case _ then acc
+                end) [] blockSons in
+            concat blockSons sons
+        case ObjectNode {} then cons son sons
+        case _ then sons
+        end) [] (reverse sons)
+
+
 -- ## render
 --
 -- Entrypoint to rendering. This function traverses the entire `ObjectTree` and writes
@@ -87,6 +105,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             case ObjUtest {} then { set with Utest = cons son set.Utest }
                             case ObjInclude { isStdlib = true } then { set with LibInclude = cons son.obj set.LibInclude }
                             case ObjInclude { isStdlib = false } then { set with Include = cons son.obj set.Include }
+                            case ObjRecursiveBlock {} then renderingWarn "We should not get to RecursiveBlock at this stage."; set
                             end) sons
                         case [] then set
                         end
