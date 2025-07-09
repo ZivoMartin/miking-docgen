@@ -27,7 +27,7 @@
 -- Result is a `DocTree` for the entire file. 
 
 
-include "./types-stream.mc"    
+include "./lexer.mc"
 include "./doc-tree.mc"
 include "../util.mc"
 
