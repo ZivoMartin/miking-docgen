@@ -3,10 +3,8 @@ include "mexpr/ast.mc"
 include "../util.mc"
 include "map.mc"
 include "pmexpr/demote.mc"
-include "mexpr/boot-parser.mc"
 include "ocaml/external.mc"
 include "mexpr/type-check.mc"
-include "mexpr/utest-generate.mc"
 include "map.mc"
 include "../logger.mc"
 
@@ -97,7 +95,7 @@ lang SimpleSkip = TypeStreamInterface
 end
     
 
-lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser + MExprUtestGenerate
+lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser
 
     
     sem buildTypeStream : String -> TypeStreamContext

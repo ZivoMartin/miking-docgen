@@ -108,3 +108,9 @@ let objToString = use ObjectKinds in lam kind. lam name.
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 con ObjectLeaf : String -> ObjectTree
+
+let objTreeToString = lam obj. switch obj
+    case ObjectNode { obj = obj } then objToString obj.kind obj.name
+    case ObjectLeaf s then s
+    end
+    

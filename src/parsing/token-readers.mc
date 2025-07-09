@@ -312,7 +312,41 @@ lang IncludeTokenReader = CommAndSepSkiper
         | "include/-" ++ str -> lam pos. includeNext (cons '\"' str) pos ""            
 end
 
-lang ComposedWordTokenReader = IncludeTokenReader end
+-- Specifically reads `recursive let` sequence of word
+-- When `recursive` and `let` are spearated by any separator / comments
+lang RecursiveTokenReader = CommAndSepSkiper
+      syn Token =
+      | Recursive { lit: String, skiped: [Token] }
+
+    sem lit =
+        | Recursive { lit = lit } -> lit
+
+    sem content =
+        | Recursive {} -> "recursive"
+
+    sem tokenToString =
+        | Recursive {} -> "Recursive"
+
+
+    sem recNext =
+    | str -> lam pos. lam firstSep.
+        match skip str firstSep with { newToken = Word { content = "let" }, stream = stream, skiped = skiped } then
+            let token = Recursive { lit = concatAll ["recursive", concatAll (map lit skiped), "let"], skiped = skiped } in
+            buildResult token pos stream
+        else
+            parsingWarn "During lexing, was waiting for a let word after `recursive`.";
+            buildResult (Word { content = concat "recursive" firstSep }) pos str
+
+    sem next =
+        | "recursive " ++ str -> lam pos. recNext str pos " "
+        | "recursive\n" ++ str -> lam pos. recNext str pos "\n"
+        | "recursive\t" ++ str -> lam pos. recNext str pos "\t"
+        | "recursive--" ++ str -> lam pos. recNext str pos ""
+        | "recursive-/" ++ str -> lam pos. recNext str pos ""            
+end
+
+
+lang ComposedWordTokenReader = RecursiveTokenReader + IncludeTokenReader end
         
 -- Combine all token readers into a single TokenReader
 lang TokenReader = ComposedWordTokenReader end
