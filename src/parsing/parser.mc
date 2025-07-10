@@ -61,7 +61,7 @@ let typeDocTree : DocTree -> String -> DocTree =
                 { fRes with sons = reverse fRes.sons } in
         let default = { tree = tree, ctx = ctx } in
         switch tree
-        case Node { state = Let {} | TopLet {} | Sem {} } & Node d then
+        case Node { state = Let {} | TopLet {} | Rec {} | TopRec {} | Sem {} } & Node d then
             let t = typeStreamNext ctx in
             match foldSons d.sons t.ctx with { ctx = ctx, sons = sons} in
             (match t.t with None {} then parsingWarn "At this stage, all lets and sems should have a type available from AST." else ());

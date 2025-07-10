@@ -34,7 +34,9 @@ end
 lang RecLetsTypeStream = TypeStreamInterface
 
     sem typeStreamNext =
-    | { stack = [TmRecLets { bindings = bindings, inexpr = inexpr, ty = ty }] ++ stack } & ctx -> error "todo"
+    | { stack = [TmRecLets { bindings = [], inexpr = inexpr }] ++ stack } & ctx -> typeStreamNext { stack = cons inexpr stack }
+    | { stack = ([TmRecLets { bindings = [b] ++ bindings }] ++ stack) & ([TmRecLets tm] ++ stack) } & ctx ->
+        { t = Some b.tyBody, ctx = { ctx with stack = concat [b.body, TmRecLets { tm with bindings = bindings } ] stack } }
 
 end
 
