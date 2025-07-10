@@ -91,6 +91,8 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
     -- HashSet of included files
     type IncludeSet = HashMap String () in
 
+    let baseLoc = sysGetCwd () in
+    
     let logBegin = lam loc. parsingLog (concat "Beggining of parsing stage on " loc) in
     logBegin basePath;
 
@@ -178,10 +180,11 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
         
             match token with Include { content = content } then
                 match goHere (dirname loc) content with { path = path, isStdlib = isStdlib } in
-                match (if hmMem path includeSet then (None {}, includeSet) else
+                match goHere baseLoc path with { path = abs, isStdlib = isStdlib } in
+                match (if hmMem abs includeSet then (None {}, includeSet) else
                     let isStdlib = false in
-                    let includeSet = hmInsert path () includeSet in
-                    let s = readOrNever path in
+                    let includeSet = hmInsert abs () includeSet in
+                    let s = readOrNever abs in
                     logBegin path;
                     let stream = lex s in
                     let snippet = parseRec includeSet path stream { x = 0, y = 0 } baseBreaker [] in
@@ -236,8 +239,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
 let parseFile : String -> DocTree = lam fileName.
     let s = readOrNever fileName in
-    match goHere (sysGetCwd ()) fileName with { path = path } in
-    parse s path
+    parse s fileName
 
 
 mexpr use BreakerChooser in
