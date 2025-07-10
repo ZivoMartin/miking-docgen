@@ -30,6 +30,7 @@
 include "./lexer.mc"
 include "./doc-tree.mc"
 include "../util.mc"
+include "../options.mc"
 
 include "seq.mc"
 include "hashmap.mc"
@@ -224,10 +225,13 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
     in
     let stream = lex code in
     let snippet = parseRec (hashmapEmpty ()) basePath stream { x = 0, y = 0 } baseBreaker [] in
-    parsingLog "Computing types...";
-    let tree = typeDocTree (snippet2tree snippet basePath) basePath in
-    parsingLog "Parsing is over.";
-    tree
+    let tree = snippet2tree snippet basePath in
+    if opt.noTypes then tree else
+        parsingLog "Computing types...";
+        let tree = typeDocTree tree  basePath in
+        parsingLog "Parsing is over.";
+        tree 
+    
 
 
 let parseFile : String -> DocTree = lam fileName.

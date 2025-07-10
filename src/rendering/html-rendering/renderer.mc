@@ -36,7 +36,7 @@ let objToStringColorized : Object -> String = use ObjectKinds in use TypeColoriz
     case ObjProgram {} then ""
     case ObjSem { ty = ty } then
         let t = match ty with Some t then typeColorize t else "?" in
-        concatAll ["sem ", obj.name, " : ", t]
+        concatAll [kw "sem", " ", var obj.name, " : ", t]
     case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
     end
 
@@ -142,7 +142,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     sem getFormatedLinkList /- (Format, [Object]) -> String -/ =
     | (Html {}, objects) ->
         let doc = map (lam u. htmlGetLink (objLink u) (objTitle u)) objects in
-        let doc = strJoin ", " (reverse doc) in
+        let doc = strJoin ", " doc in
         match doc with "" then "" else
             concat (htmlText doc) "\n"
 

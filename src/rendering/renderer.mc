@@ -83,7 +83,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 let sons: [RenderingData] = map (render fmt) sons in
 
                 -- Pushing object documentation using data of the sons to reconstruct the source code
-                let data = getRenderingData obj obj.sourceCode sons (getWordRenderer fmt) (getCodeHider fmt) in
+                let data = getRenderingData obj obj.sourceCode (filter (lam s. match s.obj.kind with ObjInclude {} then false else true) sons) (getWordRenderer fmt) (getCodeHider fmt) in
                 
                 write (objGetSpecificDoc (fmt, data));
 
@@ -109,7 +109,7 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                             end) sons
                         case [] then set
                         end
-                    in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } sons in
+                    in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } (reverse sons) in
 
                 -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
@@ -124,11 +124,11 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                     let title = match arr with [] then "" else match title with "" then "" else
                             getFormatedSectionTitle (fmt, title) in
                     write title;
-                    iter (lam u. write (objFormat (fmt, u))) (reverse arr)
+                    iter (lam u. write (objFormat (fmt, u))) arr
                 in
 
-                iter (lam a. displayUseInclude a.0 (reverse a.1)) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
-                iter (lam a. displayDefault a.0 (reverse a.1))
+                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
+                iter (lam a. displayDefault a.0 a.1)
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
                 ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr), ("Tests", set.Utest)];
 

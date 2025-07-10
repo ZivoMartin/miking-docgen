@@ -56,10 +56,10 @@ let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
 let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: SourceCode } = lam builder.
     match builder with SourceCodeNode { parent = Some parent, buffer = buffer, ctx = ctx } then
         match parent with SourceCodeNode { parent = parent, buffer = parentBuffer  } in
-        { builder = SourceCodeNode { parent = parent, buffer = parentBuffer, ctx = ctx }, sourceCode = buffer }
+        { builder = SourceCodeNode { parent = parent, buffer = parentBuffer, ctx = ctx }, sourceCode = reverse buffer }
     else match builder with SourceCodeNode { buffer = buffer } in
         extractingWarn "finish: Builder parent should never be empty at this point";
-        { builder = builder, sourceCode = buffer }
+        { builder = builder, sourceCode = reverse buffer }
 
 -- Returns a new SourceCodeBuilder
 let newSourceCodeBuilder : () -> SourceCodeBuilder = use Colorizer in lam . SourceCodeNode { buffer = [], parent = None {}, ctx = colorizerEmptyContext () }

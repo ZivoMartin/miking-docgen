@@ -46,7 +46,7 @@ let extract : DocTree -> ObjectTree =
 
             -- Builds doc string from comments
             let buildDoc : [String] -> String = lam commentBuffer.
-                let res = strJoin "  \n" (reverse commentBuffer) in
+                let res = strJoin "  \n" commentBuffer in
                 match res with "" then "No documentation available here." else res in
 
             let finish : Object -> SourceCodeBuilder -> { builder: SourceCodeBuilder, obj: Object } = lam obj. lam sourceCodeBuilder.
@@ -55,7 +55,7 @@ let extract : DocTree -> ObjectTree =
     
             -- Start new object
             let obj = { defaultObject with namespace = namespace } in
-            let doc = buildDoc commentBuffer in
+            let doc = buildDoc (reverse commentBuffer) in
             
 
             -- Process children nodes
@@ -71,7 +71,7 @@ let extract : DocTree -> ObjectTree =
                     sons in
                 let obj = { obj with name = name, kind = kind, doc = doc } in
                 match finish obj foldResult.ctx.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
-                let obj = ObjectNode { obj = obj, sons = foldResult.sons } in
+                let obj = ObjectNode { obj = obj, sons = reverse foldResult.sons } in
                 { foldResult.ctx with obj = obj, sourceCodeBuilder = sourceCodeBuilder } in
 
             -- Dispatch by token type + state
@@ -86,7 +86,7 @@ let extract : DocTree -> ObjectTree =
                     else { comments = [], sons = sons } in
                 let extractRes = extractProgramComments sons in
                 process state sons content content
-                    (buildDoc (reverse extractRes.comments))
+                    (buildDoc extractRes.comments)
                     (ObjProgram { isStdlib = inStdlib })
                     utestCount
 
@@ -125,7 +125,7 @@ let extract : DocTree -> ObjectTree =
                     case Sem {} then
                         ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons), ty = ty }
                     case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
-                    case Lang {} then ObjLang { parents = reverse (extractParents name.rest) }
+                    case Lang {} then ObjLang { parents = extractParents name.rest }
                     case (Con {} | TopCon {}) then
                         let t =
                             match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
@@ -167,9 +167,9 @@ let extract : DocTree -> ObjectTree =
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = emptyInclude, utestCount = utestCount } in
             match tree with Some tree then
                 extractingLog (concat "Extracting on: " path);
-                let res = extractRec tree path [] sourceCodeBuilder isStdlib utestCount in
+                let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount in
                 match res with
-                    { sourceCodeBuilder = sourceCodeBuilder, obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
+                    { obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
                     { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }  }
                 else

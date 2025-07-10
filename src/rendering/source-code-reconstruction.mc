@@ -34,7 +34,7 @@ include "./rendering-types.mc"
 --
 -- ### Returns:
 -- - A `RenderingData` record with `left`, `right`, and `trimmed` segments as strings    
-let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -> CodeHider ->RenderingData  = lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
+let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -> CodeHider -> RenderingData  = lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
     type Arg = {
         tree: [TreeSourceCode],
         sons: [RenderingData],
@@ -48,12 +48,13 @@ let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -
                 match a.buffer with [] then
                     { a with tree = cons (TreeSourceCodeNode son) a.tree, sons = sons }
                 else
-                    { tree = concat [TreeSourceCodeNode son, TreeSourceCodeSnippet a.buffer] a.tree, sons = sons, buffer = [] }
+                    { tree = concat [TreeSourceCodeNode son, TreeSourceCodeSnippet (reverse a.buffer)] a.tree, sons = sons, buffer = [] }
             else
                 renderingWarn "Son array should not be empty at this point";
                 a
         end) { tree = [], sons = sons, buffer = [] } code in
-    let tree = reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet tree.buffer) tree.tree) in
+    
+    let tree = reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet (reverse tree.buffer)) tree.tree) in
     match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
 
     let getFormatedStringFromWordBuffer : [SourceCodeWord] -> String = lam code.
@@ -65,8 +66,8 @@ let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -
             case TreeSourceCodeNode son then getCodeWithPreview codeHider son
             case TreeSourceCodeSnippet code then getFormatedStringFromWordBuffer code
             end) s
-            ) "" code in
-    
+            ) "" (reverse code) in
+
     {
         obj = obj,
         left = getFormatedString left,

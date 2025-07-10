@@ -42,7 +42,8 @@ type Options = use Formats in {
     debug: Bool,             -- Global debug flag
     parsingDebug: Bool,      -- Debug flag for parsing stage
     extractingDebug: Bool,   -- Debug flag for extracting stage
-    renderingDebug: Bool     -- Debug flag for rendering stage
+    renderingDebug: Bool,    -- Debug flag for rendering stage
+    noTypes: Bool            -- Disable types computing during parsing
 }
 
 -- The default state of all CLI options before parsing.
@@ -53,7 +54,8 @@ let optionsDefault : Options = use Formats in {
     debug = false,
     parsingDebug = false,
     extractingDebug = false,
-    renderingDebug = false
+    renderingDebug = false,
+    noTypes = false
 }
 
 -- Displays an error message and terminates the program if the CLI arguments are invalid.
@@ -71,6 +73,7 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
         case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }    
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
+        case ["--no-types"] ++ rest then parse rest { opts with noTypes = true }
         case ["--format", fmt] ++ rest then
             match formatFromStr fmt with Some fmt then
                 parse rest { opts with fmt = fmt }
