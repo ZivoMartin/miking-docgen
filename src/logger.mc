@@ -10,7 +10,8 @@ include "format.mc"
 let message : String -> String -> String -> () = lam kind. lam namespace. lam message. printLn (concatAll [kind, " from ", namespace, ": ", message])
     
 -- Displays a warning message
-let warn : String -> String -> () = message "WARNING"
+let warn : String -> String -> () = lam m1. lam m2.
+    if opt.noWarn then () else  message "WARNING" m1 m2
 
 -- Displays a info message
 let log : String -> String -> () = message "INFO"
@@ -22,9 +23,9 @@ let extractingLog : String -> () = lam m.
 let renderingLog : String -> () = lam m.
     if or opt.renderingDebug opt.debug then log "Rendering" m else ()
 
-let parsingWarn : String -> () = warn "Parsing"
-let extractingWarn : String -> () = warn "Extracting"
-let renderingWarn : String -> () = warn "Rendering"
+let parsingWarn : String -> () = lam m. if opt.noParsingWarn then () else warn "Parsing" m
+let extractingWarn : String -> () = lam m. if opt.noExtractingWarn then () else warn "Extracting" m
+let renderingWarn : String -> () = lam m. if opt.noRenderingWarn then () else warn "Rendering" m
 
 
 let logOpt : Options -> () = use Formats in lam opt.

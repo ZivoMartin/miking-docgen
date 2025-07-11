@@ -43,8 +43,12 @@ type Options = use Formats in {
     parsingDebug: Bool,      -- Debug flag for parsing stage
     extractingDebug: Bool,   -- Debug flag for extracting stage
     renderingDebug: Bool,    -- Debug flag for rendering stage
-    outputFolder: String,     -- Output name for the folder
-    noGen: Bool,              -- Do not parse anything and uses the output folder 
+    noParsingWarn: Bool,     -- Disable warning during parsing stage
+    noExtractingWarn: Bool,  -- Disable warning during extraction stage
+    noRenderingWarn: Bool,   -- Disable warning during rendering stage
+    noWarn: Bool,            -- Disable all warnings
+    outputFolder: String,    -- Output name for the folder
+    noGen: Bool,             -- Do not parse anything and uses the output folder 
     noTypes: Bool,           -- Disable types computing during parsing
     noTypeColor: Bool        -- Disable the type colorizer
 }
@@ -61,7 +65,12 @@ let optionsDefault : Options = use Formats in {
     noTypes = false,
     noTypeColor = false,
     outputFolder = "doc-gen-output",
-    noGen = false
+    noGen = false,
+    noParsingWarn = false,
+    noExtractingWarn = false,
+    noRenderingWarn = false,
+    noWarn = false
+
 }
 
 -- Displays an error message and terminates the program if the CLI arguments are invalid.
@@ -75,13 +84,20 @@ let parseOptions : [String] -> Options = lam argv.
     recursive let parse : [String] -> Options -> Options = use Formats in lam args. lam opts.
         switch args
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
-        case ["--debug"] ++ rest then parse rest { opts with debug = true }
-        case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
-        case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }    
-        case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
+        case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
         case ["--no-types"] ++ rest then parse rest { opts with noTypes = true }
         case ["--no-type-color"] ++ rest then parse rest { opts with noTypeColor = true }
-        case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
+
+        case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
+        case ["--no-parsing-warn"] ++ rest then parse rest { opts with noParsingWarn = true }
+        case ["--no-extracting-warn"] ++ rest then parse rest { opts with noExtractingWarn = true }   
+        case ["--no-rendering-warn"] ++ rest then parse rest { opts with noRenderingWarn = true }        
+        
+        case ["--debug"] ++ rest then parse rest { opts with debug = true }
+        case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
+        case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }   
+        case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
+    
         case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
         case ["--format", fmt] ++ rest then
             match formatFromStr fmt with Some fmt then

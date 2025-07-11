@@ -121,6 +121,7 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
                 disableConstructorTypes = true}
                ast)
         in
+        printLn (expr2str ast);
         { stack = [ast] }
 
 end 
