@@ -12,7 +12,7 @@
 -- - `startServer` writes the Python script to a temporary file
 -- - launches it with:
 --   ```bash
---   python3 script.py <doc-gen-output dir> <initial object>
+--   python3 script.py <output-folder dir> <initial object>
 --   ```
 
 include "extracting/objects.mc"
@@ -115,7 +115,7 @@ let startServer = lam obj. lam fmt.
         write (pythonScript fmt);
         fileWriteFlush wc;
         fileWriteClose wc;
-        let path = concat (sysGetCwd ()) "/doc-gen-output" in
+        let path = concatAll [sysGetCwd (), "/", opt.outputFolder] in
         let res = sysRunCommand ["python3", file, path, objLink obj] "" "/" in ()
         
     else error "Failed to open temporary file. The browser failed to start but the files have been generated."

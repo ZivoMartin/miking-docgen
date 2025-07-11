@@ -43,7 +43,10 @@ type Options = use Formats in {
     parsingDebug: Bool,      -- Debug flag for parsing stage
     extractingDebug: Bool,   -- Debug flag for extracting stage
     renderingDebug: Bool,    -- Debug flag for rendering stage
-    noTypes: Bool            -- Disable types computing during parsing
+    outputFolder: String,     -- Output name for the folder
+    noGen: Bool,              -- Do not parse anything and uses the output folder 
+    noTypes: Bool,           -- Disable types computing during parsing
+    noTypeColor: Bool        -- Disable the type colorizer
 }
 
 -- The default state of all CLI options before parsing.
@@ -55,7 +58,10 @@ let optionsDefault : Options = use Formats in {
     parsingDebug = false,
     extractingDebug = false,
     renderingDebug = false,
-    noTypes = false
+    noTypes = false,
+    noTypeColor = false,
+    outputFolder = "doc-gen-output",
+    noGen = false
 }
 
 -- Displays an error message and terminates the program if the CLI arguments are invalid.
@@ -74,6 +80,9 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }    
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
         case ["--no-types"] ++ rest then parse rest { opts with noTypes = true }
+        case ["--no-type-color"] ++ rest then parse rest { opts with noTypeColor = true }
+        case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
+        case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
         case ["--format", fmt] ++ rest then
             match formatFromStr fmt with Some fmt then
                 parse rest { opts with fmt = fmt }
