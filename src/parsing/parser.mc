@@ -110,7 +110,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
     -- Snippet type = partial parse result
     type Snippet = { pos: Pos, tree: [DocTree], stream: TokenStream, breaker: String, toAdd: [DocTree], absorbed: Bool, includeSet: IncludeSet } in
-    let snippet2tree : Snippet -> String -> DocTree = lam snippet. lam progName. Node { sons = snippet.tree, token = ProgramToken { content = progName }, state = Program {}, ty = None {} } in
+    let snippet2tree : Snippet -> String -> DocTree = lam snippet. lam progName. Node { sons = snippet.tree, pos = { x = 0, y = 0 }, token = ProgramToken { content = progName }, state = Program {}, ty = None {} } in
     
     -- Access top of breaker stack
     let topState = lam breakers. let h = (head breakers).0 in h.state in
@@ -144,19 +144,20 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                 -- Handle continue case (normal exit)
                 if continueTest then
                     match (match snippet.stream with [(last, lastPos)] ++ stream then (last, lastPos, stream) else (Eof {}, pos, [])) with (last, lastPos, lastStream) in
-                    let result = if and (not snippet.absorbed) (absorbIt (newState, content last)) then
-                        let leaf = Leaf { token = last, state = newState } in
-                        let docNode = Node { sons = (concat snippet.tree [leaf]), token = token, state = newState, ty = None {} } in
-                        { stream = lastStream, pos = lastPos, docNode = docNode }
+    
+                    match (if and (not snippet.absorbed) (absorbIt (newState, content last)) then
+                        let leaf = Leaf { token = last, state = newState, pos = lastPos } in
+                        { stream = lastStream, newPos = lastPos, sons = concat snippet.tree [leaf] }
                     else
-                        let docNode = Node { sons = snippet.tree, token = token, state = newState, ty = None {} } in
-                        { stream = snippet.stream, pos = snippet.pos, docNode = docNode } in
+                        { stream = snippet.stream, newPos = snippet.pos, sons = snippet.tree }) with { stream = stream, sons = sons, newPos = newPos } in
 
-                    let tree = reverse (cons result.docNode snippet.toAdd) in
-                    parseRec snippet.includeSet loc result.stream result.pos (tail breakers) (concat tree treeAcc)
+                    let docNode = Node { sons = sons, pos = pos, token = token, state = newState, ty = None {} } in
+                    let tree = reverse (cons docNode snippet.toAdd) in
+                    parseRec snippet.includeSet loc stream newPos (tail breakers) (concat tree treeAcc)
                 else
                     -- Handle hard break
                     let docNode = Node {
+                        pos = pos,
                         sons = snippet.tree, token = token,
                         state = newState, ty = None {} } in
                     let concatToAdd = cons docNode snippet.toAdd in
@@ -191,18 +192,18 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                     (Some (snippet2tree snippet path), snippet.includeSet)) with
                 (tree, includeSet) in
 
-                let includeNode = IncludeNode { token = token, tree = tree, state = state, path = path, isStdlib = isStdlib } in
+                let includeNode = IncludeNode { token = token, tree = tree, state = state, path = path, isStdlib = isStdlib, pos = pos } in
                 parseRec includeSet loc stream pos breakers (cons includeNode treeAcc)
             -- If current token is a breaker
             else if contains (topBreakers breakers) lword then
                 if (head breakers).1 then
-                    let acc = (cons (Leaf { token = token, state = state }) treeAcc) in
+                    let acc = (cons (Leaf { token = token, state = state, pos = pos }) treeAcc) in
                     parseAgain stream pos (tail breakers) acc
                 else
                     let absorb = absorbIt (state, lword) in
                     {
                         tree = reverse (if absorb then
-                                            cons (Leaf { token = token, state = state }) treeAcc
+                                            cons (Leaf { token = token, state = state, pos = pos }) treeAcc
                                         else treeAcc),
                         stream = if absorb then stream else oldStream,
                         absorbed = absorb,
@@ -216,13 +217,13 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                     stream
                     pos
                     (cons ( { breakers = b.1, state = state }, true ) breakers)
-                    (cons (Leaf { token = token, state = state }) treeAcc)
+                    (cons (Leaf { token = token, state = state, pos = pos }) treeAcc)
             else if hmMem lword headSnippets then
                 -- If head snippet -> build new snippet block
                 buildSnippet token stream pos breakers treeAcc
             else
                 -- Default case: accumulate leaf
-                parseAgain stream pos breakers (cons (Leaf { token = token, state = state }) treeAcc)
+                parseAgain stream pos breakers (cons (Leaf { token = token, state = state, pos = pos }) treeAcc)
             end
 
     in

@@ -15,11 +15,11 @@ include "./types-stream.mc"
 -- Main DocTree types, will contains Leafs and Nodes
 type DocTree
 -- A single token with formatting state
-con Leaf : use TokenReader in use BreakerChooser in { token: Token, state: State } -> DocTree
+con Leaf : use TokenReader in use BreakerChooser in { token: Token, state: State, pos: Pos } -> DocTree
 -- A node with children, token and state
-con Node : use TokenReader in use BreakerChooser in use TypeStream in { sons: [DocTree], ty: Option Type, token: Token, state: State} -> DocTree
+con Node : use TokenReader in use BreakerChooser in use TypeStream in { sons: [DocTree], ty: Option Type, token: Token, state: State, pos: Pos } -> DocTree
 -- A node representing an include, contains the DocTree of the file.
-con IncludeNode : use TokenReader in use BreakerChooser in { token: Token, tree: Option DocTree, state: State, path : String, isStdlib : Bool } -> DocTree
+con IncludeNode : use TokenReader in use BreakerChooser in { token: Token, tree: Option DocTree, state: State, path : String, isStdlib : Bool, pos: Pos } -> DocTree
 
 -- Print the document tree with indentation
 let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam tree.
