@@ -139,6 +139,7 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
                 disableConstructorTypes = true}
                ast)
         in
+        parsingLog (expr2str ast);
         { stack = [ast] }
 
 end 

@@ -141,8 +141,8 @@ lang TopBreakerChooser = BreakerChooserInterface
     
     sem choose =
         | (Mexpr {} | TopLet {} | TopUtest {}, "let", pos) -> build fullLetBreak (Let {})
+        | (Mexpr {} | TopLet {} | TopUtest {}, "utest", pos) -> build fullLetBreak (Utest {})    
         | (Mexpr {} | TopLet {} | TopUtest {}, "recursive", pos) -> build fullRecBreak (TopRec {})
-        | (Mexpr {} | TopLet {} | TopUtest {}, "utest", pos) -> build fullLetBreak (Utest {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "con", pos) -> build fullTopBreak (Con {})
         | (Mexpr {} | TopLet {} | TopUtest {}, "use", pos) -> build ["in"] (Use {})
@@ -153,8 +153,8 @@ lang TopRecBreakerChooser = BreakerChooserInterface
     
     sem choose =
         | (TopRec {}, "let", pos) -> build fullLetBreak (Let {})
+        | (TopRec {}, "utest", pos) -> build fullLetBreak (Utest {})    
         | (TopRec {}, "recursive", pos) -> build fullRecBreak (Rec {})
-        | (TopRec {}, "utest", pos) -> build fullLetBreak (Utest {})
         | (TopRec {}, "type", pos) -> build fullTopBreak (Type {})
         | (TopRec {}, "con", pos) -> build fullTopBreak (Con {})
         | (TopRec {}, "use", pos) -> build ["in"] (Use {})
@@ -182,8 +182,8 @@ lang RecBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Rec {}, "let", pos) -> build fullLetBreak (Let {})
+        | (Rec {}, "utest", pos) -> build fullLetBreak (Utest {})    
         | (Rec {}, "recursive", pos) -> build fullRecBreak (Rec {})
-        | (Rec {}, "utest", pos) -> build fullTopBreak (Utest {})
         | (Rec {}, "type", pos) -> build fullTopBreak (Type {})
         | (Rec {}, "con", pos) -> build fullTopBreak (Con {})
         | (Rec {}, "use", pos) -> build ["in"] (Use {})    
@@ -199,8 +199,8 @@ lang LetUtestBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Let {} | Utest {}, "let", pos) -> build fullLetBreak (Let {})
+        | (Let {} | Utest {}, "utest", pos) -> build fullLetBreak (Utest {})    
         | (Let {} | Utest {}, "recursive", pos) -> build fullRecBreak (TopRec {})
-        | (Let {} | Utest {}, "utest", pos) -> build fullLetBreak (Utest {})
         | (Let {} | Utest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Let {} | Utest {}, "con", pos) -> build fullTopBreak (Con {})
         | (Let {} | Utest {}, "use", pos) -> build ["in"] (Use {})    

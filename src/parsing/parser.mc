@@ -75,6 +75,9 @@ let typeDocTree : DocTree -> String -> DocTree =
             match typeDocTree ctx t with { ctx = ctx, tree = tree } in
                 parsingLog (concat path " is labeled");
                 { tree = IncludeNode { d with tree = Some tree }, ctx = ctx }
+        case Leaf { token = Word { content = "switch" } } then
+            match typeStreamNext ctx with { ctx = ctx } in
+            { default with ctx = ctx }
         case tree then default
         end
     in
@@ -108,7 +111,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
     -- Extra breakers (manually added).
     -- We would like to ignore `switch` keyword, but we cant becauses it ends with then end keyword. It may break a lang block in some situations.
-    let breakerAdder = [("switch", ["end"]), ("match", ["then", "in"])] in
+    let breakerAdder = [("switch", ["end"]), ("match", ["then", "in"]), ("if", ["then"])] in
 
     -- Snippet type = partial parse result
     type Snippet = { pos: Pos, tree: [DocTree], stream: TokenStream, breaker: String, toAdd: [DocTree], absorbed: Bool, includeSet: IncludeSet } in
