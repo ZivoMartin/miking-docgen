@@ -16,7 +16,8 @@ lang TypeStreamInterface = MExprAst
         
     sem typeStreamNext : TypeStreamContext -> TypeStreamNextResult
     sem typeStreamNext =
-    | { stack = [_] ++ stack } -> typeStreamNext { stack = stack }
+    | { stack = [_] ++ stack } ->
+        typeStreamNext { stack = stack }
     | { stack = [] } & ctx -> { t = None {}, ctx = ctx }
 end
 
@@ -25,6 +26,7 @@ end
 lang LetTypeStream = TypeStreamInterface
   sem typeStreamNext =
   | { stack = [TmLet { body = body, ident = ident, inexpr = inexpr }] ++ stack } & ctx ->
+
         { t = Some (tyTm body), ctx = { ctx with stack = concat [body, inexpr] stack } }
 
 end
@@ -34,8 +36,11 @@ end
 lang RecLetsTypeStream = TypeStreamInterface
 
     sem typeStreamNext =
-    | { stack = [TmRecLets { bindings = [], inexpr = inexpr }] ++ stack } & ctx -> typeStreamNext { stack = cons inexpr stack }
+    | { stack = [TmRecLets { bindings = [], inexpr = inexpr }] ++ stack } & ctx ->
+
+    typeStreamNext { stack = cons inexpr stack }
     | { stack = ([TmRecLets { bindings = [b] ++ bindings }] ++ stack) & ([TmRecLets tm] ++ stack) } & ctx ->
+
         { t = Some b.tyBody, ctx = { ctx with stack = concat [b.body, TmRecLets { tm with bindings = bindings } ] stack } }
 
 end
@@ -44,7 +49,9 @@ end
 lang AppTypeStream = TypeStreamInterface
 
   sem typeStreamNext =
-  | { stack = [TmApp { lhs = lhs, rhs = rhs }] ++ stack } -> typeStreamNext { stack = concat [lhs, rhs] stack }
+  | { stack = [TmApp { lhs = lhs, rhs = rhs }] ++ stack } ->
+
+    typeStreamNext { stack = concat [lhs, rhs] stack }
 
 end
 
@@ -52,7 +59,9 @@ end
 lang SeqTypeStream = TypeStreamInterface
 
   sem typeStreamNext =
-  | { stack = [TmSeq { tms = tms }] ++ stack } -> typeStreamNext { stack = concat tms stack }
+  | { stack = [TmSeq { tms = tms }] ++ stack } ->
+
+    typeStreamNext { stack = concat tms stack }
 
 end
 
@@ -60,8 +69,12 @@ end
 lang RecordTypeStream = TypeStreamInterface
     
     sem typeStreamNext =
-      | { stack = [TmRecord { bindings = bindings }] ++ stack } -> typeStreamNext { stack = concat (mapValues  bindings) stack }
-      | { stack = [TmRecordUpdate { rec = rec, value = value }] ++ stack } -> typeStreamNext { stack = concat [rec, value] stack }
+      | { stack = [TmRecord { bindings = bindings }] ++ stack } ->
+
+        typeStreamNext { stack = concat (mapValues  bindings) stack }
+      | { stack = [TmRecordUpdate { rec = rec, value = value }] ++ stack } ->
+
+        typeStreamNext { stack = concat [rec, value] stack }
 
 end
 
@@ -69,7 +82,9 @@ end
 lang MatchTypeStream = TypeStreamInterface
 
   sem typeStreamNext =
-  | { stack = [TmMatch { target = target, thn = thn, els = els }] ++ stack } -> typeStreamNext { stack = concat [target, thn, els] stack }
+  | { stack = [TmMatch { target = target, thn = thn, els = els }] ++ stack } ->
+
+    typeStreamNext { stack = concat [target, thn, els] stack }
     
 end
 
@@ -79,6 +94,7 @@ lang UtestTypeStream = TypeStreamInterface
     
   sem typeStreamNext =
   | { stack = [TmUtest { next = next }] ++ stack }  ->
+
     typeStreamNext { stack = cons next stack }
 
 end    
@@ -92,12 +108,14 @@ lang SimpleSkip = TypeStreamInterface
         | TmConApp { body = inexpr }
         | TmLam { body = inexpr }
         | TmType { inexpr = inexpr }
-        | TmExt { inexpr = inexpr }] ++ stack } & ctx -> typeStreamNext { ctx with stack = cons inexpr stack }
+        | TmExt { inexpr = inexpr }] ++ stack } & ctx ->
+
+            typeStreamNext { ctx with stack = cons inexpr stack }
 
 end
     
 
-lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser
+lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser + SimpleSkip
 
     
     sem buildTypeStream : String -> TypeStreamContext
@@ -121,7 +139,6 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
                 disableConstructorTypes = true}
                ast)
         in
-        printLn (expr2str ast);
         { stack = [ast] }
 
 end 

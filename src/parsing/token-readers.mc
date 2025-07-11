@@ -23,7 +23,7 @@ lang TokenReaderInterface
         recursive let work : String -> Pos -> Pos = lam s. lam pos.
             switch s 
             case "" then pos
-            case ['\n'] ++ s then work s { x = 0, y = addi pos.y 1 }
+            case ['\n'] ++ s then work s { x = 1, y = addi pos.y 1 }
             case ['\t'] ++ s then work s { pos with x = addi pos.x 4 }
             case [_] ++ s then work s { pos with x = addi pos.x 1 }
             end
@@ -272,7 +272,7 @@ lang CommAndSepSkiper = SimpleWordTokenReader
     sem skip : String -> String -> { skiped: [Token], stream: String, newToken: Token }
     sem skip =
     | str -> lam first.
-        let pos = { x = 0, y = 0 } in
+        let pos = { x = 1, y = 1 } in
         let firstSkiped = match first with "" then [] else [Separator { content = first }] in
         switch next str pos 
             case { token = (Separator {} | Comment {} | WeakComment {}) & token, stream = stream } then
@@ -354,7 +354,7 @@ lang TokenReader = ComposedWordTokenReader end
 
 mexpr use TokenReader in
 
-let pos0 = { x = 0, y = 0 } in
+let pos0 = { x = 1, y = 1 } in
 
 -- WeakComment tests
 utest (next "/- hello -/" pos0).token with WeakComment { lit = "/- hello -/", content = " hello "} in
@@ -369,7 +369,7 @@ utest (next "\"hello world\"" pos0).token with Str { content = "\"hello world\""
 utest (next "\"escaped \\\" quote\"" pos0).token with Str { content = "\"escaped \\\" quote\""} in
 
 -- Word tests
-utest next "hello(" pos0 with { token = Word { content = "hello"}, stream = "(", pos = { x = 5, y = 0 } } in
+utest next "hello(" pos0 with { token = Word { content = "hello"}, stream = "(", pos = { x = 5, y = 1 } } in
 utest (next "x1_y2" pos0).token with Word { content = "x1_y2" } in
 utest (next "includeX" pos0).token with Word { content = "includeX" } in
 utest (next "recursivelet" pos0).token with Word { content = "recursivelet" } in    
@@ -399,35 +399,35 @@ utest (next "/- a comment -/ include \"x.mc\"" pos0).token with WeakComment { li
 
 
 -- Position after a simple word
-utest (next "hello" pos0).pos with { x = 5, y = 0 } in
+utest (next "hello" pos0).pos with { x = 5, y = 1 } in
 
 -- Position after weak comment
-utest (next "/- hi -/" pos0).pos with { x = 8, y = 0 } in
+utest (next "/- hi -/" pos0).pos with { x = 8, y = 1 } in
 
 -- Position after line comment with newline
-utest (next "-- line\n" pos0).pos with { x = 0, y = 1 } in
+utest (next "-- line\n" pos0).pos with { x = 1, y = 1 } in
 
 -- Position after multi-line separator
 utest (next "   \n\t" pos0).pos with { x = 4, y = 1 } in  -- space(3) + \n (y++) + tab(x+=4)
 
 -- Position after string
-utest (next "\"abc\"" pos0).pos with { x = 5, y = 0 } in
+utest (next "\"abc\"" pos0).pos with { x = 5, y = 1 } in
 
 -- Position after include "lib.mc"
-utest (next "include \"lib.mc\"" pos0).pos with { x = 16, y = 0 } in  -- include + space + quoted string
+utest (next "include \"lib.mc\"" pos0).pos with { x = 16, y = 1 } in  -- include + space + quoted string
 
 -- Position after recursive let
-utest (next "recursive let" pos0).pos with { x = 13, y = 0 } in
+utest (next "recursive let" pos0).pos with { x = 13, y = 1 } in
 
 -- String with newline inside — should be tokenized as one line (not split)
-utest (next "\"line1\\nline2\"" pos0).pos with { x = 14, y = 0 } in
+utest (next "\"line1\\nline2\"" pos0).pos with { x = 14, y = 1 } in
 
 -- Separator with multiple newlines
-utest (next "\n\n" pos0).pos with { x = 0, y = 2 } in
+utest (next "\n\n" pos0).pos with { x = 1, y = 2 } in
 
 -- Word stopped by separator
 utest (next "abc;" pos0).token with Word { content = "abc" } in
-utest (next "abc;" pos0).pos with { x = 3, y = 0 } in
+utest (next "abc;" pos0).pos with { x = 3, y = 1 } in
 
 -- Include directive with newline before quote
 utest (next "include\n\"x\"" pos0).token with Include { lit = "include\n\"x\"", content = "x", skiped = [ Separator { content = "\n" } ] } in
@@ -437,7 +437,7 @@ utest (next "include\n\"x\"" pos0).pos with { x = 3, y = 1 } in
 utest (next "recursive\n\tlet" pos0).pos with { x = 7, y = 1 } in 
 
 -- EOF position should remain unchanged
-utest (next "" pos0).pos with { x = 0, y = 0 } in
+utest (next "" pos0).pos with { x = 1, y = 1 } in
 
 -- WeakComment
 utest (next "/- a -/next" pos0).stream with "next" in

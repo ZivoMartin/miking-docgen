@@ -116,7 +116,7 @@ end
 lang ConTypeColorizer = TypeColorizerInterface
   sem getTypeStringCode (indent : Int) (env: PprintEnv) =
   | TyCon t ->
-    match pprintTypeName env t.ident with (env, idstr) in
+    let idstr = formatTypeName t.ident.0 in
     let d = unwrapType t.data in
     match d with TyUnknown _ then (env, idstr) else
       match getTypeStringCode indent env t.data with (env, datastr) in

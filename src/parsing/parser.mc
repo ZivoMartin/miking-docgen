@@ -64,15 +64,17 @@ let typeDocTree : DocTree -> String -> DocTree =
         case Node { state = Let {} | TopLet {} | Rec {} | TopRec {} | Sem {} } & Node d then
             let t = typeStreamNext ctx in
             match foldSons d.sons t.ctx with { ctx = ctx, sons = sons} in
-            (match t.t with None {} then parsingWarn "At this stage, all lets and sems should have a type available from AST." else ());
+            (match t.t with None {} then parsingWarn (concatAll ["Found a typeless token: ", int2string d.pos.x, " ", int2string d.pos.y]) else ());
             { tree = Node { d with sons = sons, ty = t.t}, ctx = ctx }
         case Node { state = Utest {} | TopUtest {} } then default
         case Node d then
             match foldSons d.sons ctx  with { ctx = ctx, sons = sons} in
             { tree = Node { d with sons = sons }, ctx = ctx }
-        case IncludeNode { tree = Some t } & IncludeNode d then
+        case IncludeNode { tree = Some t, path = path } & IncludeNode d then
+            parsingLog (concat "Entering in" path);
             match typeDocTree ctx t with { ctx = ctx, tree = tree } in
-            { tree = IncludeNode { d with tree = Some tree }, ctx = ctx }
+                parsingLog (concat path " is labeled");
+                { tree = IncludeNode { d with tree = Some tree }, ctx = ctx }
         case tree then default
         end
     in
@@ -110,7 +112,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
     -- Snippet type = partial parse result
     type Snippet = { pos: Pos, tree: [DocTree], stream: TokenStream, breaker: String, toAdd: [DocTree], absorbed: Bool, includeSet: IncludeSet } in
-    let snippet2tree : Snippet -> String -> DocTree = lam snippet. lam progName. Node { sons = snippet.tree, pos = { x = 0, y = 0 }, token = ProgramToken { content = progName }, state = Program {}, ty = None {} } in
+    let snippet2tree : Snippet -> String -> DocTree = lam snippet. lam progName. Node { sons = snippet.tree, pos = { x = 1, y = 1 }, token = ProgramToken { content = progName }, state = Program {}, ty = None {} } in
     
     -- Access top of breaker stack
     let topState = lam breakers. let h = (head breakers).0 in h.state in
@@ -188,7 +190,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                     let s = readOrNever abs in
                     logBegin path;
                     let stream = lex s in
-                    let snippet = parseRec includeSet path stream { x = 0, y = 0 } baseBreaker [] in
+                    let snippet = parseRec includeSet path stream { x = 1, y = 1 } baseBreaker [] in
                     (Some (snippet2tree snippet path), snippet.includeSet)) with
                 (tree, includeSet) in
 
@@ -228,7 +230,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
     in
     let stream = lex code in
-    let snippet = parseRec (hashmapEmpty ()) basePath stream { x = 0, y = 0 } baseBreaker [] in
+    let snippet = parseRec (hashmapEmpty ()) basePath stream { x = 1, y = 1 } baseBreaker [] in
     let tree = snippet2tree snippet basePath in
     if opt.noTypes then tree else
         parsingLog "Computing types...";
