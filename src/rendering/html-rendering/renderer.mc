@@ -18,12 +18,15 @@ lang TypeColorizer = TypeColorizerTemplate
     sem formatTypeName =
     | t -> tp t
 
+    sem formatEntryName =
+    | t -> var t
+
     sem unknownDisplay =
     | () -> "?"
 end
     
 -- Object pretty-printer with syntax coloring 
-let objToStringColorized : Object -> String = use ObjectKinds in use TypeColorizer in lam obj.
+let objToStringColorized : Object -> String = use ObjectKinds in use TypeColorizer in use MExprPrettyPrint in lam obj.
     switch obj.kind
     case ObjLet { rec = rec, args = args, ty = ty } then
         let t = match ty with Some t then typeColorize t else "?" in
@@ -35,7 +38,11 @@ let objToStringColorized : Object -> String = use ObjectKinds in use TypeColoriz
     case ObjLang {} then concatAll [kw "lang", " ", tp obj.name]
     case ObjProgram {} then ""
     case ObjSem { ty = ty } then
-        let t = match ty with Some t then typeColorize t else "?" in
+        let t =
+            match ty with Some t then
+                if opt.noTypeColor then type2str t
+                else typeColorize t
+            else "?" in
         concatAll [kw "sem", " ", var obj.name, " : ", t]
     case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
     end
