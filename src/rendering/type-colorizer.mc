@@ -101,7 +101,7 @@ lang RecordTypeColorizer = TypeColorizerInterface + RecordTypeUtils
         in
         match mapAccumL f env orderedFields with (env, fields) in
         let fields =
-          map (lam b : (SID,String). (pprintLabelString b.0, b.1)) fields in
+          map (lam b : (SID,String). (formatEntryName (int2string b.0), b.1)) fields in
         let conventry = lam entry : (String,String). join [formatEntryName entry.0, ": ", formatTypeName entry.1] in
         (env,join ["{", strJoin ", " (map conventry fields), "}"])
 end

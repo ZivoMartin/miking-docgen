@@ -120,10 +120,12 @@ end
 -- Reader for string literals ( "..." )
 lang StrTokenReader = TokenReaderInterface
     syn Token =
-      | Str { content: String }
+      | Str { content: String, between: String }
 
     sem lit =
         | Str { content = content } -> content
+
+    
 
     sem tokenToString =
         | Str {} -> "Str"
@@ -138,7 +140,7 @@ lang StrTokenReader = TokenReaderInterface
                         let extracted = extract xs in
                         (concat ['\\', x] extracted.0, extracted.1)
                     case ['\"'] ++ xs then
-                        ("\"", xs)
+                        ("", xs)
                     case [x] ++ xs then
                         let extracted = extract xs in
                         (cons x extracted.0, extracted.1)
@@ -146,7 +148,7 @@ lang StrTokenReader = TokenReaderInterface
                     end
                 in
             let extracted =  extract str in
-            buildResult (Str { content = cons '\"' extracted.0 }) pos extracted.1
+            buildResult (Str { content = concatAll ["\"", extracted.0, "\""], between = extracted.0 }) pos extracted.1
 end
 
 -- Define set of separator characters / operators as a hashmap for fast lookup

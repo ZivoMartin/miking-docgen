@@ -27,6 +27,7 @@
 -- Result is a `DocTree` for the entire file. 
 
 
+include "./doc-tree-typer.mc"
 include "./lexer.mc"
 include "./doc-tree.mc"
 include "../util.mc"
@@ -47,44 +48,6 @@ let readOrNever : String -> String = lam fileName.
         s
     else
         error (concatAll ["Parsing failed: file ", fileName, "doesn't exists."])
-
-
-let typeDocTree : DocTree -> String -> DocTree =
-    use TokenReader in use BreakerChooser in use TypeStream in lam tree. lam filePath.
-    recursive let typeDocTree : TypeStreamContext -> DocTree -> { ctx : TypeStreamContext, tree : DocTree } = lam ctx. lam tree.
-        let foldSons = lam sons. lam ctx.
-                let fRes = foldl (
-                    lam a. lam s.
-                    match typeDocTree a.ctx s with { ctx = ctx, tree = tree} in
-                    { ctx = ctx, sons = cons tree a.sons }
-                ) { ctx = ctx, sons = [] } sons in
-                { fRes with sons = reverse fRes.sons } in
-        let default = { tree = tree, ctx = ctx } in
-        switch tree
-        case Node { state = Let {} | TopLet {} | Rec {} | TopRec {} | Sem {} } & Node d then
-            let t = typeStreamNext ctx in
-            match foldSons d.sons t.ctx with { ctx = ctx, sons = sons} in
-            (match t.t with None {} then parsingWarn (concatAll ["Found a typeless token: ", int2string d.pos.x, " ", int2string d.pos.y]) else ());
-            { tree = Node { d with sons = sons, ty = t.t}, ctx = ctx }
-        case Node { state = Utest {} | TopUtest {} } then default
-        case Node d then
-            match foldSons d.sons ctx  with { ctx = ctx, sons = sons} in
-            { tree = Node { d with sons = sons }, ctx = ctx }
-        case IncludeNode { tree = Some t, path = path } & IncludeNode d then
-            parsingLog (concat "Entering in" path);
-            match typeDocTree ctx t with { ctx = ctx, tree = tree } in
-                parsingLog (concat path " is labeled");
-                { tree = IncludeNode { d with tree = Some tree }, ctx = ctx }
-        case Leaf { token = Word { content = "switch" } } then
-            match typeStreamNext ctx with { ctx = ctx } in
-            { default with ctx = ctx }
-        case tree then default
-        end
-    in
-    parsingLog "Computing ast...";
-    let ctx = buildTypeStream filePath in
-    parsingLog "Labeling types..";
-    (typeDocTree ctx tree).tree 
 
     
 -- # The parse function

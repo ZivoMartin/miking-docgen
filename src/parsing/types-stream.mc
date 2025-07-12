@@ -14,20 +14,23 @@ lang TypeStreamInterface = MExprAst
     type TypeStreamNextResult = { ctx: TypeStreamContext, t: Option Type }
     
         
-    sem typeStreamNext : TypeStreamContext -> TypeStreamNextResult
-    sem typeStreamNext =
+    sem typeStreamNext : String -> TypeStreamContext -> TypeStreamNextResult
+    sem typeStreamNext name =
     | { stack = [_] ++ stack } ->
-        typeStreamNext { stack = stack }
+        typeStreamNext name { stack = stack }
     | { stack = [] } & ctx -> { t = None {}, ctx = ctx }
 end
 
 
 -- TmLet --
 lang LetTypeStream = TypeStreamInterface
-  sem typeStreamNext =
-  | { stack = [TmLet { body = body, ident = ident, inexpr = inexpr }] ++ stack } & ctx ->
-
-        { t = Some (tyTm body), ctx = { ctx with stack = concat [body, inexpr] stack } }
+  sem typeStreamNext name =
+  | { stack = [TmLet { ident = ident, body = body, ident = ident, inexpr = inexpr }] ++ stack } & ctx ->
+        let ctx = { ctx with stack = concat [body, inexpr] stack } in
+        if eqString ident.0 name then
+            { t = Some (tyTm body), ctx = ctx }
+        else
+            typeStreamNext name ctx
 
 end
 
@@ -35,56 +38,58 @@ end
 -- TmRecLets --
 lang RecLetsTypeStream = TypeStreamInterface
 
-    sem typeStreamNext =
+    sem typeStreamNext name =
     | { stack = [TmRecLets { bindings = [], inexpr = inexpr }] ++ stack } & ctx ->
-
-    typeStreamNext { stack = cons inexpr stack }
+        typeStreamNext name { stack = cons inexpr stack }
     | { stack = ([TmRecLets { bindings = [b] ++ bindings }] ++ stack) & ([TmRecLets tm] ++ stack) } & ctx ->
-
-        { t = Some b.tyBody, ctx = { ctx with stack = concat [b.body, TmRecLets { tm with bindings = bindings } ] stack } }
+        let ctx = { ctx with stack = concat [b.body, TmRecLets { tm with bindings = bindings } ] stack } in
+        if eqString name b.ident.0 then
+            { t = Some b.tyBody, ctx = ctx }
+        else
+            typeStreamNext name ctx
 
 end
 
     
 lang AppTypeStream = TypeStreamInterface
 
-  sem typeStreamNext =
+  sem typeStreamNext name =
   | { stack = [TmApp { lhs = lhs, rhs = rhs }] ++ stack } ->
 
-    typeStreamNext { stack = concat [lhs, rhs] stack }
+    typeStreamNext name { stack = concat [lhs, rhs] stack }
 
 end
 
 
 lang SeqTypeStream = TypeStreamInterface
 
-  sem typeStreamNext =
+  sem typeStreamNext name =
   | { stack = [TmSeq { tms = tms }] ++ stack } ->
 
-    typeStreamNext { stack = concat tms stack }
+    typeStreamNext name { stack = concat tms stack }
 
 end
 
 
 lang RecordTypeStream = TypeStreamInterface
     
-    sem typeStreamNext =
+    sem typeStreamNext name =
       | { stack = [TmRecord { bindings = bindings }] ++ stack } ->
 
-        typeStreamNext { stack = concat (mapValues  bindings) stack }
+        typeStreamNext name { stack = concat (mapValues  bindings) stack }
       | { stack = [TmRecordUpdate { rec = rec, value = value }] ++ stack } ->
 
-        typeStreamNext { stack = concat [rec, value] stack }
+        typeStreamNext name { stack = concat [rec, value] stack }
 
 end
 
 
 lang MatchTypeStream = TypeStreamInterface
 
-  sem typeStreamNext =
+  sem typeStreamNext name =
   | { stack = [TmMatch { target = target, thn = thn, els = els }] ++ stack } ->
 
-    typeStreamNext { stack = concat [target, thn, els] stack }
+    typeStreamNext name { stack = concat [target, thn, els] stack }
     
 end
 
@@ -92,17 +97,17 @@ end
 -- TmUtest --
 lang UtestTypeStream = TypeStreamInterface
     
-  sem typeStreamNext =
+  sem typeStreamNext name =
   | { stack = [TmUtest { next = next }] ++ stack }  ->
 
-    typeStreamNext { stack = cons next stack }
+    typeStreamNext name { stack = cons next stack }
 
 end    
     
 -- TmConDef and TmConApp --
 lang SimpleSkip = TypeStreamInterface
     
-  sem typeStreamNext =
+  sem typeStreamNext name =
   | { stack =
           [TmConDef { inexpr = inexpr } 
         | TmConApp { body = inexpr }
@@ -110,7 +115,7 @@ lang SimpleSkip = TypeStreamInterface
         | TmType { inexpr = inexpr }
         | TmExt { inexpr = inexpr }] ++ stack } & ctx ->
 
-            typeStreamNext { ctx with stack = cons inexpr stack }
+            typeStreamNext name { ctx with stack = cons inexpr stack }
 
 end
     
@@ -139,7 +144,67 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
                 disableConstructorTypes = true}
                ast)
         in
-        parsingLog (expr2str ast);
+        recursive let displayAst = use MExprAst in lam ast.
+    switch ast 
+    case TmVar { ident = ident } then
+        printLn (concat "var " ident.0)
+    case TmLet { ident = ident, body = body, inexpr = inexpr } then
+        printLn (concat "let " ident.0);
+        displayAst body;
+        displayAst inexpr
+    case TmApp { lhs = lhs, rhs = rhs } then
+        printLn "app";
+        displayAst lhs;
+        displayAst rhs
+    case TmLam { ident = ident, body = body } then
+        printLn (concat "lam " ident.0);
+        displayAst body
+    case TmRecLets { bindings = bindings, inexpr = inexpr } then
+        printLn "rec";
+        iter (lam b. displayAst b.body) bindings;
+        displayAst inexpr
+    case TmConst {} then
+        printLn "const"
+    case TmRecord { bindings = bindings } then
+        printLn "record";
+        iter displayAst (mapValues bindings)
+    case TmRecordUpdate { rec = rec, value = value } then
+        printLn "record update";
+        displayAst rec;
+        displayAst value
+    case TmSeq { tms = tms } then
+      printLn "seq ";
+      iter displayAst tms
+    case TmType { ident = ident, ty = _ty, inexpr = inexpr } then
+        printLn (concat "type " ident.0);
+        displayAst inexpr
+    case TmConDef { ident = ident, ty = _ty, inexpr = inexpr } then
+        printLn (concat "con def " ident.0);
+        displayAst inexpr
+    case TmConApp { ident = ident, body = body } then
+        printLn (concat "con app " ident.0);
+        displayAst body
+    case TmMatch { target = target, thn = thn, els = els } then
+        printLn "match";
+        displayAst target;
+        displayAst thn;
+        displayAst els
+    case TmUtest { test = test, expected = expected, next = next } then
+        printLn "utest";
+        displayAst test;
+        displayAst expected;
+        displayAst next
+    case TmPlaceholder {} then
+        printLn "placeholder"
+    case TmExt {inexpr = inexpr } then
+        printLn "external";
+        displayAst inexpr
+    case TmNever {} then
+        printLn "never"
+    end
+in
+displayAst ast;
+        printLn (expr2str ast);
         { stack = [ast] }
 
 end 
