@@ -22,7 +22,7 @@ lang TypeColorizer = TypeColorizerTemplate
     | t -> var t
 
     sem unknownDisplay =
-    | () -> "?"
+    | () -> "Unknown"
 end
     
 -- Object pretty-printer with syntax coloring 

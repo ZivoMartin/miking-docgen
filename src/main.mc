@@ -9,7 +9,7 @@ include "./extracting/extracter.mc"
 include "./rendering/renderer.mc"
 include "./options.mc"
 include "./server.mc"
-
+    
 mexpr
     logOpt opt;
     let tree = parseFile opt.file in

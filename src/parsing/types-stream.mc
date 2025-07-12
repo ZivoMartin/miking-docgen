@@ -11,14 +11,22 @@ include "../logger.mc"
 lang TypeStreamInterface = MExprAst
     
     type TypeStreamContext = { stack: [Expr] }
-    type TypeStreamNextResult = { ctx: TypeStreamContext, t: Option Type }
+    type TypeStreamNextResult = { ctx: TypeStreamContext, t: Option Type, skiped: [{ name: String, t: Type }] }
     
         
     sem typeStreamNext : String -> TypeStreamContext -> TypeStreamNextResult
     sem typeStreamNext name =
     | { stack = [_] ++ stack } ->
         typeStreamNext name { stack = stack }
-    | { stack = [] } & ctx -> { t = None {}, ctx = ctx }
+    | { stack = [] } & ctx -> { t = None {}, ctx = ctx, skiped = [] }
+
+    sem checkAndEnd name ident t =
+    | ctx -> if eqString name ident.0 then
+            { t = Some t, ctx = ctx, skiped = [] }
+        else
+             printLn (concatAll ["skiped: ", ident.0, " ", name]);
+            let res = typeStreamNext name ctx in
+            { res with skiped = cons { name = ident.0, t = t } res.skiped }
 end
 
 
@@ -27,10 +35,7 @@ lang LetTypeStream = TypeStreamInterface
   sem typeStreamNext name =
   | { stack = [TmLet { ident = ident, body = body, ident = ident, inexpr = inexpr }] ++ stack } & ctx ->
         let ctx = { ctx with stack = concat [body, inexpr] stack } in
-        if eqString ident.0 name then
-            { t = Some (tyTm body), ctx = ctx }
-        else
-            typeStreamNext name ctx
+        checkAndEnd name ident (tyTm body) ctx
 
 end
 
@@ -43,11 +48,7 @@ lang RecLetsTypeStream = TypeStreamInterface
         typeStreamNext name { stack = cons inexpr stack }
     | { stack = ([TmRecLets { bindings = [b] ++ bindings }] ++ stack) & ([TmRecLets tm] ++ stack) } & ctx ->
         let ctx = { ctx with stack = concat [b.body, TmRecLets { tm with bindings = bindings } ] stack } in
-        if eqString name b.ident.0 then
-            { t = Some b.tyBody, ctx = ctx }
-        else
-            typeStreamNext name ctx
-
+        checkAndEnd name b.ident (b.tyBody) ctx
 end
 
     
@@ -203,9 +204,9 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
         printLn "never"
     end
 in
-displayAst ast;
-        printLn (expr2str ast);
-        { stack = [ast] }
+--displayAst ast;
+    printLn (expr2str ast);
+    { stack = [ast] }
 
 end 
     
