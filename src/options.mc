@@ -2,61 +2,56 @@
 --
 -- This module parses command-line arguments for the doc generator.
 --
--- ## Supported arguments:
--- - `--no-open`  
---    Disables automatic opening of the output in the browser.
---
--- - `--debug`  
---    Enables global debugging mode (enables all sub-debug flags).
---
--- - `--parsing-debug`, `--extracting-debug`, `--rendering-debug`  
---    Enables specific logging for internal stages.
---
--- - `--format <format>`  
---    Sets the output format. Supported values: `html`, `md`. Default is `html`.
---
--- - `<file>`  
---    The source file to process. Required as the last positional argument.
---
 -- ## Usage
+--
 -- ```
 -- my-doc-gen [options] <file>
 --
+-- Required:
+--   <file>                    Path to the Miking source file to process.
+--
 -- Options:
---   --no-open
---   --debug
---   --parsing-debug
---   --extracting-debug
---   --rendering-debug
---   --format html|md
+--   --no-open                 Do not open the result in a browser.
+--   --debug                   Enable all debug modes.
+--   --parsing-debug           Enable debug logs for parsing stage.
+--   --extracting-debug        Enable debug logs for extracting stage.
+--   --labeling-debug          Enable debug logs for labeling stage.
+--   --rendering-debug         Enable debug logs for rendering stage.
+--   --no-warn                 Disable all warnings.
+--   --no-parsing-warn         Disable parsing warnings.
+--   --no-extracting-warn      Disable extracting warnings.
+--   --no-labeling-warn        Disable labeling warnings.
+--   --no-rendering-warn       Disable rendering warnings.
+--   --format <html|md>        Output format. Default: html.
+--   --output-folder <name>    Output folder name. Default: doc-gen-output.
+--   --no-gen                  Do not parse anything, use the output folder as is.
+--   --skip-labeling           Skip type computation during parsing.
+--   --no-type-color           Disable type colorization in output.
 -- ```
 
 include "./format.mc"
 include "string.mc"
 
--- Represents parsed CLI options.
--- Contains all toggles, selected format, and the input file path.
 type Options = use Formats in {
-    noOpen: Bool,            -- Disable auto-open of output
-    fmt: Format,             -- Output format: `html` or `md`
-    file: String,            -- Input file path
-    debug: Bool,             -- Global debug flag
-    parsingDebug: Bool,      -- Debug flag for parsing stage
-    extractingDebug: Bool,   -- Debug flag for extracting stage
-    labelingDebug: Bool,     -- Debug flag for labeling stage    
-    renderingDebug: Bool,    -- Debug flag for rendering stage
-    noParsingWarn: Bool,     -- Disable warning during parsing stage
-    noExtractingWarn: Bool,  -- Disable warning during extraction stage
-    noLabelingWarn: Bool,    -- Disable warning during labeling stage    
-    noRenderingWarn: Bool,   -- Disable warning during rendering stage
-    noWarn: Bool,            -- Disable all warnings
-    outputFolder: String,    -- Output name for the folder
-    noGen: Bool,             -- Do not parse anything and uses the output folder 
-    skipLabeling: Bool,      -- Disable types computing during parsing
-    noTypeColor: Bool        -- Disable the type colorizer
+    noOpen: Bool,
+    fmt: Format,
+    file: String,
+    debug: Bool,
+    parsingDebug: Bool,
+    extractingDebug: Bool,
+    labelingDebug: Bool,
+    renderingDebug: Bool,
+    noParsingWarn: Bool,
+    noExtractingWarn: Bool,
+    noLabelingWarn: Bool,
+    noRenderingWarn: Bool,
+    noWarn: Bool,
+    outputFolder: String,
+    noGen: Bool,
+    skipLabeling: Bool,
+    noTypeColor: Bool
 }
 
--- The default state of all CLI options before parsing.
 let optionsDefault : Options = use Formats in {
     noOpen = false,
     fmt = defaultFormat (),
@@ -72,20 +67,37 @@ let optionsDefault : Options = use Formats in {
     noGen = false,
     noParsingWarn = false,
     noExtractingWarn = false,
-    noLabelingWarn = false,    
+    noLabelingWarn = false,
     noRenderingWarn = false,
     noWarn = false
-
 }
 
--- Displays an error message and terminates the program if the CLI arguments are invalid.
--- This is called whenever an unrecognized flag or invalid format is encountered.
-let usage = lam x.
-    error "Usage: <program> [--no-open] [--debug] [--<parsing|extracting|rendering>-debug] [--format <html|md>] <file>"
+let usage = lam.
+    error (join [
+        "Usage:\n",
+        "  my-doc-gen [options] <file>\n\n",
+        "Required:\n",
+        "  <file>                    Path to the Miking source file to process.\n\n",
+        "Options:\n",
+        "  --no-open                 Do not open the result in a browser.\n",
+        "  --debug                   Enable all debug modes.\n",
+        "  --parsing-debug           Enable debug logs for parsing stage.\n",
+        "  --extracting-debug        Enable debug logs for extracting stage.\n",
+        "  --labeling-debug          Enable debug logs for labeling stage.\n",
+        "  --rendering-debug         Enable debug logs for rendering stage.\n",
+        "  --no-warn                 Disable all warnings.\n",
+        "  --no-parsing-warn         Disable parsing warnings.\n",
+        "  --no-extracting-warn      Disable extracting warnings.\n",
+        "  --no-labeling-warn        Disable labeling warnings.\n",
+        "  --no-rendering-warn       Disable rendering warnings.\n",
+        "  --format <html|md>        Output format. Default: html.\n",
+        "  --output-folder <name>    Output folder name. Default: doc-gen-output.\n",
+        "  --no-gen                  Do not parse anything, use the output folder as is.\n",
+        "  --skip-labeling           Skip type computation during parsing.\n",
+        "  --no-type-color           Disable type colorization in output.\n"
+    ])
 
--- Parses a list of command-line arguments and builds a fully populated `Options` value.
 let parseOptions : [String] -> Options = lam argv.
-    -- Recursive helper to process args
     recursive let parse : [String] -> Options -> Options = use Formats in lam args. lam opts.
         switch args
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
@@ -98,28 +110,27 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }
         case ["--labeling-debug"] ++ rest then parse rest { opts with labelingDebug = true }       
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
-    
+
         case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
         case ["--no-parsing-warn"] ++ rest then parse rest { opts with noParsingWarn = true }
         case ["--no-extracting-warn"] ++ rest then parse rest { opts with noExtractingWarn = true }
         case ["--no-labeling-warn"] ++ rest then parse rest { opts with noLabelingWarn = true }       
         case ["--no-rendering-warn"] ++ rest then parse rest { opts with noRenderingWarn = true }                
-    
+
         case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
+
         case ["--format", fmt] ++ rest then
             match formatFromStr fmt with Some fmt then
                 parse rest { opts with fmt = fmt }
             else usage ()
+
         case [s] ++ rest then
             if eqString opts.file "" then parse rest { opts with file = s }
             else usage ()
+
         case [] then opts
         end
     in
-    -- Skip program name (first argument), start parsing with defaults
-    parse (tail argv) optionsDefault    
+    parse (tail argv) optionsDefault
 
-
--- Global `Options` instance parsed from `argv`.
--- This value is used throughout the application to control rendering behavior.
 let opt: Options = parseOptions argv
