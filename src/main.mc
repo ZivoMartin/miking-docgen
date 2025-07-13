@@ -12,10 +12,11 @@ include "./rendering/renderer.mc"
 include "./server.mc"
     
 mexpr
-    logOpt opt;
-    let tree = parseFile opt.file in
-    let obj = extract tree in
-    let obj = if opt.skipLabeling then obj else label obj in
-    render opt.fmt obj;
-    startServer obj
+    (if opt.noGen then () else
+        logOpt opt;
+        let tree = parseFile opt.file in
+        let obj = extract tree in
+        let obj = if opt.skipLabeling then obj else label obj in
+        render opt.fmt obj);
+    startServer ()
     

@@ -108,17 +108,19 @@ finally:
     httpd.server_close()
 "
 ]    
-let startServer = lam obj.
-    match obj with ObjectNode { obj = obj } then
+let startServer = lam.
     if opt.noOpen then () else
+    if sysFileExists opt.file then
     let file = sysTempFileMake () in
     match fileWriteOpen file with Some wc then
         let write = fileWriteString wc in
         write (pythonScript opt.fmt);
         fileWriteFlush wc;
         fileWriteClose wc;
-        let path = concatAll [sysGetCwd (), "/", opt.outputFolder] in
-        let res = sysRunCommand ["python3", file, path, objLink obj] "" "/" in ()
+        let pwd = sysGetCwd () in
+        let path = concatAll [pwd, "/", opt.outputFolder] in
+        match goHere pwd opt.file with { path = first } in
+        let res = sysRunCommand ["python3", file, path, concat "File/" first] "" "/" in ()
         
     else error "Failed to open temporary file. The browser failed to start but the files have been generated."
-    else error "Extraction failed: `extract` should always return a tree with a Program root."
+    else error (concatAll ["Failed to start server, file ", opt.file, " doesn't exist."])
