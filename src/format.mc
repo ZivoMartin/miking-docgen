@@ -4,6 +4,8 @@
 -- functions for converting to/from strings. It's used primarily by the CLI or renderer to
 -- determine the output mode.
 
+include "option.mc"
+    
 lang Formats
 
     syn Format =

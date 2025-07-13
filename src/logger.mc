@@ -22,10 +22,13 @@ let extractingLog : String -> () = lam m.
     if or opt.extractingDebug opt.debug then log "Extracting" m else ()
 let renderingLog : String -> () = lam m.
     if or opt.renderingDebug opt.debug then log "Rendering" m else ()
+let labelingLog : String -> () = lam m.
+    if or opt.labelingDebug opt.debug then log "Labeling" m else ()
 
 let parsingWarn : String -> () = lam m. if opt.noParsingWarn then () else warn "Parsing" m
 let extractingWarn : String -> () = lam m. if opt.noExtractingWarn then () else warn "Extracting" m
 let renderingWarn : String -> () = lam m. if opt.noRenderingWarn then () else warn "Rendering" m
+let labelingWarn : String -> () = lam m. if opt.noLabelingWarn then () else warn "Labeling" m    
 
 
 let logOpt : Options -> () = use Formats in lam opt.

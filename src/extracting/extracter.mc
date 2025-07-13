@@ -20,7 +20,7 @@ include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
 include "../logger.mc"
-    
+        
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
@@ -42,7 +42,7 @@ let extract : DocTree -> ObjectTree =
     
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         switch tree 
-        case Node { sons = sons, token = token, state = state, ty = ty } then
+        case Node { sons = sons, token = token, state = state } then
 
             -- Builds doc string from comments
             let buildDoc : [String] -> String = lam commentBuffer.
@@ -121,9 +121,9 @@ let extract : DocTree -> ObjectTree =
                         let sons = skipUseIn sons in
                         -- Extract params if any
                         let args = extractParams sons in
-                        ObjLet { rec = rec, args = args, ty = ty }
+                        ObjLet { rec = rec, args = args, ty = None {} }
                     case Sem {} then
-                        ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons), ty = ty }
+                        ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons), ty = None {} }
                     case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
                     case Lang {} then ObjLang { parents = extractParents name.rest }
                     case (Con {} | TopCon {}) then

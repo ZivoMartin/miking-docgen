@@ -32,6 +32,7 @@
 -- ```
 
 include "./format.mc"
+include "string.mc"
 
 -- Represents parsed CLI options.
 -- Contains all toggles, selected format, and the input file path.
@@ -42,9 +43,11 @@ type Options = use Formats in {
     debug: Bool,             -- Global debug flag
     parsingDebug: Bool,      -- Debug flag for parsing stage
     extractingDebug: Bool,   -- Debug flag for extracting stage
+    labelingDebug: Bool,     -- Debug flag for labeling stage    
     renderingDebug: Bool,    -- Debug flag for rendering stage
     noParsingWarn: Bool,     -- Disable warning during parsing stage
     noExtractingWarn: Bool,  -- Disable warning during extraction stage
+    noLabelingWarn: Bool,    -- Disable warning during labeling stage    
     noRenderingWarn: Bool,   -- Disable warning during rendering stage
     noWarn: Bool,            -- Disable all warnings
     outputFolder: String,    -- Output name for the folder
@@ -61,6 +64,7 @@ let optionsDefault : Options = use Formats in {
     debug = false,
     parsingDebug = false,
     extractingDebug = false,
+    labelingDebug = false,
     renderingDebug = false,
     noTypes = false,
     noTypeColor = false,
@@ -68,6 +72,7 @@ let optionsDefault : Options = use Formats in {
     noGen = false,
     noParsingWarn = false,
     noExtractingWarn = false,
+    noLabelingWarn = false,    
     noRenderingWarn = false,
     noWarn = false
 
@@ -88,15 +93,17 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--no-types"] ++ rest then parse rest { opts with noTypes = true }
         case ["--no-type-color"] ++ rest then parse rest { opts with noTypeColor = true }
 
-        case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
-        case ["--no-parsing-warn"] ++ rest then parse rest { opts with noParsingWarn = true }
-        case ["--no-extracting-warn"] ++ rest then parse rest { opts with noExtractingWarn = true }   
-        case ["--no-rendering-warn"] ++ rest then parse rest { opts with noRenderingWarn = true }        
-        
         case ["--debug"] ++ rest then parse rest { opts with debug = true }
         case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
-        case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }   
+        case ["--extracting-debug"] ++ rest then parse rest { opts with extractingDebug = true }
+        case ["--labeling-debug"] ++ rest then parse rest { opts with labelingDebug = true }       
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
+    
+        case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
+        case ["--no-parsing-warn"] ++ rest then parse rest { opts with noParsingWarn = true }
+        case ["--no-extracting-warn"] ++ rest then parse rest { opts with noExtractingWarn = true }
+        case ["--no-labeling-warn"] ++ rest then parse rest { opts with noLabelingWarn = true }       
+        case ["--no-rendering-warn"] ++ rest then parse rest { opts with noRenderingWarn = true }                
     
         case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
         case ["--format", fmt] ++ rest then

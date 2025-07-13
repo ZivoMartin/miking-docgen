@@ -1,13 +1,14 @@
 include "mexpr/keywords.mc"
 include "mexpr/ast.mc"
-include "../util.mc"
 include "map.mc"
 include "pmexpr/demote.mc"
 include "ocaml/external.mc"
 include "mexpr/type-check.mc"
 include "map.mc"
-include "../logger.mc"
 
+include "../logger.mc"
+include "../util.mc"
+    
 lang TypeStreamInterface = MExprAst
     
     type TypeStreamContext = { stack: [Expr] }

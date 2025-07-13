@@ -27,7 +27,6 @@
 -- Result is a `DocTree` for the entire file. 
 
 
-include "./doc-tree-typer.mc"
 include "./lexer.mc"
 include "./doc-tree.mc"
 include "../util.mc"
@@ -55,7 +54,7 @@ let readOrNever : String -> String = lam fileName.
 -- - And the name of the output root
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
-let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChooser in use TypeStream in lam code. lam basePath.
+let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChooser in lam code. lam basePath.
     -- HashSet of included files
     type IncludeSet = HashMap String () in
 
@@ -78,7 +77,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
     -- Snippet type = partial parse result
     type Snippet = { pos: Pos, tree: [DocTree], stream: TokenStream, breaker: String, toAdd: [DocTree], absorbed: Bool, includeSet: IncludeSet } in
-    let snippet2tree : Snippet -> String -> DocTree = lam snippet. lam progName. Node { sons = snippet.tree, pos = { x = 1, y = 1 }, token = ProgramToken { content = progName }, state = Program {}, ty = None {} } in
+    let snippet2tree : Snippet -> String -> DocTree = lam snippet. lam progName. Node { sons = snippet.tree, pos = { x = 1, y = 1 }, token = ProgramToken { content = progName }, state = Program {} } in
     
     -- Access top of breaker stack
     let topState = lam breakers. let h = (head breakers).0 in h.state in
@@ -119,7 +118,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                     else
                         { stream = snippet.stream, newPos = snippet.pos, sons = snippet.tree }) with { stream = stream, sons = sons, newPos = newPos } in
 
-                    let docNode = Node { sons = sons, pos = pos, token = token, state = newState, ty = None {} } in
+                    let docNode = Node { sons = sons, pos = pos, token = token, state = newState } in
                     let tree = reverse (cons docNode snippet.toAdd) in
                     parseRec snippet.includeSet loc stream newPos (tail breakers) (concat tree treeAcc)
                 else
@@ -127,7 +126,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
                     let docNode = Node {
                         pos = pos,
                         sons = snippet.tree, token = token,
-                        state = newState, ty = None {} } in
+                        state = newState } in
                     let concatToAdd = cons docNode snippet.toAdd in
                     {
                         snippet with
@@ -197,14 +196,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
     in
     let stream = lex code in
     let snippet = parseRec (hashmapEmpty ()) basePath stream { x = 1, y = 1 } baseBreaker [] in
-    let tree = snippet2tree snippet basePath in
-    if opt.noTypes then tree else
-        parsingLog "Computing types...";
-        let tree = typeDocTree tree  basePath in
-        parsingLog "Parsing is over.";
-        tree 
-    
-
+    snippet2tree snippet basePath
 
 let parseFile : String -> DocTree = lam fileName.
     let s = readOrNever fileName in
@@ -215,8 +207,8 @@ mexpr use BreakerChooser in
 
 -- 1. Basic single block parsing
 utest parse "let x = 1" "" with 
-  (Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons =
-    [Node { ty = None {}, token = Word { content = "let" }, state = TopLet {}, sons = [
+  (Node {  token = ProgramToken { content = "" }, state = Program {}, sons =
+    [Node {  token = Word { content = "let" }, state = TopLet {}, sons = [
         Leaf { token = Separator { content = " " }, state = TopLet {} },
         Leaf { token = Word { content = "x" }, state = TopLet {} },
         Leaf { token = Separator { content = " " }, state = TopLet {} },    
@@ -227,8 +219,8 @@ utest parse "let x = 1" "" with
   }) in
 
 utest parse "lang end" "" with 
-  (Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons =
-    [Node { ty = None {}, token = Word { content = "lang" }, state = Lang {}, sons = [
+  (Node {  token = ProgramToken { content = "" }, state = Program {}, sons =
+    [Node {  token = Word { content = "lang" }, state = Lang {}, sons = [
         Leaf { token = Separator { content = " " }, state = Lang {} },
         Leaf { token = Word { content = "end" }, state = Lang {} }
     ]},
@@ -237,10 +229,10 @@ utest parse "lang end" "" with
 
 -- 2. Nested snippet structure
 utest parse "let let in " "" with 
-  (Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons = [
-    Node { ty = None {}, token = Word { content = "let" }, state = TopLet {}, sons = [
+  (Node {  token = ProgramToken { content = "" }, state = Program {}, sons = [
+    Node {  token = Word { content = "let" }, state = TopLet {}, sons = [
         Leaf { token = Separator { content = " " }, state = TopLet {} },
-        Node { ty = None {}, token = Word { content = "let" }, state = Let {}, sons = [
+        Node {  token = Word { content = "let" }, state = Let {}, sons = [
             Leaf { token = Separator { content = " " }, state = Let {} },
             Leaf { token = Word { content = "in" }, state = Let {} }
         ]},
@@ -252,10 +244,10 @@ utest parse "let let in " "" with
 
 -- 3. Absorbed vs non-absorbed breakers
 utest parse "mexpr let x = 1 in" "" with 
-  (Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons = [
-    Node { ty = None {}, token = Word { content = "mexpr" }, state = Mexpr {}, sons = [
+  (Node {  token = ProgramToken { content = "" }, state = Program {}, sons = [
+    Node {  token = Word { content = "mexpr" }, state = Mexpr {}, sons = [
       Leaf { token = Separator { content = " " }, state = Mexpr {} },        
-      Node { ty = None {}, token = Word { content = "let" }, state = Let {}, sons = [
+      Node {  token = Word { content = "let" }, state = Let {}, sons = [
         Leaf { token = Separator { content = " " }, state = Let {} },    
         Leaf { token = Word { content = "x" }, state = Let {} },
         Leaf { token = Separator { content = " " }, state = Let {} },    
@@ -272,8 +264,8 @@ utest parse "mexpr let x = 1 in" "" with
 
 -- 4. Hard break handling
 utest parse "let x = 3 let y = 2 lang end" "" with 
-(Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons = [
-    Node { ty = None {}, token = Word { content = "let" }, state = TopLet {}, sons = [
+(Node {  token = ProgramToken { content = "" }, state = Program {}, sons = [
+    Node {  token = Word { content = "let" }, state = TopLet {}, sons = [
         Leaf { token = Separator { content = " " }, state = TopLet {} },    
         Leaf { token = Word { content = "x" }, state = TopLet {} },
         Leaf { token = Separator { content = " " }, state = TopLet {} },
@@ -282,7 +274,7 @@ utest parse "let x = 3 let y = 2 lang end" "" with
         Leaf { token = Word { content = "3" }, state = TopLet {} },
         Leaf { token = Separator { content = " " }, state = TopLet {} }
     ]},
-    Node { ty = None {}, token = Word { content = "let" }, state = TopLet {}, sons = [
+    Node {  token = Word { content = "let" }, state = TopLet {}, sons = [
         Leaf { token = Separator { content = " " }, state = Let {} },    
         Leaf { token = Word { content = "y" }, state = Let {} },
         Leaf { token = Separator { content = " " }, state = Let {} },    
@@ -291,7 +283,7 @@ utest parse "let x = 3 let y = 2 lang end" "" with
         Leaf { token = Word { content = "2" }, state = Let {} },
         Leaf { token = Separator { content = " " }, state = Let {} }
     ]},
-    Node { ty = None {}, token = Word { content = "lang" }, state = Lang {}, sons = [
+    Node {  token = Word { content = "lang" }, state = Lang {}, sons = [
         Leaf { token = Separator { content = " " }, state = Lang {} },    
         Leaf { token = Word { content = "end" }, state = Lang {} }
     ]},
@@ -302,8 +294,8 @@ utest parse "let x = 3 let y = 2 lang end" "" with
 
 -- 5. Extra breakers
 utest parse "lang switch x then end end" "" with 
-  (Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons = [
-    Node { ty = None {}, token = Word { content = "lang" }, state = Lang {}, sons = [
+  (Node {  token = ProgramToken { content = "" }, state = Program {}, sons = [
+    Node {  token = Word { content = "lang" }, state = Lang {}, sons = [
         Leaf { token = Separator { content = " " }, state = Lang {} },
         Leaf { token = Word { content = "switch" }, state = Lang {} },
         Leaf { token = Separator { content = " " }, state = Lang {} },    
@@ -321,8 +313,8 @@ utest parse "lang switch x then end end" "" with
 
 -- 6. Deep nesting
 utest parse "let x = 2 lang sem let y = match 1 with 1 then 2 in 3 end" "" with 
-(Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons = [
-    Node { ty = None {}, token = Word { content = "let" }, state = TopLet {}, sons = [
+(Node {  token = ProgramToken { content = "" }, state = Program {}, sons = [
+    Node {  token = Word { content = "let" }, state = TopLet {}, sons = [
         Leaf { token = Separator { content = " " }, state = TopLet {} },
         Leaf { token = Word { content = "x" }, state = TopLet {} },
         Leaf { token = Separator { content = " " }, state = TopLet {} },    
@@ -331,11 +323,11 @@ utest parse "let x = 2 lang sem let y = match 1 with 1 then 2 in 3 end" "" with
         Leaf { token = Word { content = "2" }, state = TopLet {} },
         Leaf { token = Separator { content = " " }, state = TopLet {} }    
     ]},
-    Node { ty = None {}, token = Word { content = "lang" }, state = Lang {}, sons = [
+    Node {  token = Word { content = "lang" }, state = Lang {}, sons = [
         Leaf { token = Separator { content = " " }, state = Lang {} },    
-        Node { ty = None {}, token = Word { content = "sem" }, state = Sem {}, sons = [
+        Node {  token = Word { content = "sem" }, state = Sem {}, sons = [
             Leaf { token = Separator { content = " " }, state = Sem {} },
-            Node { ty = None {}, token = Word { content = "let" }, state = Let {}, sons = [
+            Node {  token = Word { content = "let" }, state = Let {}, sons = [
                 Leaf { token = Separator { content = " " }, state = Let {} },
                 Leaf { token = Word { content = "y" }, state = Let {} },
                 Leaf { token = Separator { content = " " }, state = Let {} },    
@@ -366,8 +358,8 @@ utest parse "let x = 2 lang sem let y = match 1 with 1 then 2 in 3 end" "" with
 
 -- 7. Recursive let
 utest parse "let x = 1 recursive let y = recursive let z = 2 in 2 end" "" with 
-  (Node { ty = None {}, token = ProgramToken { content = "" }, state = Program {}, sons =
-    [Node { ty = None {}, token = Word { content = "let" }, state = TopLet {}, sons = [
+  (Node {  token = ProgramToken { content = "" }, state = Program {}, sons =
+    [Node {  token = Word { content = "let" }, state = TopLet {}, sons = [
         Leaf { token = Separator { content = " " }, state = TopLet {} },
         Leaf { token = Word { content = "x" }, state = TopLet {} },
         Leaf { token = Separator { content = " " }, state = TopLet {} },    
@@ -376,13 +368,13 @@ utest parse "let x = 1 recursive let y = recursive let z = 2 in 2 end" "" with
         Leaf { token = Word { content = "1" }, state = TopLet {} },
         Leaf { token = Separator { content = " " }, state = TopLet {} }    
     ]},
-    Node { ty = None {}, token = Recursive { lit = "recursive let", skiped = [Separator { content = " " }] }, state = TopRec {}, sons = [
+    Node {  token = Recursive { lit = "recursive let", skiped = [Separator { content = " " }] }, state = TopRec {}, sons = [
         Leaf { token = Separator { content = " " }, state = TopRec {} },
         Leaf { token = Word { content = "y" }, state = TopRec {} },
         Leaf { token = Separator { content = " " }, state = TopRec {} },    
         Leaf { token = Word { content = "=" }, state = TopRec {} },
         Leaf { token = Separator { content = " " }, state = TopRec {} },        
-        Node { ty = None {}, token = Recursive { lit = "recursive let", skiped = [Separator { content = " " }] }, state = Rec {}, sons = [
+        Node {  token = Recursive { lit = "recursive let", skiped = [Separator { content = " " }] }, state = Rec {}, sons = [
             Leaf { token = Separator { content = " " }, state = Rec {} },
             Leaf { token = Word { content = "z" }, state = Rec {} },
             Leaf { token = Separator { content = " " }, state = Rec {} },    

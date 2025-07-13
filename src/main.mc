@@ -4,20 +4,18 @@
 -- extracting: Converts DocTree into an ObjectTree suitable for generating documentation.
 -- rendering: Renders the `ObjectTree` into Markdown pages (HTML support planned).
 
+include "./options.mc"
 include "./parsing/parser.mc"
 include "./extracting/extracter.mc"
+include "./labeling/labeler.mc"
 include "./rendering/renderer.mc"
-include "./options.mc"
 include "./server.mc"
     
 mexpr
     logOpt opt;
     let tree = parseFile opt.file in
---    displayTree tree;
     let obj = extract tree in
-
+    let obj = label obj in
     render opt.fmt obj;
-    match obj with ObjectNode { obj = obj } then
-        if opt.noOpen then () else startServer obj opt.fmt
-    else error "Extraction failed: `extract` should always return a tree with a Program root."
+    startServer obj
     

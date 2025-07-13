@@ -9,8 +9,9 @@
 
 include "../util.mc"
 include "./source-code-builder.mc"
-include "../parsing/types-stream.mc"
 include "util.mc"
+
+include "mexpr/ast.mc"
     
 lang ObjectKinds = MExprAst
 
@@ -103,6 +104,13 @@ let objToString = use ObjectKinds in lam kind. lam name.
     case ObjProgram {} then ""
     case kind then concatAll [getFirstWord kind, " ", name]
     end
+
+let objSetType = use ObjectKinds in lam obj. lam ty.
+    { obj with kind = switch obj.kind
+    case ObjLet d then ObjLet { d with ty = ty }
+    case ObjSem d then ObjSem { d with ty = ty }    
+    case _ then obj.kind end }
+    
     
 -- Object tree (hierarchy)
 type ObjectTree

@@ -47,8 +47,15 @@ recursive let nthWord = use TokenReader in lam sons. lam n.
     end
 end
 
--- Returns the first word in the syntax tree nodes or empty if none.
-let getName = lam sons. match nthWord sons 0 with Some r then r else { word = "", rest = [] }
+recursive let getName: [DocTree] -> { word: String, rest: [DocTree]} = use TokenReader in lam sons.
+    switch sons
+    case [Leaf { token = Word { content = "#var" } }, Leaf { token = Str { between = name } } ] ++ rest then
+        { word = name, rest = rest }
+    case [Leaf { token = Word { content = name } }] ++ rest then
+        { word = name, rest = rest }
+    case [_] ++ sons then getName sons
+    end
+end
 
 -- Extracts the type signature from a reversed list of string tokens.
 let strExtractType = use TokenReader in lam typedef.
