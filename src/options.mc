@@ -52,7 +52,7 @@ type Options = use Formats in {
     noWarn: Bool,            -- Disable all warnings
     outputFolder: String,    -- Output name for the folder
     noGen: Bool,             -- Do not parse anything and uses the output folder 
-    noTypes: Bool,           -- Disable types computing during parsing
+    skipLabeling: Bool,      -- Disable types computing during parsing
     noTypeColor: Bool        -- Disable the type colorizer
 }
 
@@ -66,7 +66,7 @@ let optionsDefault : Options = use Formats in {
     extractingDebug = false,
     labelingDebug = false,
     renderingDebug = false,
-    noTypes = false,
+    skipLabeling = false,
     noTypeColor = false,
     outputFolder = "doc-gen-output",
     noGen = false,
@@ -90,7 +90,7 @@ let parseOptions : [String] -> Options = lam argv.
         switch args
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
         case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
-        case ["--no-types"] ++ rest then parse rest { opts with noTypes = true }
+        case ["--skip-labeling"] ++ rest then parse rest { opts with skipLabeling = true }
         case ["--no-type-color"] ++ rest then parse rest { opts with noTypeColor = true }
 
         case ["--debug"] ++ rest then parse rest { opts with debug = true }

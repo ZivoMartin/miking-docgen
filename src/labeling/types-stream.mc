@@ -1,5 +1,4 @@
 include "mexpr/keywords.mc"
-include "mexpr/ast.mc"
 include "map.mc"
 include "pmexpr/demote.mc"
 include "ocaml/external.mc"
@@ -122,7 +121,6 @@ lang SimpleSkip = TypeStreamInterface
             typeStreamNext name { ctx with stack = cons inexpr stack }
 
 end
-    
 
 lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser + SimpleSkip
     sem typeStreamFromExpr : Expr -> TypeStreamContext 
@@ -132,24 +130,21 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
     sem buildTypeStream : String -> TypeStreamContext
     sem buildTypeStream = | file ->
         let externalsExclude = mapKeys (externalGetSupportedExternalImpls ()) in
+        labelingLog "Genarating ast...";
         let ast = parseMCoreFile {{{{{{ defaultBootParserParseMCoreFileArg
-          with keepUtests = true }
+          with keepUtests = false }
           with pruneExternalUtests = true }
           with externalsExclude = externalsExclude }
           with pruneExternalUtestsWarning = false }
           with eliminateDeadCode = false }
           with keywords = mexprExtendedKeywords } file in
         
-        let ast = makeKeywords ast in
-        let ast = demoteParallel ast in
+        labelingLog "Symbolizing ast...";
         let ast = symbolize ast in
-        let ast =
-          removeMetaVarExpr
-            (typeCheckExpr
-               {typcheckEnvDefault with
-                disableConstructorTypes = true}
-               ast)
-        in
+
+        labelingLog "Typing ast...";
+        let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
+
 --        printLn (expr2str ast);
         { stack = [ast] }
 end 

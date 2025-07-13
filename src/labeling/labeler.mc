@@ -3,7 +3,7 @@ include "../extracting/objects.mc"
 include "../util.mc"
 
 let label : ObjectTree -> ObjectTree =
-    use ObjectKinds in use TypeStream in lam tree.
+    use ObjectKinds in use TypeStream in use RemoveMetaVar in lam tree.
 
     type SkipedContext = { ctx: TypeStreamContext, t: Type } in
     type LangContext = { langName: String, semMap: HashMap String SkipedContext } in
@@ -23,7 +23,9 @@ let label : ObjectTree -> ObjectTree =
                 { fRes with sons = reverse fRes.sons } in
     
         let default = { tree = tree, ctx = ctx, langContext = langContext } in
-        let buildRes = lam obj. lam ctx. lam langContext. lam sons. lam ty. {
+        let buildRes = lam obj. lam ctx. lam langContext. lam sons. lam ty.
+            let ty = match ty with Some t then Some (removeMetaVarType t) else None {} in
+            {
                     tree = ObjectNode {
                             sons = sons,
                             obj = objSetType obj ty

@@ -15,7 +15,7 @@ mexpr
     logOpt opt;
     let tree = parseFile opt.file in
     let obj = extract tree in
-    let obj = label obj in
+    let obj = if opt.skipLabeling then obj else label obj in
     render opt.fmt obj;
     startServer obj
     

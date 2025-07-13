@@ -4,13 +4,21 @@ include "../util.mc"
 include "mexpr/pprint.mc"
 
     
-lang TypeColorizerInterface = MExprAst + PrettyPrint
+lang TypeColorizerInterface = MExprAst + PrettyPrint + MetaVarTypePrettyPrint
     sem getTypeStringCode (indent : Int) (env : PprintEnv) =
     
     sem typeColorize =
     | ty ->
         match getTypeStringCode 0 pprintEnvEmpty ty with (_,str) in str
+
+    sem getTypeStringCode indent env =
+    | ty ->
+        renderingWarn "Type not supported by colorize";
+        (env, "x")
     
+    sem pprintVarName env =
+    | name -> (env, formatEntryName name.0)
+            
     sem formatTypeName : String -> String
     sem formatEntryName : String -> String
     sem unknownDisplay : () -> String
