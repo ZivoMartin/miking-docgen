@@ -155,3 +155,13 @@ let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentL
         { path = normalizePath path, isStdlib = strStartsWith stdlibLoc path }
     else
         { path = join [stdlibLoc, "/", target], isStdlib = true }
+
+
+-- Try to open a file in a String, panic if it fails
+let readOrNever : String -> String = lam fileName.
+    match fileReadOpen fileName with Some rc then
+        let s = fileReadString rc in
+        fileReadClose rc;
+        s
+    else
+        error (join ["Failed to read a file: file ", fileName, " doesn't exists."])

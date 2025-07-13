@@ -2,8 +2,40 @@
 --
 -- This module defines the entry point for rendering an object tree into formatted output.
 -- It traverses the parsed object structure, organizes its children,
--- reconstructs source code, and writes formatted files to disk.
-
+-- reconstructs the source code, and writes the formatted documentation files to disk.
+--
+-- After the extraction phase (and optionally the labeling phase), we obtain an `Object`.
+-- From this object, generating documentation pages becomes straightforward.
+--
+-- Here’s how the renderer works:
+--
+-- - To produce the correct output format, we define a rendering interface in `renderer-interface.mc`,
+--   which is implemented by each specific renderer. Then, we unify all language renderers inside the main `Renderer`,
+--   allowing us to abstract away the output format and work uniformly.
+--
+-- - Rendering the children on an object’s page is relatively simple.
+--   We can distinguish each child’s type via its `kind` field and display them in the desired order.
+--   Additionally, linking to a child is easy thanks to its `namespace`, which provides a unique and structured identifier.
+--
+-- - Reconstructing the source code is by far the most challenging part.
+--   We don’t just want to dump a raw string into the documentation,
+--   we want syntax highlighting, block-by-block collapsibility (folding), and contextual formatting.
+--   Importantly, this reconstruction must **re-use data from the children**:
+--   otherwise, we would have to recompute syntax highlighting and toggle button placement from scratch,
+--   which is clearly not an acceptable solution.
+--
+--   The idea is that each renderer defines a `WordRender`:
+--   a function that takes a word (token) and returns, for example, a colored `<span>` for HTML.
+--   During reconstruction, each word is passed through this function.
+--
+--   The toggling system is handled in `source-code-spliter.mc`.
+--   The idea is to split the source code into three parts:
+--     - `left` (or `preview`): the part shown on the left of the toggle button,
+--     - `right` (or `hidden`): the collapsible part of the code,
+--     - `trimmed`: separators or comments found at the end of the block.
+--      Trimmed part should **not** be displayed in the current block’s source,
+--      but instead passed to the parent, who may need them for its own reconstruction.
+    
 include "preprocessor.mc"
 include "../extracting/objects.mc"
 include "../util.mc"    

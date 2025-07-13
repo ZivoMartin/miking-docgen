@@ -24,6 +24,8 @@
 --      but encountering 'lang' reveals that it's actually a top-level 'let' block,
 --      requiring us to restructure the tree accordingly.    
 --
+-- The includes are handled via a hashset allowing us to know if we already visited a given include before jumping in it's code.
+--
 -- Result is a `DocTree` for the entire file. 
 
 
@@ -38,15 +40,6 @@ include "ext/file-ext.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 include "sys.mc"
-
-    
-let readOrNever : String -> String = lam fileName.
-    match fileReadOpen fileName with Some rc then
-        let s = fileReadString rc in
-        fileReadClose rc;
-        s
-    else
-        error (join ["Parsing failed: file ", fileName, " doesn't exists."])
 
     
 -- # The parse function
@@ -198,6 +191,8 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
     let snippet = parseRec (hashmapEmpty ()) basePath stream { x = 1, y = 1 } baseBreaker [] in
     snippet2tree snippet basePath
 
+
+-- Parse a Miking file, takes in argument a file, read it, and call parse with its content.
 let parseFile : String -> DocTree = lam fileName.
     let s = readOrNever fileName in
     parse s fileName

@@ -1,9 +1,27 @@
+-- # Type Colorization System
+--
+-- This module defines the infrastructure used to render Miking types as strings,
+-- optionally with formatting (e.g., syntax highlighting or HTML spans).
+--
+-- It is used during documentation rendering to display object types in a visually
+-- structured and readable format. Types are rendered based on their kind (e.g., `Bool`, `Record`, `Variant`).
+-- You can extend the colorization by composing new modules with this interface.
+--
+-- All the code comes from the type pretty printer of the stdlib in mexpr/pprint.mc.
+
+
+
 include "mexpr/type-check.mc"
 include "../logger.mc"
 include "../util.mc"
 include "mexpr/pprint.mc"
 
-    
+-- ## TypeColorizerInterface
+--
+-- This abstract interface defines how to render types as strings.
+-- - `typeColorize` is the top-level entry point.
+-- - `getTypeStringCode` implements formatting logic for each type variant.
+-- - Additional semantic hooks allow formatting names and unknown types.
 lang TypeColorizerInterface = MExprAst + PrettyPrint + MetaVarTypePrettyPrint
     sem getTypeStringCode (indent : Int) (env : PprintEnv) =
     

@@ -4,12 +4,41 @@
 -- - input: a parsed `DocTree`
 -- - output: an `ObjectTree` representing documentation content
 --
--- The extracter walks the `DocTree`:
--- - It accumulates comments across lines (using a comment buffer)
--- - It builds the corresponding Object and ObjectTree
--- - It detects Includes and recursively loads included files
+-- The parsing phase produces a `DocTree`, which is a relatively minimal structure that only defines the layout of the code.
+-- In the extracting phase, we transform this `DocTree` into an `Object`.  
+-- Objects also follow a tree logic, with sub-objects, but they carry more semantic information than the `DocTree`.
 --
--- The result can later be rendered as Markdown / HTML files.
+-- In this phase, look-ahead is allowed, meaning we can inspect as many upcoming nodes or children/subchildren of the current node as we wish.
+--
+-- Here is the list of information contained in an `Object`:
+--
+--  - `name`: The name of the object. If the object is a `let`, it corresponds to the variable name.  
+--    To extract it, we perform a look-ahead on the children of the current node until we find the object’s name.
+--
+--  - `doc`: The documentation is one of the most important components.  
+--    It consists of the comments written above the definition of an object.  
+--    To retrieve it, we maintain a comment buffer throughout the extraction process.  
+--    Each time we encounter a comment, it is added to the buffer. If we encounter something other than a comment, there are three cases:
+--      * It is a `DocTree` node -> the current state of the buffer becomes the documentation for that node, and the buffer is cleared.
+--      * It is a separator **without** a newline -> we simply keep the buffer unchanged.  
+--        This is crucial, for example in cases where the documented object is indented.  
+--        In that case, the documentation (i.e., the comments) is likely also indented and separated by separators.  
+--        However, if the separator **contains** a newline, we must still clear the buffer, because it represents a break.  
+--      * It is anything else -> we clear the buffer.
+--
+--  - `namespace`: The namespace reflects the current position of the node in the tree.  
+--    Each namespace is naturally unique and is used, combined with the object name, to produce unique identifiers for every object.  
+--    Duplicate names within the same namespace are handled elsewhere.
+--
+--  - `kind`: The `kind` field is specific to the object’s type.  
+--    It is first used to distinguish between object types (`Let`, `Sem`, etc.),  
+--    but also to enrich objects with category-specific metadata:  
+--    e.g., the composition of a language, parameter names of a let, or the variants of a syntax.
+--
+--  - `sourceCode`: The `sourceCode` of an object is an **absolute** representation of the object’s source code.  
+--    It is not just a plain string, but a structured value defined in `source-code-word.mc` and `source-code-builder.mc`.  
+--    The idea is to pass each node and leaf of the `DocTree` to the source code builder,  
+--    and call its `finish` function after all children have been processed to obtain the final representation.
     
 include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
