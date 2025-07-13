@@ -36,7 +36,6 @@ include "../options.mc"
 
 include "seq.mc"
 include "hashmap.mc"
-include "ext/file-ext.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 include "sys.mc"

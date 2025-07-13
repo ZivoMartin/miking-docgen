@@ -26,7 +26,6 @@
 --   --output-folder <name>    Output folder name. Default: doc-gen-output.
 --   --no-gen                  Do not parse anything, use the output folder as is.
 --   --skip-labeling           Skip type computation during parsing.
---   --no-type-color           Disable type colorization in output.
 -- ```
 
 include "./format.mc"
@@ -48,8 +47,7 @@ type Options = use Formats in {
     noWarn: Bool,
     outputFolder: String,
     noGen: Bool,
-    skipLabeling: Bool,
-    noTypeColor: Bool
+    skipLabeling: Bool
 }
 
 let optionsDefault : Options = use Formats in {
@@ -62,7 +60,6 @@ let optionsDefault : Options = use Formats in {
     labelingDebug = false,
     renderingDebug = false,
     skipLabeling = false,
-    noTypeColor = false,
     outputFolder = "doc-gen-output",
     noGen = false,
     noParsingWarn = false,
@@ -93,8 +90,7 @@ let usage = lam.
         "  --format <html|md>        Output format. Default: html.\n",
         "  --output-folder <name>    Output folder name. Default: doc-gen-output.\n",
         "  --no-gen                  Do not parse anything, use the output folder as is.\n",
-        "  --skip-labeling           Skip type computation during parsing.\n",
-        "  --no-type-color           Disable type colorization in output.\n"
+        "  --skip-labeling           Skip type computation during parsing.\n"
     ])
 
 let parseOptions : [String] -> Options = lam argv.
@@ -103,7 +99,6 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
         case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
         case ["--skip-labeling"] ++ rest then parse rest { opts with skipLabeling = true }
-        case ["--no-type-color"] ++ rest then parse rest { opts with noTypeColor = true }
 
         case ["--debug"] ++ rest then parse rest { opts with debug = true }
         case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }

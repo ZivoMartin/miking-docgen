@@ -8,6 +8,7 @@ include "string.mc"
 include "hashmap.mc"
 include "sys.mc"
 include "stdlib.mc"
+include "ext/file-ext.mc"
 
 -- Print a line followed by a newline to stdout.
 let printLn: String -> () = lam word. print word; print "\n"; flushStdout ()

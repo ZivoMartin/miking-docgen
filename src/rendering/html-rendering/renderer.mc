@@ -39,10 +39,7 @@ let objToStringColorized : Object -> String = use ObjectKinds in use TypeColoriz
     case ObjProgram {} then ""
     case ObjSem { ty = ty } then
         let t =
-            match ty with Some t then
-                if opt.noTypeColor then type2str t
-                else typeColorize t
-            else "?" in
+            match ty with Some t then typeColorize t else "?" in
         join [kw "sem", " ", var obj.name, " : ", t]
     case kind then join [kw (getFirstWord kind), " ", var obj.name]
     end
