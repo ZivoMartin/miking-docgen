@@ -29,7 +29,7 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
     -- Build indentation string
     let indentString = lam n.
         if eqi n 0 then "" else
-            concatAll (replicate n "  ")
+            join (replicate n "  ")
     in
     
     -- Recursive print of tree with current indentation depth
@@ -37,14 +37,14 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
             
         switch tree
         case Node { sons = sons, token = token, state = state } then
-            printLn (concatAll [indentString depth, "Node (", toString state, ")"]);
+            printLn (join [indentString depth, "Node (", toString state, ")"]);
             iter (lam child. displayTreeIndented child (addi depth 1)) sons
         case Leaf { token = token, state = state } then
             -- Skip separators and EOF for cleaner output
             match token with Separator {} | Eof {} then () else 
-                printLn (concatAll [indentString depth, "Leaf (", tokenToString token, "):", lit token])
+                printLn (join [indentString depth, "Leaf (", tokenToString token, "):", lit token])
         case IncludeNode { tree = tree, token = token, state = state, path = path } then
-            printLn (concatAll [indentString depth, "Include \"", path, "\" (", toString state, ")"]);
+            printLn (join [indentString depth, "Include \"", path, "\" (", toString state, ")"]);
             match tree with Some tree then displayTreeIndented tree (addi depth 1) else ()
         case _ then parsingWarn "No-covered variant in DocTree reached during displayTree execution."
         end

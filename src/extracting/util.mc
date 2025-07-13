@@ -14,7 +14,7 @@ include "../logger.mc"
 -- Concatenates a namespace and a name with a slash between them.
 -- Example: getNamespace "foo/bar" "baz" returns "foo/bar/baz"
 let getNamespace = lam namespace. lam name.
-    concatAll [namespace, "/", name]
+    join [namespace, "/", name]
 
 utest getNamespace "foo" "bar" with "foo/bar"
 utest getNamespace "" "bar" with "/bar"
@@ -68,7 +68,7 @@ let strExtractType = use TokenReader in lam typedef.
             switch (current, res)
             case (_, "," ++ _) | ("{", "}" ++ _) | ("[", _) | (_, "]" ++ _) | ("(", _) | (_, ")" ++ _) | (_, ":" ++ _) then
                 concat current res
-            case (current, _) then concatAll [current, " ", res]
+            case (current, _) then join [current, " ", res]
             end
         end in strExtractType (reverse typedef)
 

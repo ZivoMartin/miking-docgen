@@ -12,13 +12,6 @@ include "stdlib.mc"
 -- Print a line followed by a newline to stdout.
 let printLn: String -> () = lam word. print word; print "\n"; flushStdout ()
 
--- Concatenates all strings in an array into a single string.
--- Example: concatAll ["a", "b", "c"] => "abc"
-let concatAll = lam arr. strJoin "" arr
-
-utest concatAll ["foo", "bar", "baz"] with "foobarbaz"
-utest concatAll [] with ""
-
 -- Checks if a given string `lword` is present in the array of strings `arr`.
 recursive let contains = lam arr. lam lword.
     match arr with [] then
@@ -44,7 +37,7 @@ recursive let repeat = lam s. lam n.
     else cons s (repeat s (subi n 1))
 end
 
-utest concatAll (repeat "x" 5) with "xxxxx"
+utest join (repeat "x" 5) with "xxxxx"
 utest repeat "a" 0 with []
 
 -- Changes the extension of a file.
@@ -157,8 +150,8 @@ let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentL
     let currentLoc = match currentLoc with "" then "./" else currentLoc in
     match target with "" then { path = currentLoc, isStdlib = false } else
     let path = if strStartsWith "/" target then target
-               else concatAll [currentLoc, "/", target] in
+               else join [currentLoc, "/", target] in
     if sysFileExists path then
         { path = normalizePath path, isStdlib = strStartsWith stdlibLoc path }
     else
-        { path = concatAll [stdlibLoc, "/", target], isStdlib = true }
+        { path = join [stdlibLoc, "/", target], isStdlib = true }

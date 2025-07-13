@@ -114,7 +114,7 @@ lang CommentTokenReader = TokenReaderInterface
                     ("", "")
             in
             let extracted = extract str in
-            buildResult (Comment { content = extracted.0, lit = concatAll ["--", extracted.0, "\n"] }) pos extracted.1
+            buildResult (Comment { content = extracted.0, lit = join ["--", extracted.0, "\n"] }) pos extracted.1
 end
 
 -- Reader for string literals ( "..." )
@@ -148,7 +148,7 @@ lang StrTokenReader = TokenReaderInterface
                     end
                 in
             let extracted =  extract str in
-            buildResult (Str { content = concatAll ["\"", extracted.0, "\""], between = extracted.0 }) pos extracted.1
+            buildResult (Str { content = join ["\"", extracted.0, "\""], between = extracted.0 }) pos extracted.1
 end
 
 -- Define set of separator characters / operators as a hashmap for fast lookup
@@ -299,7 +299,7 @@ lang IncludeTokenReader = CommAndSepSkiper
     sem includeNext =
         | str -> lam pos. lam firstSep.
             match skip str firstSep with { newToken = Str { content = str }, stream = stream, skiped = skiped } then
-                let token = Include { content = subsequence str 1 (subi (length str) 2), lit = concatAll ["include", concatAll (map lit skiped), str], skiped = skiped } in
+                let token = Include { content = subsequence str 1 (subi (length str) 2), lit = join ["include", join (map lit skiped), str], skiped = skiped } in
                 buildResult token pos stream
             else
                 parsingWarn "During lexing, was waiting for an Str after `include `.";
@@ -333,7 +333,7 @@ lang RecursiveTokenReader = CommAndSepSkiper
     sem recNext =
     | str -> lam pos. lam firstSep.
         match skip str firstSep with { newToken = Word { content = "let" }, stream = stream, skiped = skiped } then
-            let token = Recursive { lit = concatAll ["recursive", concatAll (map lit skiped), "let"], skiped = skiped } in
+            let token = Recursive { lit = join ["recursive", join (map lit skiped), "let"], skiped = skiped } in
             buildResult token pos stream
         else
             parsingWarn "During lexing, was waiting for a let word after `recursive`.";

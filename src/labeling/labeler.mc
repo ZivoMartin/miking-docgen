@@ -36,7 +36,7 @@ let label : ObjectTree -> ObjectTree =
         in
     
         match tree with ObjectNode { obj = { kind = kind, name = name, namespace = namespace } & obj, sons = sons } then
-            let warn = lam. labelingWarn (concatAll ["Found a typeless token : ", fileName]) in
+            let warn = lam. labelingWarn (join ["Found a typeless token : ", fileName]) in
             switch kind
             case ObjLet {} then
                 match typeStreamNext name ctx with { t = t, ctx = ctx } in
@@ -45,7 +45,7 @@ let label : ObjectTree -> ObjectTree =
                buildRes obj ctx langContext sons t
             case ObjSem {} then
                 match langContext with Some { langName = langName, semMap = semMap } then
-                    let prefix = concatAll ["v", langName, "_"] in
+                    let prefix = join ["v", langName, "_"] in
                     let name = concat prefix name in
                     match hmLookup name semMap with Some { t = t, ctx = tmpCtx } then
                         match foldSons sons (None {}) tmpCtx with { ctx = tmpCtx, sons = sons} in

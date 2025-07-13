@@ -131,7 +131,7 @@ let extract : DocTree -> ObjectTree =
                             match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
                                 extractType (skipUseIn typedef)
                             else
-                                extractingWarn (concatAll ["The constructor ", name.word, " is typeless."]);
+                                extractingWarn (join ["The constructor ", name.word, " is typeless."]);
                                 ""
                         in
                         ObjCon { t = t }
@@ -173,7 +173,7 @@ let extract : DocTree -> ObjectTree =
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
                     { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }  }
                 else
-                    extractingWarn (concatAll ["Found a leaf at the root of a Program : ", objTreeToString res.obj]); defaultRes
+                    extractingWarn (join ["Found a leaf at the root of a Program : ", objTreeToString res.obj]); defaultRes
             else defaultRes
         end
     in

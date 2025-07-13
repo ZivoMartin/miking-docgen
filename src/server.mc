@@ -18,7 +18,7 @@
 include "extracting/objects.mc"
 include "rendering/renderer.mc"
 
-let pythonScript = use Renderer in lam fmt. concatAll ["
+let pythonScript = use Renderer in lam fmt. join ["
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import unquote
@@ -118,9 +118,9 @@ let startServer = lam.
         fileWriteFlush wc;
         fileWriteClose wc;
         let pwd = sysGetCwd () in
-        let path = concatAll [pwd, "/", opt.outputFolder] in
+        let path = join [pwd, "/", opt.outputFolder] in
         match goHere pwd opt.file with { path = first } in
         let res = sysRunCommand ["python3", file, path, concat "File/" first] "" "/" in ()
         
     else error "Failed to open temporary file. The browser failed to start but the files have been generated."
-    else error (concatAll ["Failed to start server, file ", opt.file, " doesn't exist."])
+    else error (join ["Failed to start server, file ", opt.file, " doesn't exist."])

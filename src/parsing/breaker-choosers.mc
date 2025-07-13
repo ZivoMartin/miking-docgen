@@ -75,12 +75,12 @@ lang BreakerChooserInterface = TokenReader
 
     sem crashMessage : Pos -> String
     sem crashMessage =
-        | pos -> concatAll ["Parsing Failed, x: ", int2string pos.x, ", y: ", int2string pos.y, ": "]
+        | pos -> join ["Parsing Failed, x: ", int2string pos.x, ", y: ", int2string pos.y, ": "]
     
     -- Determine the new state and the breakers after having find a block opener
     sem choose : (State, String, Pos) -> Breaker
     sem choose =
-      | (state, word, pos) -> error (concatAll [crashMessage pos, "You cannot have the word ", word, " inside a ", (toString state), " block."])
+      | (state, word, pos) -> error (join [crashMessage pos, "You cannot have the word ", word, " inside a ", (toString state), " block."])
 
     -- Determine if for a given breaker, the tokenisation should continue for the parent state
     sem continue : (State, String) -> Bool

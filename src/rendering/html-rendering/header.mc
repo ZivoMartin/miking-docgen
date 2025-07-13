@@ -1,5 +1,5 @@
 let getHeader = lam title.
-    concatAll [
+    join [
 "<!DOCTYPE html>
 <html lang=\"en\">
 <head>

@@ -31,11 +31,11 @@ let objToStringColorized : Object -> String = use ObjectKinds in use TypeColoriz
     case ObjLet { rec = rec, args = args, ty = ty } then
         let t = match ty with Some t then typeColorize t else "?" in
         let args = strJoin " " (map var args) in
-        concatAll [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " ", args, " : ", t]
-    case ObjType { t = t } then concatAll [kw "type", " ", var obj.name, match t with Some t then concat " : " (tp t) else ""]
-    case ObjCon { t = t } then concatAll [kw "con", " ", var obj.name, " : ", tp t]
+        join [if rec then concat (kw "recursive") " " else "", kw "let ", var obj.name, " ", args, " : ", t]
+    case ObjType { t = t } then join [kw "type", " ", var obj.name, match t with Some t then concat " : " (tp t) else ""]
+    case ObjCon { t = t } then join [kw "con", " ", var obj.name, " : ", tp t]
     case (ObjMexpr {} | ObjUtest {}) & kind then kw (getFirstWord kind)
-    case ObjLang {} then concatAll [kw "lang", " ", tp obj.name]
+    case ObjLang {} then join [kw "lang", " ", tp obj.name]
     case ObjProgram {} then ""
     case ObjSem { ty = ty } then
         let t =
@@ -43,8 +43,8 @@ let objToStringColorized : Object -> String = use ObjectKinds in use TypeColoriz
                 if opt.noTypeColor then type2str t
                 else typeColorize t
             else "?" in
-        concatAll [kw "sem", " ", var obj.name, " : ", t]
-    case kind then concatAll [kw (getFirstWord kind), " ", var obj.name]
+        join [kw "sem", " ", var obj.name, " : ", t]
+    case kind then join [kw (getFirstWord kind), " ", var obj.name]
     end
 
 recursive let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWordKinds in lam w.
@@ -60,11 +60,11 @@ recursive let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWord
     in
 
     let renderSkiped: [Token] -> String = lam skiped.
-        concatAll (map (lam s. wordRenderer ( { word = s, kind = CodeDefault {} } )) skiped) in
+        join (map (lam s. wordRenderer ( { word = s, kind = CodeDefault {} } )) skiped) in
 
     switch w
     case { word = Include { content = content, skiped = skiped } } then
-        concatAll [kw "include", renderSkiped skiped, st (characterReplacer content)]    
+        join [kw "include", renderSkiped skiped, st (characterReplacer content)]    
     case { word = word, kind = kind } then
         let class = (switch word
         case Str {} then "string"
@@ -84,10 +84,10 @@ end
 
 let codeHider : Bool -> CodeHider = lam jumpLine. lam code.
     let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
-    concatAll [jsDisplay, if jumpLine then "\n" else "", code, "</div>"] 
+    join [jsDisplay, if jumpLine then "\n" else "", code, "</div>"] 
 
 let getCodeWithoutPreview = lam code.
-    concatAll ["<div class=\"inline-container\"><pre class=\"source\">", getCodeWithoutPreview (codeHider true) code, "</pre></div>"]
+    join ["<div class=\"inline-container\"><pre class=\"source\">", getCodeWithoutPreview (codeHider true) code, "</pre></div>"]
 
     
 -- The HTML renderer implementation 
@@ -109,7 +109,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         let s = objToStringColorized obj in
         match s with "" then "" else
         let link = objLink obj in
-        concatAll [
+        join [
         "<div class=\"ObjectParent\">\n",
         htmlPre s, 
         "<a class=\"gotoLink\" href=\"", if strStartsWith "/" link then "" else "/", link, "\">[→]</a>", "\n",
@@ -118,7 +118,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     sem objGetSpecificDoc =
     | (Html {}, { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } & data ) ->
         let parents = map htmlGetLangLink parents in
-        concatAll [
+        join [
         htmlStrong "Stem from:", "\n",
         (strJoin " + " parents), "\n<br>\n",
         htmlStrong "Signature:", "\n",
@@ -129,20 +129,20 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
                 ObjSem { langName = langName, variants = variants }
                 )} & obj } & data ) ->
         let code = getCodeWithoutPreview data in
-        let variants = concatAll (map (lam v. concatAll ["| ", v, "\n"]) variants) in
-        concatAll [
+        let variants = join (map (lam v. join ["| ", v, "\n"]) variants) in
+        join [
             htmlStrong "From:", "\n", htmlGetLangLink langName, "\n\n",
             htmlBalise "Signature" "h2", "\n\n",
-            htmlCode (concatAll [objToStringColorized obj, "\n", variants]), "\n",
+            htmlCode (join [objToStringColorized obj, "\n", variants]), "\n",
             htmlDoc doc, "\n", code
          ]
     
     | (Html {}, { obj = obj } & data) ->
         let code = getCodeWithoutPreview data in
         let s = objToStringColorized obj in
-        concatAll [
+        join [
         match s with "" then "" else 
-            concatAll [htmlBalise "Signature" "h2", "\n\n", (htmlCode s), "\n"],
+            join [htmlBalise "Signature" "h2", "\n\n", (htmlCode s), "\n"],
             htmlDoc obj.doc, "\n", code]
 
 

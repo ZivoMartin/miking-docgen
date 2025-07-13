@@ -77,18 +77,18 @@ let objAbsolutePath : Object -> String = lam obj. normalizePath (concat basePosi
 let objLink : Object -> String = use ObjectKinds in lam obj.
     switch obj
     case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
-    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then concatAll ["File", objAbsolutePath obj]
-    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then concatAll ["Lib", namespace]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then join ["File", objAbsolutePath obj]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then join ["Lib", namespace]
     case { name = name, kind = (ObjSem { langName = langName } | ObjSyn { langName = langName }) & kind } then
-        concatAll [getLangLink langName, "/", getFirstWord kind, "/", name]    
-    case { name = name, namespace = namespace, kind = kind } then concatAll [getFirstWord kind, objAbsolutePath obj, "/", name, ".", getFirstWord kind]
+        join [getLangLink langName, "/", getFirstWord kind, "/", name]    
+    case { name = name, namespace = namespace, kind = kind } then join [getFirstWord kind, objAbsolutePath obj, "/", name, ".", getFirstWord kind]
     end
     
 -- Get full namespace of object
 let objNamespace : Object -> String = use ObjectKinds in lam obj.
     switch obj
     case { kind = (ObjProgram {} | ObjInclude {}), name = name } then name
-    case { name = name, namespace = namespace } then concatAll [namespace, "/", name]
+    case { name = name, namespace = namespace } then join [namespace, "/", name]
     end
 
 -- Empty default object
@@ -97,12 +97,12 @@ let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace
 -- Returns a string representation of the object
 let objToString = use ObjectKinds in lam kind. lam name.
     switch kind
-    case ObjLet { rec = rec, args = args } then concatAll [if rec then "recursive " else "", "let ", name, " ", strJoin " " args]
-    case ObjType { t = t } then concatAll ["type ", name, match t with Some t then concat " : " t else ""]
-    case ObjCon { t = t } then concatAll ["con ", name, " : ", t]
+    case ObjLet { rec = rec, args = args } then join [if rec then "recursive " else "", "let ", name, " ", strJoin " " args]
+    case ObjType { t = t } then join ["type ", name, match t with Some t then concat " : " t else ""]
+    case ObjCon { t = t } then join ["con ", name, " : ", t]
     case ObjMexpr {} then "mexpr"
     case ObjProgram {} then ""
-    case kind then concatAll [getFirstWord kind, " ", name]
+    case kind then join [getFirstWord kind, " ", name]
     end
 
 let objSetType = use ObjectKinds in lam obj. lam ty.

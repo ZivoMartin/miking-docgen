@@ -7,7 +7,7 @@ include "util.mc"
 include "options.mc"
 include "format.mc"
 
-let message : String -> String -> String -> () = lam kind. lam namespace. lam message. printLn (concatAll [kind, " from ", namespace, ": ", message])
+let message : String -> String -> String -> () = lam kind. lam namespace. lam message. printLn (join [kind, " from ", namespace, ": ", message])
     
 -- Displays a warning message
 let warn : String -> String -> () = lam m1. lam m2.
@@ -32,7 +32,7 @@ let labelingWarn : String -> () = lam m. if opt.noLabelingWarn then () else warn
 
 
 let logOpt : Options -> () = use Formats in lam opt.
-    let msg = concatAll [
+    let msg = join [
 "Running miking-doc-gen with\n",
 "   noOpen: ", bool2string opt.noOpen, "\n",
 "   fmt: ", formatToStr opt.fmt, "\n",
