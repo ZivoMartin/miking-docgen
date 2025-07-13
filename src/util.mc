@@ -154,6 +154,8 @@ utest normalizePath "/a/b/../../c" with "/c"
 -- If the file exists at the concatenated location, it's returned.
 -- Otherwise, the target is assumed to be from the standard library.
 let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentLoc. lam target.
+    let currentLoc = match currentLoc with "" then "./" else currentLoc in
+    match target with "" then { path = currentLoc, isStdlib = false } else
     let path = if strStartsWith "/" target then target
                else concatAll [currentLoc, "/", target] in
     if sysFileExists path then

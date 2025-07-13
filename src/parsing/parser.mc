@@ -47,7 +47,7 @@ let readOrNever : String -> String = lam fileName.
         fileReadClose rc;
         s
     else
-        error (concatAll ["Parsing failed: file ", fileName, "doesn't exists."])
+        error (concatAll ["Parsing failed: file ", fileName, " doesn't exists."])
 
     
 -- # The parse function

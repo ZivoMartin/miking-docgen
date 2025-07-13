@@ -58,7 +58,7 @@ end
 lang SeqTypeColorizer = TypeColorizerInterface
   sem getTypeStringCode (indent : Int) (env: PprintEnv) =
   | TySeq { ty = TyChar {} } ->
-    (env, join ["[", formatTypeName "String", "]"])
+    (env, formatTypeName "String")
   | TySeq t ->
     match getTypeStringCode indent env t.ty with (env, ty) in
     (env, join ["[", ty, "]"])

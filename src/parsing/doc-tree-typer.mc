@@ -13,8 +13,9 @@ let typeDocTree : DocTree -> String -> DocTree =
         case [_] ++ sons then getNextName sons
         end in
 
-    type LangContext = { langName: String, semMap: HashMap String Type } in
-        
+    type SkipedContext = { ctx: TypeStreamContext, t: Type } in
+    type LangContext = { langName: String, semMap: HashMap String SkipedContext } in
+    
     recursive let typeDocTree : TypeStreamContext -> String -> Option LangContext -> DocTree -> { ctx : TypeStreamContext, tree : DocTree, langContext : Option LangContext } = lam ctx. lam fileName. lam langContext. lam tree.
 
         type FoldRes = { ctx : TypeStreamContext, sons: [DocTree], langContext : Option LangContext } in
@@ -32,29 +33,35 @@ let typeDocTree : DocTree -> String -> DocTree =
             match (match langContext with Some { langName = langName, semMap = semMap } then
                     let prefix = concatAll ["v", langName, "_"] in
                     let name = concat prefix (getNextName d.sons) in
-                    match hmLookup name semMap with Some t then
-                        { t = Some t, langContext = langContext, ctx = ctx }
+                    match hmLookup name semMap with Some { t = t, ctx = tmpCtx } then
+                        match foldSons d.sons (None {}) tmpCtx with { ctx = tmpCtx, sons = sons} in
+                        let semMap = hmInsert name { ctx = tmpCtx, t = t } semMap in
+                        { t = Some t, langContext = Some { langName = langName, semMap = semMap }, ctx = ctx, sons = sons }
                     else
                         let addSkipedSems = lam semMap. lam skiped.
-                            foldl (lam semMap. lam skip. hmInsert skip.name skip.t semMap) semMap (filter (lam s. strStartsWith prefix s.name) skiped)
+                            foldl (lam semMap. lam skip.
+                            hmInsert skip.name { t = skip.t, ctx = typeStreamFromExpr skip.body } semMap)
+                            semMap (filter (lam s. strStartsWith prefix s.name) skiped)
                          in
-                        switch typeStreamNext name ctx
+                        switch typeStreamNext name ctx    
                         case { t = Some t, ctx = ctx, skiped = skiped } then
-                            let semMap = hmInsert name t semMap in
-                            { t = Some t, ctx = ctx, langContext = Some { semMap = addSkipedSems semMap skiped, langName = langName } }
+                            match typeStreamPop ctx with { ctx = ctx, ast = ast } in
+                            let tmpCtx = typeStreamFromExpr ast in
+                            match foldSons d.sons (None {}) tmpCtx with { ctx = tmpCtx, sons = sons} in
+                            let semMap = hmInsert name { t = t, ctx = tmpCtx } semMap in
+                            { t = Some t, ctx = ctx, langContext = Some { semMap = addSkipedSems semMap skiped, langName = langName }, sons = sons }
                         case { t = None {}, ctx = ctx, skiped = skiped } then
                             warn ();
-                            { t = None {}, ctx = ctx, langContext = Some { semMap = addSkipedSems semMap skiped, langName = langName } }
+                            { t = None {}, ctx = ctx, langContext = Some { semMap = addSkipedSems semMap skiped, langName = langName }, sons = d.sons }
                         end
                 else
                     match typeStreamNext (getNextName d.sons) ctx with { t = t, ctx = ctx } in
                     (match t with None {} then warn () else ());
-                    { t = t, ctx = ctx, langContext = langContext })
-            with { langContext = langContext, t = t, ctx = ctx } in
-
-            match foldSons d.sons (None {}) ctx with { ctx = ctx, sons = sons} in
+                    match foldSons d.sons (None {}) ctx with { ctx = ctx, sons = sons} in
+                    { t = t, ctx = ctx, langContext = langContext, sons = sons })
+            with { langContext = langContext, t = t, ctx = ctx, sons = sons } in
             { tree = Node { d with sons = sons, ty = t}, ctx = ctx, langContext = langContext }
-        case Node { state = Utest {} | TopUtest {} } then default
+        case Node { state = Utest {} | TopUtest {} | Mexpr {} } then default
         case Node { state = Lang {} } & Node d then
             let langContext = Some { langName = getNextName d.sons, semMap = hashmapEmpty () } in
             match foldSons d.sons langContext ctx  with { ctx = ctx, sons = sons } in
