@@ -16,6 +16,8 @@ lang RendererInterface = Formats
     -- Render an object as child (inside another page)
     sem objFormat : (Format, RenderingData) -> String
 
+    sem newLine : Format -> String
+
     sem objGetSpecificDoc : (Format, RenderingData) -> String
 
     -- Render the title of an object on its page

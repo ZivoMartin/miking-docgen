@@ -63,4 +63,8 @@ lang MarkdownRenderer = RendererInterface + ObjectKinds
     sem getCodeHider =
         | Md {} -> lam. ""
 
+    sem newLine =
+    | Md {} -> "  \n"
+    
+
 end

@@ -38,16 +38,15 @@
     
 include "preprocessor.mc"
 include "../extracting/objects.mc"
-include "../util.mc"    
-include "md-renderer.mc"
+include "../util.mc"   
 include "./html-rendering/renderer.mc"
+include "md-renderer.mc"
+include "mdx-rendering/renderer.mc"    
 include "./source-code-reconstruction.mc"
 include "../logger.mc"
 
 -- Combines the Markdown and HTML renderers via language composition.    
-lang Renderer = MarkdownRenderer + HtmlRenderer end
-
-
+lang Renderer = MarkdownRenderer + HtmlRenderer + MdxRenderer end
 
 -- Extract all the `ObjectNode`s in an array of ObjectTree
 let objectSonsFilterNodes : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.

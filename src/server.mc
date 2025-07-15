@@ -26,7 +26,7 @@ import mimetypes
 import webbrowser
 import threading
 ",
-match fmt with Md {} then
+match fmt with Md {} | Mdx {} then
 "import markdown"
 else
 "", "
@@ -50,9 +50,9 @@ class Handler(BaseHTTPRequestHandler):
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        html_output = ", match fmt with Md {} then " markdown.markdown(content)" else "content", "
+        html_output = ", match fmt with Md {} | Mdx {} then " markdown.markdown(content)" else "content", "
 
-        full_html = ", match fmt with Md {} then "f\"\"\"<!DOCTYPE html>
+        full_html = ", match fmt with Md {} | Mdx {} then "f\"\"\"<!DOCTYPE html>
 <html>
     <head>
         <meta charset=\"utf-8\">

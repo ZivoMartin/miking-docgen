@@ -79,12 +79,12 @@ recursive let wordRenderer: WordRenderer = use TokenReader in use SourceCodeWord
     end
 end
 
-let codeHider : Bool -> CodeHider = lam jumpLine. lam code.
+let htmlCodeHider : Bool -> CodeHider = lam jumpLine. lam code.
     let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
     join [jsDisplay, if jumpLine then "\n" else "", code, "</div>"] 
 
-let getCodeWithoutPreview = lam code.
-    join ["<div class=\"inline-container\"><pre class=\"source\">", getCodeWithoutPreview (codeHider true) code, "</pre></div>"]
+let htmlGetCodeWithoutPreview = lam code.
+    join ["<div class=\"inline-container\"><pre class=\"source\">", getCodeWithoutPreview (htmlCodeHider true) code, "</pre></div>"]
 
     
 -- The HTML renderer implementation 
@@ -102,7 +102,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     
     sem objFormat =
      | (Html {}, { obj = obj } & data) ->
-        let code = getCodeWithoutPreview data in
+        let code = htmlGetCodeWithoutPreview data in
         let s = objToStringColorized obj in
         match s with "" then "" else
         let link = objLink obj in
@@ -125,7 +125,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
                 ObjSyn { langName = langName, variants = variants } |
                 ObjSem { langName = langName, variants = variants }
                 )} & obj } & data ) ->
-        let code = getCodeWithoutPreview data in
+        let code = htmlGetCodeWithoutPreview data in
         let variants = join (map (lam v. join ["| ", v, "\n"]) variants) in
         join [
             htmlStrong "From:", "\n", htmlGetLangLink langName, "\n\n",
@@ -135,7 +135,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
          ]
     
     | (Html {}, { obj = obj } & data) ->
-        let code = getCodeWithoutPreview data in
+        let code = htmlGetCodeWithoutPreview data in
         let s = objToStringColorized obj in
         join [
         match s with "" then "" else 
@@ -157,5 +157,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
         | Html {} -> wordRenderer
 
     sem getCodeHider =
-        | Html {} -> codeHider false
+        | Html {} -> htmlCodeHider false
+
+    sem newLine =
+        | Html {} -> "\n<br>\n"
 end
