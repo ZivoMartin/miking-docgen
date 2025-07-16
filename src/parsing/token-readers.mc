@@ -353,10 +353,9 @@ lang ComposedWordTokenReader = RecursiveTokenReader + IncludeTokenReader end
 -- Combine all token readers into a single TokenReader
 lang TokenReader = ComposedWordTokenReader end
 
+let pos0 = { x = 1, y = 1 }
 
 mexpr use TokenReader in
-
-let pos0 = { x = 1, y = 1 } in
 
 -- WeakComment tests
 utest (next "/- hello -/" pos0).token with WeakComment { lit = "/- hello -/", content = " hello "} in

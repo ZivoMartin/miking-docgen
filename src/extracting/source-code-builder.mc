@@ -63,3 +63,7 @@ let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: Sour
 
 -- Returns a new SourceCodeBuilder
 let newSourceCodeBuilder : () -> SourceCodeBuilder = use Colorizer in lam . SourceCodeNode { buffer = [], parent = None {}, ctx = colorizerEmptyContext () }
+
+
+let wordBufferToSourceCode : [SourceCodeWord] -> SourceCode = lam code.
+    map (lam c. Some c) code

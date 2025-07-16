@@ -12,6 +12,7 @@ lang Formats
     | Html {}
     | Md {}
     | Mdx {}
+    | Row { format : Format }
     
     -- Converts a string into a `Format` if possible.
     -- Accepts various case-insensitive aliases and extensions.    

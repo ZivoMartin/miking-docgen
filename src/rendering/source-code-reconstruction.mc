@@ -12,12 +12,9 @@
 -- - Splitting the tree at semantically meaningful points (`=`, `:`)
 -- - Formatting both sides into renderable strings
 
-include "./renderer-interface.mc"
-include "./source-code-spliter.mc"
 include "../extracting/source-code-builder.mc"
-include "../extracting/source-code-word.mc"    
+include "../extracting/source-code-word.mc"
 include "./rendering-types.mc"
-
 
 -- ## getRenderingData
 --
@@ -34,7 +31,10 @@ include "./rendering-types.mc"
 --
 -- ### Returns:
 -- - A `RenderingData` record with `left`, `right`, and `trimmed` segments as strings    
-let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -> CodeHider -> RenderingData  = lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
+let reconstructSourceCode : Object -> SourceCode -> [RenderingData] -> Format -> [TreeSourceCode] = 
+    lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
+    
+    let sons = filter (lam s. match s.obj.kind with ObjInclude {} then false else true) sons in
     type Arg = {
         tree: [TreeSourceCode],
         sons: [RenderingData],
@@ -54,26 +54,5 @@ let getRenderingData : Object -> SourceCode -> [RenderingData] -> WordRenderer -
                 a
         end) { tree = [], sons = sons, buffer = [] } code in
     
-    let tree = reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet (reverse tree.buffer)) tree.tree) in
-    match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
-
-    let getFormatedStringFromWordBuffer : [SourceCodeWord] -> String = lam code.
-        foldl (lam s. lam w. concat (wordRenderer w) s) "" (reverse code) in
-
-    let getFormatedString : [TreeSourceCode] -> String = lam code.
-        foldl (lam s. lam node.
-            concat (switch node 
-            case TreeSourceCodeNode son then getCodeWithPreview codeHider son
-            case TreeSourceCodeSnippet code then getFormatedStringFromWordBuffer code
-            end) s
-            ) "" (reverse code) in
-
-    {
-        obj = obj,
-        left = getFormatedString left,
-        right = getFormatedString right,
-        trimmed = switch trimmed
-            case TrimmedFormated s then s
-            case TrimmedNotFormated b then getFormatedStringFromWordBuffer b
-            end
-    }
+    reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet (reverse tree.buffer)) tree.tree)
+   

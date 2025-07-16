@@ -233,9 +233,12 @@ lang ReprTypeColorizer = TypeColorizerInterface + ReprTypeAst
     (env, join ["Repr[", repr, "] ", arg])
 end
 
-lang TypeColorizerTemplate = UnknownTypeColorizer + BoolTypeColorizer + IntTypeColorizer +
+lang TypeColorizer = UnknownTypeColorizer + BoolTypeColorizer + IntTypeColorizer +
   FloatTypeColorizer + CharTypeColorizer + FunTypeColorizer +
   SeqTypeColorizer + RecordTypeColorizer + VariantTypeColorizer +
   ConTypeColorizer + DataTypeColorizer + VarTypeColorizer +
   AppTypeColorizer + TensorTypeColorizer + AllTypeColorizer +
   AliasTypeColorizer end
+
+
+ 

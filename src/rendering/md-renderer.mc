@@ -11,11 +11,11 @@ include "../logger.mc"
 lang MarkdownRenderer = RendererInterface + ObjectKinds
     
     sem objFormatHeader /- (Format, Object) -> String -/ =
-        | (Md {}, _) -> ""
+    | (Md {}, _) -> ""
     
     -- Markdown formatted display for an object    
     sem objFormat =
-        | (Md {}, { obj = obj }) ->
+    | (Md {}, { obj = obj }) ->
             let s = objToString obj.kind obj.name in
             match s with "" then "" else join ["```\n", s, "\n```\n\n[-](/", objLink obj, ")\n\n"]
 
@@ -55,13 +55,13 @@ lang MarkdownRenderer = RendererInterface + ObjectKinds
         concat (strJoin ", " (reverse doc)) "  \n\n"
 
     sem objFormatFooter /- (Format, Object) -> String -/ =
-        | (Md {}, _) -> ""
+    | (Md {}, _) -> ""
 
     sem getWordRenderer =
-        | Md {} -> lam. ""
+    | Md {} -> lam. ""
 
     sem getCodeHider =
-        | Md {} -> lam. ""
+    | Md {} -> lam. ""
 
     sem newLine =
     | Md {} -> "  \n"

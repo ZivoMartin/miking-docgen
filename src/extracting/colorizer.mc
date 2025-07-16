@@ -118,4 +118,19 @@ lang ColorizerNextIsType = ColorizerInterface
 end
 
 -- ## Colorizer: Full colorizer composed of all state modules
-lang Colorizer = ColorizerDefault + ColorizerNextIsName + ColorizerNextIsType end
+lang Colorizer = ColorizerDefault + ColorizerNextIsName + ColorizerNextIsType
+    
+    sem strToSourceCode : String -> SourceCode
+    sem strToSourceCode =
+    | s ->
+        recursive let work = lam ctx. lam s.
+            match s with "" then [] else
+            match next s pos0 with { token = token, stream = stream } in
+            let ctx = colorizerNext (ctx, token) in
+            let word = Some ctx.word in
+            cons word (work ctx stream)
+        in
+        let ctx = colorizerEmptyContext () in
+        work ctx s
+        
+end

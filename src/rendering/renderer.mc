@@ -39,31 +39,10 @@
 include "preprocessor.mc"
 include "../extracting/objects.mc"
 include "../util.mc"   
-include "./html-rendering/renderer.mc"
-include "md-renderer.mc"
-include "mdx-rendering/renderer.mc"    
+include "./main-renderer.mc"
 include "./source-code-reconstruction.mc"
 include "../logger.mc"
-
--- Combines the Markdown and HTML renderers via language composition.    
-lang Renderer = MarkdownRenderer + HtmlRenderer + MdxRenderer end
-
--- Extract all the `ObjectNode`s in an array of ObjectTree
-let objectSonsFilterNodes : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
-    foldl (lam sons. lam son.
-        switch son
-        case ObjectNode { obj = { kind = ObjRecursiveBlock {} }, sons = blockSons } then
-            let blockSons = foldl (lam acc. lam son.
-                switch son
-                case ObjectNode { obj = { kind = ObjLet {} } } then cons son acc
-                case ObjectNode {} then renderingWarn "We should only have let node at this stage."; cons son acc
-                case _ then acc
-                end) [] blockSons in
-            concat blockSons sons
-        case ObjectNode {} then cons son sons
-        case _ then sons
-        end) [] (reverse sons)
-
+    
 
 -- ## render
 --
@@ -81,8 +60,9 @@ let objectSonsFilterNodes : [ObjectTree] -> [ObjectTree] = use ObjectKinds in la
 --     - Recursively renders them
 --     - Organizes them by type
 --     - Writes formatted output to file
---     - Returns `RenderingData` for each node    
-let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
+--     - Returns `RenderingData` for each node
+let render : Format -> ObjectTree -> () = use Renderer in
+    lam obj.
     preprocess obj;
     renderingLog "Beggining of rendering stage.";
     recursive
@@ -97,26 +77,40 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
             -- Opening a file
             let path = concat "doc-gen-output/" (objLink obj) in
             renderingLog (concat "Rendering file " path);
-        
+   
             match fileWriteOpen path with Some wc then
                 let write = fileWriteString wc in
 
                 -- Push header of the output file
-                write (objFormatHeader (fmt, obj));
-
+                write (renderHeader obj fmt);
                 -- Pushing title and global documentation
-                write (objFormatedTitle (fmt, obj));
-
+                write (renderTitle 1 obj fmt);
+                
+                -- Extract all the `ObjectNode`s in an array of ObjectTree
+                let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
+                    foldl (lam sons. lam son.
+                        switch son
+                        case ObjectNode { obj = { kind = ObjRecursiveBlock {} }, sons = blockSons } then
+                            let blockSons = foldl (lam acc. lam son.
+                                switch son
+                                case ObjectNode { obj = { kind = ObjLet {} } } then cons son acc
+                                case ObjectNode {} then renderingWarn "We should only have let node at this stage."; cons son acc
+                                case _ then acc
+                                end) [] blockSons in
+                            concat blockSons sons
+                        case ObjectNode {} then cons son sons
+                        case _ then sons
+                        end) [] (reverse sons) in
+    
                 -- Removing words
-                let sons = objectSonsFilterNodes sons in
+                let sons = unwrapRecursives sons in
             
                 -- Recursive calls
                 let sons: [RenderingData] = map (render fmt) sons in
-
-                -- Pushing object documentation using data of the sons to reconstruct the source code
-                let data = getRenderingData obj obj.sourceCode (filter (lam s. match s.obj.kind with ObjInclude {} then false else true) sons) (getWordRenderer fmt) (getCodeHider fmt) in
-                
-                write (objGetSpecificDoc (fmt, data));
+                let trees = reconstructSourceCode obj (objSourceCode obj) sons fmt in
+                let data = renderTreeSourceCode trees obj fmt in
+    
+                write (renderSpecificDoc (fmt, data));
 
                 -- Ordering objects in a set
                 let set = 
@@ -141,30 +135,31 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                         case [] then set
                         end
                     in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } (reverse sons) in
-
-                -- Displays uses and includes
+    
+                 -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
-                            getFormatedSectionTitle (fmt, title) in
+                            renderSectionTitle (fmt, title) in
                     write title;
-                    write (getFormatedLinkList (fmt, arr))
+                    write (renderLinkList (fmt, arr))
                 in
-
-                 -- Displays types and con
+    
+                -- Displays types and con
                 let displayDefault = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
-                            getFormatedSectionTitle (fmt, title) in
+                            renderSectionTitle (fmt, title) in
                     write title;
-                    iter (lam u. write (objFormat (fmt, u))) arr
+                    iter (lam u. write (renderRenderingData (fmt, u))) arr
                 in
-
+    
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
+    
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
                 ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr), ("Tests", set.Utest)];
-
+    
                 -- Push the footer of the page
-                write (objFormatFooter (fmt, obj));
+                write (renderFooter obj fmt);
                 fileWriteClose wc;
                 data
             else
@@ -172,4 +167,8 @@ let render = use ObjectKinds in use Renderer in lam fmt. lam obj.
                 emptyPreview obj
         case ObjectLeaf _ then error "You should never try to render an ObjectLeaf." end
         
-    in let res = render fmt obj in ()
+    in let res = render opt.fmt obj in ()
+
+
+
+
