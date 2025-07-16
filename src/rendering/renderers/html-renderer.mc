@@ -3,7 +3,7 @@
 -- This module implements the **HtmlRenderer**, an instance of `RendererInterface`.
 -- It generates HTML pages from the extracted ObjectTree.
 
-include "../renderer-interface.mc"
+include "./renderer-interface.mc"
 include "./header.mc"
 
 let htmlBalise = lam s. lam b. join ["<", b, ">\n", s, "\n</", b, ">"]

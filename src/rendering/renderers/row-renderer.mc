@@ -1,4 +1,4 @@
-include "./source-code-spliter.mc"
+include "../source-code-spliter.mc"
 include "./renderer-interface.mc"
 
 lang RowRenderer = RendererInterface

@@ -37,7 +37,7 @@
 --      but instead passed to the parent, who may need them for its own reconstruction.
     
 include "preprocessor.mc"
-include "./main-renderer.mc"
+include "./renderers/main-renderer.mc"
 include "./source-code-reconstruction.mc"
 include "../logger.mc"
 include "../format.mc"

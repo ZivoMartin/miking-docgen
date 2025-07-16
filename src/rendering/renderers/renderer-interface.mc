@@ -1,6 +1,7 @@
-include "../extracting/objects.mc"
-include "../format.mc"       
-include "./rendering-types.mc"
+include "../../extracting/objects.mc"
+include "../../format.mc"
+include "../rendering-types.mc"
+
 include "mexpr/pprint.mc"
 
 lang RendererInterface = Formats + ObjectKinds + Colorizer + MExprPrettyPrint + MetaVarTypePrettyPrint
