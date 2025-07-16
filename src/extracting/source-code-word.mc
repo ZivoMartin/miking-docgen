@@ -16,6 +16,7 @@ lang SourceCodeWordKinds
     | CodeName {}
     | CodeDefault {}
     | CodeType {}
+    | CodeNumber {}
     
 end
 

@@ -14,6 +14,7 @@
 
 include "../extracting/source-code-builder.mc"
 include "../extracting/source-code-word.mc"
+include "../extracting/objects.mc"
 include "./rendering-types.mc"
 
 -- ## getRenderingData
@@ -31,8 +32,8 @@ include "./rendering-types.mc"
 --
 -- ### Returns:
 -- - A `RenderingData` record with `left`, `right`, and `trimmed` segments as strings    
-let reconstructSourceCode : Object -> SourceCode -> [RenderingData] -> Format -> [TreeSourceCode] = 
-    lam obj. lam code. lam sons. lam wordRenderer. lam codeHider.
+let reconstructSourceCode : Object -> SourceCode -> [RenderingData] -> [TreeSourceCode] = 
+    lam obj. lam code. lam sons. use ObjectKinds in
     
     let sons = filter (lam s. match s.obj.kind with ObjInclude {} then false else true) sons in
     type Arg = {

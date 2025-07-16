@@ -6,11 +6,14 @@
 -- Any renderer (MarkdownRenderer, HTMLRenderer, etc.) must implement this interface.
 
 include "../extracting/objects.mc"
-include "./rendering-types.mc"
 include "../format.mc"
+       
+include "./rendering-types.mc"
 include "./source-code-spliter.mc"
 
-lang RendererInterface = Formats + ObjectKinds + Colorizer
+include "mexpr/pprint.mc"
+
+lang RendererInterface = Formats + ObjectKinds + Colorizer + MExprPrettyPrint
 
     -- Object pretty-printer with syntax coloring 
     sem renderStringColorized : Object -> Format -> String
@@ -20,8 +23,8 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
     let kind = objKind obj in
     let code = switch obj.kind
     case ObjLet { rec = rec, args = args, ty = ty } then
-        let t = match ty with Some t then typeColorize t else "?" in
-        let args = strJoin " " (map var args) in
+        let t = match ty with Some t then type2str t else "?" in
+        let args = strJoin " " args in
         join [if rec then "recursive " else "", "let ", name, " ", args, " : ", t]
     case ObjType { t = t } then
         join ["type ", name, match t with Some t then concat " : " t else ""]
@@ -33,19 +36,18 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
         concat "lang " name
     case ObjProgram {} then ""
     case ObjSem { ty = ty } then
-        let t = match ty with Some t then typeColorize t else "?" in
+        let t = match ty with Some t then type2str t else "?" in
         join ["sem ", name, " : ", t]
     case kind then
         join [getFirstWord kind, " ", name]
     end in
-    renderSourceCode (strToSourceCode code) fmt
-
+    renderSourceCodeStr code fmt
     
     -- Render a list of objects as a link list, separated by commas
     sem renderLinkList : [Object] -> Format -> String
     sem renderLinkList (objects: [Object]) =
     | fmt | Row { fmt = fmt } ->
-        let doc = map (lam u. renderLink (objLink u) (objTitle u) fmt) objects in
+        let doc = map (lam u. renderLink (objTitle u) (objLink u) fmt) objects in
         let doc = strJoin ", " doc in
         match doc with "" then "" else
             concat (renderText doc fmt) (renderNewLine fmt)
@@ -70,9 +72,10 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
         let s = renderStringColorized obj fmt in
         match s with "" then "" else
         let link = objLink obj in
-        join [renderLabel s, 
-        renderGotoLink (concat (if strStartsWith "/" link then "" else "/") link) fmt, renderNewLine fmt,
-        renderDoc (objDoc obj), code]
+        let link = concat (if strStartsWith "/" link then "" else "/") link in
+        join [renderLabel s fmt, 
+        renderGotoLink link fmt, renderNewLine fmt,
+        renderDoc (objDoc obj) fmt, code]
 
     sem renderSpecificDoc : RenderingData -> Format -> String
     sem renderSpecificDoc (data: RenderingData) =
@@ -80,7 +83,7 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
         let nl = renderNewLine fmt in
         switch data
         case { obj = { doc = doc, kind = ObjLang { parents = parents & ([_] ++ _) } } } then
-            let parents = map (lam p. renderLink fmt p) parents in
+            let parents = map (lam p. renderLink p (getLangLink p) fmt) parents in
             strJoin (nl) [
             renderBold "Stem from:" fmt,
             (strJoin " + " parents),
@@ -91,21 +94,22 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
                 ObjSem { langName = langName, variants = variants }
                 )} & obj } then
             let variants = join (map (lam v.
-                join ["| ", renderWord (buildCodeWord (Word { content = v }) (CodeName {})), nl]
+                join ["| ", v, nl]
                 ) variants) in
+            let variants = renderSourceCodeStr variants fmt in
             strJoin (nl) [
             renderBold "From:" fmt,
             renderLink langName (concat (getLangLink langName) ".lang") fmt,
             renderTitle 2 "Signature:" fmt,
-            renderLabel (join [renderStringColorized obj, "\n", variants]) fmt,
+            renderLabel (join [renderStringColorized obj fmt, nl, variants]) fmt,
             renderDoc doc fmt,
             renderCodeWithoutPreview data fmt, ""]
         case { obj = obj } then
             let code = renderCodeWithoutPreview data fmt in
             let s = renderStringColorized obj fmt in
             join [
-            match s with "" then "" else join [renderTitle 2 "Signature" fmt, nl, renderLabel s, nl],
-            renderDoc (objDoc obj), nl, code]
+            match s with "" then "" else join [renderTitle 2 "Signature" fmt, nl, renderLabel s fmt, nl],
+            renderDoc (objDoc obj) fmt, nl, code]
         end
 
 
@@ -143,16 +147,20 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
 
     sem renderSectionTitle : String -> Format -> String
     sem renderSectionTitle (title: String) =
-    | fmt -> renderTitle (renderBold (concat title) fmt) fmt
+    | fmt -> renderTitle 2 title fmt
 
     sem renderBold : String -> Format -> String
     sem renderBold (text : String) =
     | _ -> text
 
-    sem renderRemoveForbidenChars : String -> String
+    sem renderRemoveForbidenChars : String -> Format -> String
     sem renderRemoveForbidenChars (s: String) =
     | _ -> s
 
+    sem renderSourceCodeStr : String -> Format -> String
+    sem renderSourceCodeStr (code: String) =
+    | fmt -> renderSourceCode (strToSourceCode code) fmt
+    
     sem renderSourceCode : SourceCode -> Format -> String
     sem renderSourceCode (code: SourceCode) =
     | fmt | Row { fmt = fmt } ->
@@ -162,7 +170,7 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
     sem renderWord (word: SourceCodeWord) = 
     | fmt | Row { fmt = fmt } -> 
         let renderSkiped: [Token] -> String = lam skiped.
-            join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } )) skiped) in
+            join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } ) fmt) skiped) in
 
         switch word
         case { word = Include { content = content, skiped = skiped } } then
@@ -177,6 +185,7 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
                 case CodeKeyword {} then renderKeyword
                 case CodeName {} then renderVar
                 case CodeType {} then renderType
+                case CodeNumber {} then renderNumber
                 case CodeDefault {} then renderDefault
                 end       
             end) in
@@ -184,7 +193,7 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
             renderer word fmt
         end
 
-    sem renderTreeSourceCode : TreeSourceCode -> Object -> Format -> RenderingData
+    sem renderTreeSourceCode : [TreeSourceCode] -> Object -> Format -> RenderingData
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (obj : Object) =
     | fmt ->
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
@@ -210,15 +219,19 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
         }
 
 
-    sem renderTitle : Int -> Object -> Format -> String
-    sem renderTitle (size : Int) (obj : Object) =
-    | _ -> objTitle obj
+    sem renderTitle : Int -> String -> Format -> String
+    sem renderTitle (size : Int) (s : String) =
+    | _ -> s
+
+    sem renderObjTitle : Int -> Object -> Format -> String
+    sem renderObjTitle (size : Int) (obj : Object) =
+    | fmt -> renderTitle size (objTitle obj) fmt
     
     sem renderText : String -> Format -> String
     sem renderText (text : String) =
     | _ -> text
 
-    sem renderLink : (Format, String, String) -> String
+    sem renderLink : String -> String -> Format -> String
     sem renderLink (title : String) (link : String) =
     | _ -> join [title, " (", link, ")"]
     
@@ -241,6 +254,10 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
     sem renderString : String -> Format -> String
     sem renderString (content : String) =
     | _ -> content
+
+    sem renderNumber : String -> Format -> String
+    sem renderNumber (content : String) =
+    | _ -> content
     
     sem renderDefault : String -> Format -> String
     sem renderDefault (content : String) =
@@ -251,7 +268,7 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer
     | _ -> content
 
     sem renderNewLine : Format -> String
-    sem renderNewLine (content : String) =
+    sem renderNewLine =
     | _ -> "\n"
     
 end

@@ -37,12 +37,12 @@
 --      but instead passed to the parent, who may need them for its own reconstruction.
     
 include "preprocessor.mc"
-include "../extracting/objects.mc"
-include "../util.mc"   
 include "./main-renderer.mc"
 include "./source-code-reconstruction.mc"
 include "../logger.mc"
-    
+include "../format.mc"
+include "../extracting/objects.mc"
+include "../util.mc"    
 
 -- ## render
 --
@@ -61,8 +61,8 @@ include "../logger.mc"
 --     - Organizes them by type
 --     - Writes formatted output to file
 --     - Returns `RenderingData` for each node
-let render : Format -> ObjectTree -> () = use Renderer in
-    lam obj.
+let render : use Formats in Format -> ObjectTree -> () = use Renderer in
+    lam fmt. lam obj.
     preprocess obj;
     renderingLog "Beggining of rendering stage.";
     recursive
@@ -84,7 +84,7 @@ let render : Format -> ObjectTree -> () = use Renderer in
                 -- Push header of the output file
                 write (renderHeader obj fmt);
                 -- Pushing title and global documentation
-                write (renderTitle 1 obj fmt);
+                write (renderObjTitle 1 obj fmt);
                 
                 -- Extract all the `ObjectNode`s in an array of ObjectTree
                 let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
@@ -107,10 +107,10 @@ let render : Format -> ObjectTree -> () = use Renderer in
             
                 -- Recursive calls
                 let sons: [RenderingData] = map (render fmt) sons in
-                let trees = reconstructSourceCode obj (objSourceCode obj) sons fmt in
+                let trees = reconstructSourceCode obj (objSourceCode obj) sons in
                 let data = renderTreeSourceCode trees obj fmt in
     
-                write (renderSpecificDoc (fmt, data));
+                write (renderSpecificDoc data fmt);
 
                 -- Ordering objects in a set
                 let set = 
@@ -139,17 +139,17 @@ let render : Format -> ObjectTree -> () = use Renderer in
                  -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
-                            renderSectionTitle (fmt, title) in
+                            renderSectionTitle title fmt in
                     write title;
-                    write (renderLinkList (fmt, arr))
+                    write (renderLinkList arr fmt)
                 in
     
                 -- Displays types and con
                 let displayDefault = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
-                            renderSectionTitle (fmt, title) in
+                            renderSectionTitle title fmt in
                     write title;
-                    iter (lam u. write (renderRenderingData (fmt, u))) arr
+                    iter (lam u. write (renderRenderingData u fmt)) arr
                 in
     
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];

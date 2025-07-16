@@ -5,20 +5,13 @@
 
 include "../../extracting/source-code-word.mc"
 include "../renderer-interface.mc"
-include "../type-colorizer.mc"
 include "../../extracting/objects.mc"    
 include "../source-code-spliter.mc"
 include "./header.mc"
 include "../source-code-reconstruction.mc"
 include "../../logger.mc"
 
-
-let htmlCodeHider : Bool -> CodeHider = lam jumpLine. lam code.
-    let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
-    join [jsDisplay, if jumpLine then "\n" else "", code, "</div>"] 
-
-let htmlGetCodeWithoutPreview = lam code.
-    join ["<div class=\"inline-container\"><pre class=\"source\">", getCodeWithoutPreview (htmlCodeHider true) code, "</pre></div>"]
+   
 
 let htmlBalise = lam s. lam b. join ["<", b, ">\n", s, "\n</", b, ">"]
 
@@ -30,10 +23,10 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     sem renderHeader obj =
     | Html {} -> getHeader (objName obj)
 
-    sem renderTitle size obj =
+    sem renderTitle size s =
     | Html {} ->
-        let size = int2string (if gti size 6 then 6 else size) in
-        join ["<h", size, ">", renderTitle size obj (Row {}), "</h", size, ">", renderNewLine (Html {})]
+        let sizeStr = int2string (if gti size 6 then 6 else size) in
+        join ["<h", sizeStr, ">", renderTitle size s (Row { fmt = Html {}}), "</h", sizeStr, ">", renderNewLine (Html {})]
     
     sem renderBold (text : String) =
     | Html {} -> htmlBalise text "strong"
@@ -75,9 +68,8 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
 
     sem renderRenderingData (data : RenderingData) =
     | Html {} ->
-        join [
-            "<div class=\"ObjectParent\">\n",
-            renderRenderingData data (Row { fmt = Html {} })
+        join ["<div class=\"ObjectParent\">\n",
+            renderRenderingData data (Row { fmt = Html {} }),
             "</div>"]
 
     sem renderDoc (doc: String) =
@@ -92,7 +84,13 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     sem renderHidenCode (code: String) =
     | Html {} ->
         let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
-        join [jsDisplay, renderNewLine (Html {}),  "</div>"] 
+        join [jsDisplay, renderNewLine (Html {}),  "</div>"]
 
+    sem renderCodeWithPreview (data: RenderingData) =
+    | Html {} ->
+         join ["<div class=\"inline-container\"><pre class=\"source\">", renderCodeWithoutPreview data (Row { fmt = Html {}}), "</pre></div>"]
+
+    sem renderLink (title : String) (link : String) =
+    | Html {} -> join ["<a href=\"", link, "\">", title, "</a>"]
     
 end

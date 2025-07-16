@@ -53,6 +53,12 @@ type Object = use ObjectKinds in { name: String, doc : String, namespace: String
 
 -- The position of where the program started
 let basePosition : String = concat (sysGetCwd ()) "/"
+    
+-- Build lang link prefix
+let getLangLink = lam name. concat "Lang/" name
+    
+-- Returns the absolute path of the object
+let objAbsolutePath : Object -> String = lam obj. normalizePath (concat basePosition obj.namespace)
 
 -- Prefix length to truncate stdlib paths
 let toTruncate = addi 1 (length stdlibLoc)
@@ -65,6 +71,7 @@ let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode
 
 -- Get URL link for an object
 let objLink : Object -> String = use ObjectKinds in lam obj.
+    printLn (objAbsolutePath obj);
     switch obj
     case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
     case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then join ["File", objAbsolutePath obj]
@@ -82,15 +89,6 @@ let objTitle : Object -> String = use ObjectKinds in lam obj.
     case { kind = ObjUtest {} } then "utest"
     case _ then obj.name
     end
-
--- Build lang link prefix
-let getLangLink = lam name. concat "Lang/" name
-
-
--- Returns the absolute path of the object
-let objAbsolutePath : Object -> String = lam obj. normalizePath (concat basePosition obj.namespace)
-    
-
     
 -- Get full namespace of object
 let objNamespace : Object -> String = use ObjectKinds in lam obj.
