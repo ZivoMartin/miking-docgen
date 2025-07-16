@@ -107,7 +107,7 @@ let render : use Formats in Format -> ObjectTree -> () = use Renderer in
             
                 -- Recursive calls
                 let sons: [RenderingData] = map (render fmt) sons in
-                let trees = reconstructSourceCode obj (objSourceCode obj) sons in
+                let trees = reconstructSourceCode (objSourceCode obj) sons in
                 let data = renderTreeSourceCode trees obj fmt in
     
                 write (renderSpecificDoc data fmt);

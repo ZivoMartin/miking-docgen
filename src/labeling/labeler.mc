@@ -1,7 +1,7 @@
 -- # Type Labeling Module
 --
 -- This module annotates objects in an `ObjectTree` with type information.
--- It uses the type stream system to assign types of lets sems
+-- It uses the type stream system to assign types of lets and sems
 -- The execution is using TypeStream defined in types-stream.mc to fetch types of each objects.    
 --
 -- We want to annotate each `let` and `sem`, for that we traverse our objects and there are concretely 5 cases:
@@ -10,8 +10,7 @@
 --      * The `sem`s are transformed into regular `let`s, but they are given the prefix `Langname_` before their name, which must be considered when fetching from the TypeStream.
 --      * Miking merges all `sem`s with the same name into a single `let`, which contains a large `match`. Each pattern, however, appears in the original declaration order of the `sem`s.
 --        Note that it is very common for a `sem` to be declared multiple times, especially when its type needs to be specified.
---      * And the biggest difficulty: `sem`s do not appear in the order of their declaration, although `sem`s with the same name do. Since we do not have access to the complete list of semantic names, although it would be possible, it would require granting the labeler lookahead rights, which we want to avoid.
---        Therefore, we must ensure we properly handle skipped `sem`s.
+--      * And the biggest difficulty: `sem`s do not appear in the order of their declaration, although `sem`s with the same name do. Since we do not have access to the complete list of semantic names, although it would be possible, it would require granting the labeler lookahead rights, which we want to avoid. Therefore, we must ensure we properly handle skipped `sem`s.
 --   When we encounter a `Lang`, we create a new `LangContext` initially containing the language name and a hashmap linking the `sem`s to a local context and their type.
 --  - Sem: To handle the three problems addressed above, here is how we proceed. Each time we see a `sem`:
 --      * We interpolate its name with the language name from the `LangContext`.

@@ -37,3 +37,5 @@ let buildCodeWord : use SourceCodeWordKinds in use TokenReader in Token -> Sourc
         kind = kind    
     }       
     
+-- Representation of the source code with word's buffer
+type SourceCode = [Option SourceCodeWord]

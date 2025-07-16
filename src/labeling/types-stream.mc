@@ -168,7 +168,6 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
         
         labelingLog "Symbolizing ast...";
         let ast = symbolize ast in
-
         labelingLog "Typing ast...";
         let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
         { stack = [ast] }

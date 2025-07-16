@@ -3,22 +3,15 @@
 -- This module implements the **HtmlRenderer**, an instance of `RendererInterface`.
 -- It generates HTML pages from the extracted ObjectTree.
 
-include "../../extracting/source-code-word.mc"
 include "../renderer-interface.mc"
-include "../../extracting/objects.mc"    
-include "../source-code-spliter.mc"
 include "./header.mc"
-include "../source-code-reconstruction.mc"
-include "../../logger.mc"
-
-   
 
 let htmlBalise = lam s. lam b. join ["<", b, ">\n", s, "\n</", b, ">"]
 
 let htmlSpan = lam content. lam kind. join ["<span class=\"", kind, "\">", content, "</span>"]
            
 -- The HTML renderer implementation 
-lang HtmlRenderer = RendererInterface + ObjectKinds
+lang HtmlRenderer = RendererInterface
 
     sem renderHeader obj =
     | Html {} -> getHeader (objName obj)
@@ -35,17 +28,18 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
     | Html {} -> "</div></body>\n</html>"
 
     sem renderNewLine =
-    | Html {} -> "\n<br>\n"
+    | Html {} -> "<br>"
 
     sem renderRemoveForbidenChars (s: String) =
     | Html {} ->
         switch s
         case "&" ++ s then concat "&amp;" (renderRemoveForbidenChars s (Html {}))
+        case "<br>" ++ s then cons '\n' (renderRemoveForbidenChars s (Html {}))
         case "<" ++ s then concat "&lt;" (renderRemoveForbidenChars s (Html {}))
         case ">" ++ s then concat "&gt;" (renderRemoveForbidenChars s (Html {}))    
         case [x] ++ s then cons x (renderRemoveForbidenChars s (Html {}))
         case "" then ""
-        end        
+        end      
 
 
     sem renderType (content : String) = 
@@ -73,7 +67,7 @@ lang HtmlRenderer = RendererInterface + ObjectKinds
             "</div>"]
 
     sem renderDoc (doc: String) =
-    | Html {} -> join ["<pre class=md>", doc, "</pre>"]
+    | Html {} -> join ["<pre class=md>", renderDoc doc (Row { fmt = Html {} }), "</pre>"]
 
     sem renderLabel (label: String) =
     | Html {} -> join ["<pre class=code>", label, "</pre>"]

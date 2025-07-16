@@ -12,9 +12,6 @@ include "./source-code-word.mc"
 include "./colorizer.mc"
 include "../logger.mc"
 
--- Representation of the source code with word's buffer
-type SourceCode = [Option SourceCodeWord]
-
 -- An empty source code
 let sourceCodeEmpty : () -> SourceCode = lam . []
         

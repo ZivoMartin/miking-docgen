@@ -55,7 +55,7 @@ type Object = use ObjectKinds in { name: String, doc : String, namespace: String
 let basePosition : String = concat (sysGetCwd ()) "/"
     
 -- Build lang link prefix
-let getLangLink = lam name. concat "Lang/" name
+let getLangLink = lam name. concat "/Lang/" name
     
 -- Returns the absolute path of the object
 let objAbsolutePath : Object -> String = lam obj. normalizePath (concat basePosition obj.namespace)
@@ -71,15 +71,14 @@ let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode
 
 -- Get URL link for an object
 let objLink : Object -> String = use ObjectKinds in lam obj.
-    printLn (objAbsolutePath obj);
-    switch obj
+    let link = switch obj
     case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
     case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then join ["File", objAbsolutePath obj]
     case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then join ["Lib", namespace]
     case { name = name, kind = (ObjSem { langName = langName } | ObjSyn { langName = langName }) & kind } then
         join [getLangLink langName, "/", getFirstWord kind, "/", name]    
-    case { name = name, namespace = namespace, kind = kind } then join [getFirstWord kind, objAbsolutePath obj, "/", name, ".", getFirstWord kind]
-end
+    case { name = name, namespace = namespace, kind = kind } then join [getFirstWord kind, objAbsolutePath obj, "/", name, ".", getFirstWord kind] end in
+    if strStartsWith "/" link then link else cons '/' link
         
 -- Get display title for an object
 let objTitle : Object -> String = use ObjectKinds in lam obj.
