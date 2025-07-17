@@ -1,50 +1,58 @@
 include "../parsing/token-readers.mc"
 include "./source-code-word.mc"
 
-lang ColorizerInterface = SourceCodeWordKinds + TokenReader
+lang FormatterInterface = SourceCodeWordKinds + TokenReader
 
-    syn ColorizationState =
+    syn FormattingState =
     | Default {}       -- Regular parsing mode
     
 
-    type ColorizerContext = {
-        word: SourceCodeWord,            
-        state: ColorizationState          
+    type FormatterContext = {
+        word: SourceCodeWord,
+        prev: String,           
+        state: FormattingState          
     }
 
-    sem colorizerEmptyContext : () -> ColorizerContext 
-    sem colorizerEmptyContext = 
+    sem formatterEmptyContext : () -> FormatterContext 
+    sem formatterEmptyContext = 
         | () -> { 
             word = buildCodeWord (Word { content = "" }) (CodeDefault {}), 
-            state = Default {} 
+            state = Default {},
+            prev = ""
         }
 
-    sem ctxChangeWord : ColorizerContext -> Token -> SourceCodeWordKind -> ColorizerContext  
+    sem ctxChangeWord : FormatterContext -> Token -> SourceCodeWordKind -> FormatterContext  
     sem ctxChangeWord = 
-        | { state = state } & ctx -> ctxChangeState ctx state
+        | { state = state } & ctx -> lam word. lam kind.
+            let kind = switch (ctx.prev, kind)
+            case (!"let", CodeName {}) then CodeDefault {}
+            case _ then kind
+            end in
+            let prev = match word with Word { content = content } then content else ctx.prev in
+            {
+                word = buildCodeWord word kind,
+                state = state,
+                prev = prev
+            }            
 
-    sem ctxChangeState : ColorizerContext -> ColorizationState -> Token -> SourceCodeWordKind  -> ColorizerContext  
-    sem ctxChangeState = 
-        | _ -> lam state. lam word. lam kind.  
-            { word = buildCodeWord word kind, state = state }
 
-    sem colorizerNext : (ColorizerContext, Token) -> ColorizerContext
+    sem formatterNext : (FormatterContext, Token) -> FormatterContext
 
 end
 
 
-lang ColorizerDefault = ColorizerInterface
+lang FormatterDefault = FormatterInterface
 
-    sem colorizerNext =
+    sem formatterNext =
     | ({ state = Default {} } & ctx, token) ->
         let default = ctxChangeWord ctx token (CodeDefault {}) in
         match token with Word { content = content } then
             match content with "" then
-                extractingWarn "Detected an empty word in colorizerNext";
+                extractingWarn "Detected an empty word in formatterNext";
                 default
             else match content with "mexpr" | "utest" | "with" | "recursive" | "match" | "end" |
                  "switch" | "in" | "case" | "if" | "else" | "type" | "con" |
-                 "lang" | "syn" | "use" | "let" | "lam" | "sem" then
+                 "lang" | "syn" | "use" | "let" | "lam" | "sem" | "then" then
                 ctxChangeWord ctx token (CodeKeyword {})
             else if stringIsInt content then
                 ctxChangeWord ctx token (CodeNumber {})
@@ -58,8 +66,8 @@ lang ColorizerDefault = ColorizerInterface
 
 end
 
--- ## Colorizer: Full colorizer composed of all state modules
-lang Colorizer = ColorizerDefault 
+-- ## Formatter: Full formatter composed of all state modules
+lang Formatter = FormatterDefault 
     
     sem strToSourceCode : String -> SourceCode
     sem strToSourceCode =
@@ -67,11 +75,11 @@ lang Colorizer = ColorizerDefault
         recursive let work = lam ctx. lam s.
             match s with "" then [] else
             match next s pos0 with { token = token, stream = stream } in
-            let ctx = colorizerNext (ctx, token) in
+            let ctx = formatterNext (ctx, token) in
             let word = Some ctx.word in
             cons word (work ctx stream)
         in
-        let ctx = colorizerEmptyContext () in
+        let ctx = formatterEmptyContext () in
         work ctx s
         
 end

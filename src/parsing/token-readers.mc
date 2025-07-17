@@ -294,7 +294,7 @@ lang IncludeTokenReader = CommAndSepSkiper
         | Include { content = content, lit = lit } -> lit
 
     sem tokenToString =
-        | Include {} -> "Include"    
+        | Include {} -> "Include"
 
     sem includeNext =
         | str -> lam pos. lam firstSep.

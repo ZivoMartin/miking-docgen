@@ -4,7 +4,7 @@ include "../rendering-types.mc"
 
 include "mexpr/pprint.mc"
 
-lang RendererInterface = Formats + ObjectKinds + Colorizer + MExprPrettyPrint + MetaVarTypePrettyPrint
+lang RendererInterface = Formats + ObjectKinds + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
 
     sem renderStringColorized : Object -> Format -> String
     

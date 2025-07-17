@@ -9,7 +9,7 @@
 
 include "../parsing/doc-tree.mc"
 include "./source-code-word.mc"
-include "./colorizer.mc"
+include "./source-code-formatting.mc"
 include "../logger.mc"
 
 -- An empty source code
@@ -21,7 +21,7 @@ let sourceCodeEmpty : () -> SourceCode = lam . []
 -- When entering a `Node`, a new builder context is pushed.
 -- When finishing a node, the buffer is returned and the parent context is restored.
 type SourceCodeBuilder
-con SourceCodeNode : use Colorizer in { parent: Option SourceCodeBuilder, ctx: ColorizerContext, buffer: SourceCode } -> SourceCodeBuilder
+con SourceCodeNode : use Formatter in { parent: Option SourceCodeBuilder, ctx: FormatterContext, buffer: SourceCode } -> SourceCodeBuilder
     
 -- ## absorbWord
 --
@@ -30,10 +30,10 @@ con SourceCodeNode : use Colorizer in { parent: Option SourceCodeBuilder, ctx: C
 -- - If the word is a `Node`, we inject a `None {}` into the parent
 --   and start a fresh buffer for the child node.
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
-    use TokenReader in use Colorizer in lam builder. lam word.
+    use TokenReader in use Formatter in lam builder. lam word.
     match builder with SourceCodeNode { buffer = buffer, parent = parent, ctx = ctx } in
     let token = (match word with Node { token = token } | Leaf { token = token } | IncludeNode { token = token } in token) in
-    let ctx = colorizerNext (ctx, token) in
+    let ctx = formatterNext (ctx, token) in
     let token = ctx.word in
     switch word
     case Node {} then
@@ -59,7 +59,7 @@ let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: Sour
         { builder = builder, sourceCode = reverse buffer }
 
 -- Returns a new SourceCodeBuilder
-let newSourceCodeBuilder : () -> SourceCodeBuilder = use Colorizer in lam . SourceCodeNode { buffer = [], parent = None {}, ctx = colorizerEmptyContext () }
+let newSourceCodeBuilder : () -> SourceCodeBuilder = use Formatter in lam . SourceCodeNode { buffer = [], parent = None {}, ctx = formatterEmptyContext () }
 
 
 let wordBufferToSourceCode : [SourceCodeWord] -> SourceCode = lam code.

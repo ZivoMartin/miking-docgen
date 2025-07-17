@@ -15,7 +15,7 @@ include "./labeling/labeler.mc"
 include "./rendering/renderer.mc"
 include "./server.mc"
 
-mexpr 
+mexpr
     (if opt.noGen then () else
         logOpt opt;
         let tree = parseFile opt.file in

@@ -55,10 +55,13 @@ lang HtmlRenderer = RendererInterface
     | Html {} -> htmlSpan content "comment"
     
     sem renderString (content : String) =
-    | Html {} -> htmlSpan content "st"
+    | Html {} -> htmlSpan content "string"
     
     sem renderWeakComment (content : String) =
-    | Html {} -> htmlSpan content "comment"
+    | Html {} -> htmlSpan content "weak"
+
+    sem renderNumber (content : String) =
+    | Html {} -> htmlSpan content "number"
 
     sem renderRenderingData (data : RenderingData) =
     | Html {} ->

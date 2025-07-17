@@ -140,7 +140,7 @@ lang RowRenderer = RendererInterface
 
         switch word
         case { word = Include { content = content, skiped = skiped } } then
-            join [renderKeyword "include" fmt, renderSkiped skiped, renderString (renderRemoveForbidenChars content fmt) fmt]    
+            join [renderKeyword "include" fmt, renderSkiped skiped, renderString (join ["\"", (renderRemoveForbidenChars content fmt), "\""]) fmt]    
         case { word = word, kind = kind } then
             let renderer = (switch word
             case Str {} then renderString

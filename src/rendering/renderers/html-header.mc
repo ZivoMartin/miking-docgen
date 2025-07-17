@@ -144,7 +144,8 @@ let getHeader = lam title.
     .tp { color: #6f42c1; }    
     .comment { color: #22863a; }
     .string { color: #b36f00; }    
-
+    .weak { color: #b34f00 }
+    .number { color: #0366d6; }
 
 </style>
 </head>
