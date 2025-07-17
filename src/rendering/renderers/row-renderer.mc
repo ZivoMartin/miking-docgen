@@ -96,16 +96,16 @@ lang RowRenderer = RendererInterface
    
     sem renderCodeWithoutPreview (data: RenderingData) = 
     | fmt -> let fmt = unwrapRow fmt in
-        renderHidenCode (concat data.left data.right) fmt
+        renderHidenCode (concat data.left data.right) false fmt
 
     sem renderCodeWithPreview (data: RenderingData) =
     | fmt -> let fmt = unwrapRow fmt in
         match data.right with [] then
             join [data.left, data.trimmed]
         else 
-            join [data.left, renderHidenCode data.right fmt, data.trimmed]
+            join [data.left, renderHidenCode data.right true fmt, data.trimmed]
 
-    sem renderHidenCode (code : String) =
+    sem renderHidenCode (code : String) (withPreview: Bool) =
     | _ -> ""
 
 

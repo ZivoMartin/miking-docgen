@@ -24,7 +24,7 @@ lang RendererInterface = Formats + ObjectKinds + Colorizer + MExprPrettyPrint + 
 
     sem renderCodeWithPreview : RenderingData -> Format -> String
 
-    sem renderHidenCode : String -> Format -> String
+    sem renderHidenCode : String -> Bool -> Format -> String
 
     sem renderHeader : Object -> Format -> String
 

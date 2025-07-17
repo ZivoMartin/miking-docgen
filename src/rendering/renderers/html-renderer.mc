@@ -4,7 +4,7 @@
 -- It generates HTML pages from the extracted ObjectTree.
 
 include "./renderer-interface.mc"
-include "./header.mc"
+include "./html-header.mc"
 
 let htmlBalise = lam s. lam b. join ["<", b, ">\n", s, "\n</", b, ">"]
 
@@ -75,16 +75,18 @@ lang HtmlRenderer = RendererInterface
     sem renderGotoLink (link: String) =
     | Html {} -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
-    sem renderHidenCode (code: String) =
+    sem renderHidenCode (code: String) (withPreview: Bool) =
     | Html {} ->
         let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
-        join [jsDisplay, renderNewLine (Html {}),  "</div>"]
+        join [jsDisplay, if withPreview then "" else "\n", code, "</div>"]
 
-    sem renderCodeWithPreview (data: RenderingData) =
+
+    sem renderCodeWithoutPreview (data: RenderingData) =
     | Html {} ->
          join ["<div class=\"inline-container\"><pre class=\"source\">", renderCodeWithoutPreview data (Row { fmt = Html {}}), "</pre></div>"]
 
     sem renderLink (title : String) (link : String) =
     | Html {} -> join ["<a href=\"", link, "\">", title, "</a>"]
+
     
 end
