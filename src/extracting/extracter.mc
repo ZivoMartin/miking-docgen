@@ -63,7 +63,7 @@ let extract : DocTree -> ObjectTree =
     type CommentBuffer = [String] in
 
     -- Output of one extractRec step
-    type ExtractRecOutput = { obj: ObjectTree, commentBuffer: CommentBuffer, sourceCodeBuilder: SourceCodeBuilder, utestCount: Int } in
+    type ExtractRecOutput = { obj: Option ObjectTree, commentBuffer: CommentBuffer, sourceCodeBuilder: SourceCodeBuilder, utestCount: Int } in
 
     recursive
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> Bool -> Int -> ExtractRecOutput ) =
@@ -95,13 +95,14 @@ let extract : DocTree -> ObjectTree =
                     (lam arg: Arg. lam s: DocTree.
                         let ctx = arg.ctx in
                         let ctx = extractRec s namespace ctx.commentBuffer ctx.sourceCodeBuilder inStdlib ctx.utestCount in
-                        { sons = cons ctx.obj arg.sons, ctx = ctx })
-                    { sons = [], ctx = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount, obj = ObjectLeaf "" } }
+                        let sons = match ctx.obj with Some obj then cons obj arg.sons else arg.sons in
+                        { sons = sons, ctx = ctx })
+                    { sons = [], ctx = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount, obj = None {} } }
                     sons in
                 let obj = { obj with name = name, kind = kind, doc = doc } in
                 match finish obj foldResult.ctx.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 let obj = ObjectNode { obj = obj, sons = reverse foldResult.sons } in
-                { foldResult.ctx with obj = obj, sourceCodeBuilder = sourceCodeBuilder } in
+                { foldResult.ctx with obj = Some obj, sourceCodeBuilder = sourceCodeBuilder } in
 
             -- Dispatch by token type + state
             switch token case Word { content = content } | Recursive { lit = content } | ProgramToken { content = content } then
@@ -127,7 +128,7 @@ let extract : DocTree -> ObjectTree =
                 let obj = { obj with name = name.word, kind = ObjUse {} } in
                 let sourceCodeBuilder = foldl absorbWord sourceCodeBuilder sons in
                 match finish obj sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
-                { obj = ObjectNode { obj = obj, sons = [] }, commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount }
+                { obj = Some (ObjectNode { obj = obj, sons = [] }), commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount }
 
             case TopUtest {} | Utest {} then
                 let name = int2string utestCount in
@@ -177,8 +178,7 @@ let extract : DocTree -> ObjectTree =
                 error (concat "Not covered: " (toString state))
             end
         case Leaf { token = token, state = state } then
-            let w = ObjectLeaf (lit token) in
-            let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = w, utestCount = utestCount } in
+            let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = None {}, utestCount = utestCount } in
             -- Leaf dispatch
             switch token
             case Comment { content = content } then
@@ -193,21 +193,21 @@ let extract : DocTree -> ObjectTree =
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file
             let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content }, name = path, namespace = path }, sons = [] } in    
-            let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = emptyInclude, utestCount = utestCount } in
+            let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = Some emptyInclude, utestCount = utestCount } in
             match tree with Some tree then
                 extractingLog (concat "Extracting on: " path);
                 let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount in
                 match res with
-                    { obj = (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
+                    { obj = Some (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
                     let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
-                    { defaultRes with obj = ObjectNode { obj = includeObj, sons = [ progObjTree ] }  }
+                    { defaultRes with obj = Some (ObjectNode { obj = includeObj, sons = [ progObjTree ] })  }
                 else
-                    extractingWarn (join ["Found a leaf at the root of a Program : ", objTreeToString res.obj]); defaultRes
+                    extractingWarn "Found a leaf at the root of a Program"; defaultRes
             else defaultRes
         end
     in
 
     -- Entry point: tree must be Program node
     match tree with Node { token = ProgramToken { content = content }, state = Program {} } then
-        (extractRec tree content [] (newSourceCodeBuilder ()) false 0).obj
+        match (extractRec tree content [] (newSourceCodeBuilder ()) false 0).obj with Some obj then obj else error "Extraction failed: extractRec returned None"
     else error "Extraction failed: the top node of the output tree should always be a program."

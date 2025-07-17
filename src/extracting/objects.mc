@@ -120,10 +120,5 @@ let objSetType = use ObjectKinds in lam obj. lam ty.
 -- Object tree (hierarchy)
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
-con ObjectLeaf : String -> ObjectTree
 
-let objTreeToString = lam obj. switch obj
-    case ObjectNode { obj = obj } then objToString obj.kind obj.name
-    case ObjectLeaf s then s
-    end
-    
+let objTreeToString = lam obj. match obj with ObjectNode { obj = obj } in objToString obj.kind obj.name

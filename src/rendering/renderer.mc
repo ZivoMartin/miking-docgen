@@ -165,9 +165,9 @@ let render : use Formats in Format -> ObjectTree -> () = use Renderer in
             else
                 renderingWarn (concat "Failed to open " path);
                 emptyPreview obj
-        case ObjectLeaf _ then error "You should never try to render an ObjectLeaf." end
-        
-    in let res = render opt.fmt obj in ()
+        end
+    in
+    let res = render opt.fmt obj in ()
 
 
 
