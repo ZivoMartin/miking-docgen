@@ -6,9 +6,6 @@
 include "./renderer-interface.mc"
 include "./html-header.mc"
 
-let htmlBalise = lam s. lam b. join ["<", b, ">\n", s, "\n</", b, ">"]
-
-let htmlSpan = lam content. lam kind. join ["<span class=\"", kind, "\">", content, "</span>"]
            
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
@@ -22,7 +19,7 @@ lang HtmlRenderer = RendererInterface
         join ["<h", sizeStr, ">", renderTitle size s (Row { fmt = Html {}}), "</h", sizeStr, ">", renderNewLine (Html {})]
     
     sem renderBold (text : String) =
-    | Html {} -> htmlBalise text "strong"
+    | Html {} -> join ["<strong>", text, "</strong>"]
 
     sem renderFooter obj =
     | Html {} -> "</div></body>\n</html>"
@@ -39,41 +36,49 @@ lang HtmlRenderer = RendererInterface
         case ">" ++ s then concat "&gt;" (renderRemoveForbidenChars s (Html {}))    
         case [x] ++ s then cons x (renderRemoveForbidenChars s (Html {}))
         case "" then ""
-        end      
+        end
 
+    sem htmlRenderSpan : String -> String -> String
+    sem htmlRenderSpan =
+    | content -> lam kind. join ["<span class=\"", kind, "\">", content, "</span>"]
 
     sem renderType (content : String) = 
-    | Html {} -> htmlSpan content "tp"
+    | Html {} -> htmlRenderSpan content "tp"
 
     sem renderVar (content : String) =
-    | Html {} -> htmlSpan content "var"
+    | Html {} -> htmlRenderSpan content "var"
     
     sem renderKeyword (content : String) =
-    | Html {} -> htmlSpan content "kw"
+    | Html {} -> htmlRenderSpan content "kw"
     
     sem renderComment (content : String) =
-    | Html {} -> htmlSpan content "comment"
+    | Html {} -> htmlRenderSpan content "comment"
     
     sem renderString (content : String) =
-    | Html {} -> htmlSpan content "string"
+    | Html {} -> htmlRenderSpan content "string"
     
     sem renderWeakComment (content : String) =
-    | Html {} -> htmlSpan content "weak"
+    | Html {} -> htmlRenderSpan content "weak"
 
     sem renderNumber (content : String) =
-    | Html {} -> htmlSpan content "number"
+    | Html {} -> htmlRenderSpan content "number"
 
-    sem renderRenderingData (data : RenderingData) =
+    sem htmlRenderWrapper : all a. String -> (a -> Format -> String) -> a -> String -> String
+    sem htmlRenderWrapper =
+    | left -> lam f. lam arg. lam right. join [left, f arg (Row { fmt = Html {} }), right]
+     
+    sem renderDocBloc (data : RenderingData) =
     | Html {} ->
-        join ["<div class=\"ObjectParent\">\n",
-            renderRenderingData data (Row { fmt = Html {} }),
-            "</div>"]
+        htmlRenderWrapper "<div class=\"doc-block\">\n" renderDocBloc data "</div>"
 
-    sem renderDoc (doc: String) =
-    | Html {} -> join ["<pre class=md>", renderDoc doc (Row { fmt = Html {} }), "</pre>"]
+    sem renderDocDescription (obj: Object) =
+    | Html {} -> htmlRenderWrapper "<div class = \"doc-description\"><pre>" renderDocDescription obj "</pre></div>"
 
-    sem renderLabel (label: String) =
-    | Html {} -> join ["<pre class=code>", label, "</pre>"]
+    sem renderDocSignature (obj: Object) =
+    | Html {} -> htmlRenderWrapper "<div class=\"doc-signature\">" renderDocSignature obj "</div>"
+    
+    sem renderCodeWithoutPreview (data: RenderingData) =
+    | Html {} -> htmlRenderWrapper "<div class=\"inline-container\"><pre class=\"source\">" renderCodeWithoutPreview data "</pre></div>"
 
     sem renderGotoLink (link: String) =
     | Html {} -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
@@ -82,12 +87,7 @@ lang HtmlRenderer = RendererInterface
     | Html {} ->
         let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
         join [jsDisplay, if withPreview then "" else "\n", code, "</div>"]
-
-
-    sem renderCodeWithoutPreview (data: RenderingData) =
-    | Html {} ->
-         join ["<div class=\"inline-container\"><pre class=\"source\">", renderCodeWithoutPreview data (Row { fmt = Html {}}), "</pre></div>"]
-
+    
     sem renderLink (title : String) (link : String) =
     | Html {} -> join ["<a href=\"", link, "\">", title, "</a>"]
 

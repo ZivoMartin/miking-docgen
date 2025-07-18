@@ -110,7 +110,7 @@ let render : use Formats in Format -> ObjectTree -> () = use Renderer in
                 let trees = reconstructSourceCode (objSourceCode obj) sons in
                 let data = renderTreeSourceCode trees obj fmt in
     
-                write (renderSpecificDoc data fmt);
+                write (renderTopPageDoc data fmt);
 
                 -- Ordering objects in a set
                 let set = 
@@ -149,7 +149,7 @@ let render : use Formats in Format -> ObjectTree -> () = use Renderer in
                     let title = match arr with [] then "" else match title with "" then "" else
                             renderSectionTitle title fmt in
                     write title;
-                    iter (lam u. write (renderRenderingData u fmt)) arr
+                    iter (lam u. write (renderDocBloc u fmt)) arr
                 in
     
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];

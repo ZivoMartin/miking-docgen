@@ -68,6 +68,8 @@ let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind
 let objDoc : Object -> String = lam obj. obj.doc
 let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode    
 
+let objGetLangName : Object -> String = use ObjectKinds in lam obj.
+    match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
 
 -- Get URL link for an object
 let objLink : Object -> String = use ObjectKinds in lam obj.

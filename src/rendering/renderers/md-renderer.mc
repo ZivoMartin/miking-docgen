@@ -22,16 +22,17 @@ lang MarkdownRenderer = RendererInterface
         case "" then ""
         end
 
-    sem renderDoc : String -> Format -> String
-    sem renderDoc doc =
+    sem renderDocDescription : Object -> Format -> String
+    sem renderDocDescription obj =
     | Md {} ->
+        let doc = objDoc obj in
         match splitOnR (lam c. match c with ' ' | '\n' then false else true) doc with { right = doc } in
         strReplace "\n " "\n" doc
         
     
 
-    sem renderLabel (label: String) =
-    | Md {} -> join ["```", label, "```"]
+    sem renderDocSignature (obj: Object) =
+    | Md {} -> join ["```", renderDocSignature obj (Row { fmt = Md {} }), "```"]
 
     sem renderLink (title : String) (link : String) =
     | Md {} -> join ["[", title, "](", link, ")"]

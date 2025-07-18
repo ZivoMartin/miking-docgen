@@ -9,20 +9,32 @@ let getHeader = lam title.
 <style>
 
     body {
-        font-family: system-ui, sans-serif;
-        width: 100%;
-        margin: 0;
-        display: flex;
-        justify-content: center;
-        background-color: #fdfdfd;
-        color: #333;
+        
     }
 
     .main-container {
+        margin: 0 auto;
         width: 100%;
-        max-width: 1200px; /* ou 1000/1100 selon ton goût */
+        max-width: 1200px;
         padding: 0 2em;
         box-sizing: border-box;
+    }
+
+    h1 {
+        font-size: 2em;
+        margin-top: 1em;
+        color: #2c3e50;
+        border-bottom: 2px solid #eee;
+        padding-bottom: 0.3em;
+    }
+
+    h2 {
+        font-size: 1.5em;
+        margin-top: 2em;
+        padding-bottom: 0.2em;
+        border-left: 4px solid #2980b9;
+        padding-left: 0.5em;
+        color: #2c3e50;
     }
 
     h1 {
@@ -31,13 +43,6 @@ let getHeader = lam title.
         padding-bottom: 0.3em;
     }
 
-    h2 {
-        color: #2c3e50;
-        font-size: 1.1em;
-        margin-top: 3em;
-        border-bottom: 1px solid #eee;
-        padding-bottom: 0.3em;
-    }
 
     a {
         color: #2980b9;
@@ -48,64 +53,30 @@ let getHeader = lam title.
         text-decoration: underline;
     }
 
-    pre.code {
-        font-family: Consolas, \"Liberation Mono\", Menlo, Courier, monospace;
-        background: #f5f5f5;
-        border-left: 4px solid #2980b9;
-        padding: 1em;
-        overflow-x: auto;
-        border-radius: 5px;
-        font-size: 1em; 
-        line-height: 1.4;
-        margin-bottom: 2em;
-    }
-
-    pre a:hover {
-        text-decoration: underline;
-    }
-
-    pre span {
-        font-family: inherit;
-        font-size: inherit;
-    }
-
-    pre.source {
-        font-size: 1em;
-        text-color: #24292e;
-    }   
-        
-    pre.md {
-        font-family: system-ui, sans-serif;
-        font-size: 1em;
-        line-height: 1.6;
-        white-space: pre-wrap;
-    }
-
-    nav {
-        background: #fafafa;
+    .doc-signature {
+        background: #f6f8fa;
+        border-left: 4px solid #3b82f6;
         padding: 0.8em 1em;
-        border-bottom: 1px solid #ddd;
-        margin-bottom: 1em;
-        font-size: 0.9em;
-        color: #999;
+        font-family: 'JetBrains Mono', monospace;
+        font-size: 0.95em;
+        color: #111827;
+        border-radius: 6px;
+        overflow-x: auto;
     }
 
-    .ObjectParent {
-        border-bottom: 1px solid #eee;
-        position: relative;
-        padding-top: 1em;
-        padding-bottom: 2em;
+    .doc-block {
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        margin: 1.5em 0;
+        background: #fefefe;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        padding: 0;
+        overflow: hidden;
+        font-family: system-ui, sans-serif;
     }
         
     .inline-container {
         display: block;
-    }
-    
-    nav a {
-        margin-right: 1em;
-        color: #999;
-        text-decoration: none;
-        cursor: default; /* pas la main cliqueuse */
     }
 
     nav a:hover {
@@ -113,19 +84,19 @@ let getHeader = lam title.
     }
 
     .toggle-btn {
-        background: none;
-        border: none;
-        color: #888;
-        font-family: monospace;
+        color: #666;
+        background: #f0f0f0;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 0 0.5em;
         font-size: 0.8em;
         cursor: pointer;
-        padding: 0;
-        margin: 0 4px;
-        transition: color 0.2s;
+        transition: background 0.2s, color 0.2s;
     }
-    
+
     .toggle-btn:hover {
-        color: #444;
+        background: #e0e0e0;
+        color: #000;
     }
 
     .gotoLink {
@@ -135,7 +106,7 @@ let getHeader = lam title.
         font-size: 1em;
         color: #2980b9;
         text-decoration: none;
-    }   
+    }
     
     .arg { color: #24292e; font-style: italic; }
     .kw  { color: #d73a49; }   
@@ -163,9 +134,4 @@ function toggle(btn) {
     window.scrollTo({ top: scrollY }); // Preventing the screen to move
 }
 </script>
-    
-<nav>
-    <a href=\"/\">Home (todo)</a>
-    <a href=\"/Lang/\">Modules (todo)</a>
-</nav>
 "]

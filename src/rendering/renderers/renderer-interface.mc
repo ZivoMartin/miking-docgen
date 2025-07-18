@@ -6,19 +6,19 @@ include "mexpr/pprint.mc"
 
 lang RendererInterface = Formats + ObjectKinds + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
 
-    sem renderStringColorized : Object -> Format -> String
+    sem renderTopPageDoc : RenderingData -> Format -> String
     
+    sem renderDocBloc : RenderingData -> Format -> String
+    
+    sem renderDocSignature : Object -> Format -> String
+
+    sem renderDocDescription : Object -> Format -> String    
+
     sem renderLinkList : [Object] -> Format -> String
 
     sem renderGotoLink : String -> Format -> String
 
-    sem renderDoc : String -> Format -> String
-
-    sem renderLabel : String -> Format -> String
-    
-    sem renderRenderingData : RenderingData -> Format -> String
-
-    sem renderSpecificDoc : RenderingData -> Format -> String
+    sem renderStringColorized : Object -> Format -> String  
 
     sem renderCodeWithoutPreview : RenderingData -> Format -> String
 
