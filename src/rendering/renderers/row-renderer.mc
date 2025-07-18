@@ -10,9 +10,7 @@ lang RowRenderer = RendererInterface
         let description = renderDocDescription obj fmt in
         let code = renderCodeWithoutPreview data fmt in
 
-        let result = [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc] in
-        let result = filter (neqString "") result in
-        strJoin (renderNewLine fmt) result
+        join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc] 
             
     sem renderTopPageDoc (data: RenderingData) =
     | fmt -> let fmt = unwrapRow fmt in

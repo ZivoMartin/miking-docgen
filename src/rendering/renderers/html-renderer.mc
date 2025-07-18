@@ -65,7 +65,9 @@ lang HtmlRenderer = RendererInterface
 
     sem htmlRenderWrapper : all a. String -> (a -> Format -> String) -> a -> String -> String
     sem htmlRenderWrapper =
-    | left -> lam f. lam arg. lam right. join [left, f arg (Row { fmt = Html {} }), right]
+    | left -> lam f. lam arg. lam right.
+        let inner = f arg (Row { fmt = Html {} }) in
+        match inner with "" then "" else join [left, inner, right]
      
     sem renderDocBloc (data : RenderingData) =
     | Html {} ->
@@ -78,14 +80,14 @@ lang HtmlRenderer = RendererInterface
     | Html {} -> htmlRenderWrapper "<div class=\"doc-signature\">" renderDocSignature obj "</div>"
     
     sem renderCodeWithoutPreview (data: RenderingData) =
-    | Html {} -> htmlRenderWrapper "<div class=\"inline-container\"><pre class=\"source\">" renderCodeWithoutPreview data "</pre></div>"
+    | Html {} -> htmlRenderWrapper "<div class=\"code-block\"><pre>" renderCodeWithoutPreview data "</pre></div>"
 
     sem renderGotoLink (link: String) =
     | Html {} -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
     sem renderHidenCode (code: String) (withPreview: Bool) =
     | Html {} ->
-        let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div style=\"display: none;\">" in
+        let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div class=\"hiden-code\" style=\"display: none;\">" in
         join [jsDisplay, if withPreview then "" else "\n", code, "</div>"]
     
     sem renderLink (title : String) (link : String) =

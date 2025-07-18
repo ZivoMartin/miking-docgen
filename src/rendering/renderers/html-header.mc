@@ -7,116 +7,126 @@ let getHeader = lam title.
 <title>", title, "</title>
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
 <style>
+body {
+    font-family: 'Segoe UI', Roboto, sans-serif;
+    background-color: #f9fafb;
+    color: #111827;
+    margin: 2rem auto;
+    max-width: 960px;
+    padding: 0 1rem;
+    font-size: 16px;
+    line-height: 1.7;
+    letter-spacing: 0.02em;
+}
 
-    body {
-        
-    }
+h1 {
+    font-size: 2.4em;
+    font-weight: 700;
+    border-bottom: 3px solid #d1d5db;
+    padding-bottom: 0.4em;
+    margin-bottom: 1.5em;
+    color: #111827;
+}
 
-    .main-container {
-        margin: 0 auto;
-        width: 100%;
-        max-width: 1200px;
-        padding: 0 2em;
-        box-sizing: border-box;
-    }
+h2 {
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #1f2937;
+    margin-top: 2.5em;
+    border-left: 4px solid #3b82f6;
+    padding-left: 0.6em;
+}
 
-    h1 {
-        font-size: 2em;
-        margin-top: 1em;
-        color: #2c3e50;
-        border-bottom: 2px solid #eee;
-        padding-bottom: 0.3em;
-    }
+.doc-block {
+    background-color: #ffffff;
+    border-left: 3px solid #3b82f6;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0.8rem 1rem;
+    margin: 1.5rem 0;
+    font-size: 15px;
+    position: relative;    
+}
 
-    h2 {
-        font-size: 1.5em;
-        margin-top: 2em;
-        padding-bottom: 0.2em;
-        border-left: 4px solid #2980b9;
-        padding-left: 0.5em;
-        color: #2c3e50;
-    }
+.doc-signature {
+    background-color: #f9f9f9;
+    padding: 0.4em 0.8em;
+    border-radius: 3px;
+    font-weight: 600;
+    display: inline-block;
+    margin-bottom: 0.6em;
+}
 
-    h1 {
-        color: #2c3e50;
-        border-bottom: 2px solid #eee;
-        padding-bottom: 0.3em;
-    }
+.doc-description {
+    background-color: #f0f4ff;    
+    border-left: 2px solid #d1d5db;
+    padding: 0.5em 1em;
+    color: #374151;
+    font-style: italic;
+    font-size: 0.95em;
+    margin-bottom: 0.5em;
+}
+
+.code-block {
+    background-color: #fafafa;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    padding: 0.5em 0.8em;
+    margin-top: 0.5em;
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.toggle-btn {
+    all: unset;    
+    border: none;
+    padding: 0.2em 0.5em;
+    font-size: 0.85em;
+    font-family: monospace;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.toggle-btn:hover {
+    background-color: #bae6fd;
+}
+
+.hiden-code {}
+
+.gotoLink {
+    font-size: 1.1em;
+    color: #3b82f6;
+    text-decoration: none;
+    position: absolute;
+    top: 0.6em;
+    right: 1em;
+    opacity: 0.7;
+    font-weight: 500;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+}
 
 
-    a {
-        color: #2980b9;
-        text-decoration: none;
-    }
-    
-    a:hover {
-        text-decoration: underline;
-    }
+a {
+    color: #2980b9;
+    text-decoration: none;
+}
 
-    .doc-signature {
-        background: #f6f8fa;
-        border-left: 4px solid #3b82f6;
-        padding: 0.8em 1em;
-        font-family: 'JetBrains Mono', monospace;
-        font-size: 0.95em;
-        color: #111827;
-        border-radius: 6px;
-        overflow-x: auto;
-    }
+a:hover {
+    text-decoration: underline;
+}
 
-    .doc-block {
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        margin: 1.5em 0;
-        background: #fefefe;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        padding: 0;
-        overflow: hidden;
-        font-family: system-ui, sans-serif;
-    }
-        
-    .inline-container {
-        display: block;
-    }
+.gotoLink:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
 
-    nav a:hover {
-        text-decoration: none;
-    }
 
-    .toggle-btn {
-        color: #666;
-        background: #f0f0f0;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        padding: 0 0.5em;
-        font-size: 0.8em;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s;
-    }
-
-    .toggle-btn:hover {
-        background: #e0e0e0;
-        color: #000;
-    }
-
-    .gotoLink {
-        position: absolute;
-        bottom: 0.4em;
-        right: 0.8em;
-        font-size: 1em;
-        color: #2980b9;
-        text-decoration: none;
-    }
-    
-    .arg { color: #24292e; font-style: italic; }
-    .kw  { color: #d73a49; }   
-    .var { color: #005cc5; }                      
-    .default { color: #24292e; font-style: italic; }
-    .tp { color: #6f42c1; }    
-    .comment { color: #22863a; }
-    .string { color: #b36f00; }    
-    .weak { color: #b34f00 }
-    .number { color: #0366d6; }
+/* Highlighting stays the same (optional tweaks below) */
+.kw { color: #dc2626; font-weight: 500; }
+.var { color: #2563eb; }
+.tp  { color: #7c3aed; }
+.number { color: #0284c7; }
+.comment { color: #16a34a; font-style: italic; }
 
 </style>
 </head>
