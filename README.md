@@ -51,7 +51,7 @@ The documentation is built through a multi-phase pipeline:
 - **Rendering**: Generates output files
 
 ##  Project Structure
-
+```
 .
 ├── options.mc                 # CLI argument parsing
 ├── parsing/                  # Lexer + parser (breaker-based)
@@ -65,7 +65,7 @@ The documentation is built through a multi-phase pipeline:
 ├── logger.mc                 # Debug and warning logging
 ├── format.mc                 # Format types and helpers
 └── server.mc                 # Local file server (optional)
-
+```
 
 Dependencies
 
