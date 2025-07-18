@@ -4,14 +4,14 @@
 -- It generates HTML pages from the extracted ObjectTree.
 
 include "./renderer-interface.mc"
-include "./html-header.mc"
+include "./headers/html-themes.mc"
 
            
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
 
-    sem renderHeader obj =
-    | Html {} -> getHeader (objName obj)
+    sem renderHeader obj theme =
+    | Html {} -> getHeader theme (objName obj)
 
     sem renderTitle size s =
     | Html {} ->
@@ -22,7 +22,7 @@ lang HtmlRenderer = RendererInterface
     | Html {} -> join ["<strong>", text, "</strong>"]
 
     sem renderFooter obj =
-    | Html {} -> "</div></body>\n</html>"
+    | Html {} -> "</div></body>\n</html>"   
 
     sem renderNewLine =
     | Html {} -> "<br>"

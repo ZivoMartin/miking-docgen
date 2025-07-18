@@ -11,27 +11,30 @@
 --   <file>                    Path to the Miking source file to process.
 --
 -- Options:
---   --no-open                 Do not open the result in a browser.
---   --debug                   Enable all debug modes.
---   --parsing-debug           Enable debug logs for parsing stage.
---   --extracting-debug        Enable debug logs for extracting stage.
---   --labeling-debug          Enable debug logs for labeling stage.
---   --rendering-debug         Enable debug logs for rendering stage.
---   --no-warn                 Disable all warnings.
---   --no-parsing-warn         Disable parsing warnings.
---   --no-extracting-warn      Disable extracting warnings.
---   --no-labeling-warn        Disable labeling warnings.
---   --no-rendering-warn       Disable rendering warnings.
---   --format <html|md>        Output format. Default: html.
---   --output-folder <name>    Output folder name. Default: doc-gen-output.
---   --no-gen                  Do not parse anything, use the output folder as is.
---   --skip-labeling           Skip type computation during parsing.
+--   --no-open                              Do not open the result in a browser.
+--   --debug                                Enable all debug modes.
+--   --parsing-debug                        Enable debug logs for parsing stage.
+--   --extracting-debug                     Enable debug logs for extracting stage.
+--   --labeling-debug                       Enable debug logs for labeling stage.
+--   --rendering-debug                      Enable debug logs for rendering stage.
+--   --no-warn                              Disable all warnings.
+--   --no-parsing-warn                      Disable parsing warnings.
+--   --no-extracting-warn                   Disable extracting warnings.
+--   --no-labeling-warn                     Disable labeling warnings.
+--   --no-rendering-warn                    Disable rendering warnings.
+--   --format <html|md|mdx>                 Output format. Default: html.
+--   --output-folder <name>                 Output folder name. Default: doc-gen-output.
+--   --no-gen                               Do not parse anything, use the output folder as is.
+--   --skip-labeling                        Skip type computation during parsing.
+--   --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.
 -- ```
 
 include "./format.mc"
+include "./theme.mc"
+        
 include "string.mc"
 
-type Options = use Formats in {
+type Options = use Formats in use Themes in {
     noOpen: Bool,
     fmt: Format,
     file: String,
@@ -47,10 +50,11 @@ type Options = use Formats in {
     noWarn: Bool,
     outputFolder: String,
     noGen: Bool,
-    skipLabeling: Bool
+    skipLabeling: Bool,
+    theme: Theme
 }
 
-let optionsDefault : Options = use Formats in {
+let optionsDefault : Options = use Formats in use Themes in {
     noOpen = false,
     fmt = defaultFormat (),
     file = "",
@@ -66,7 +70,8 @@ let optionsDefault : Options = use Formats in {
     noExtractingWarn = false,
     noLabelingWarn = false,
     noRenderingWarn = false,
-    noWarn = false
+    noWarn = false,
+    theme = ThDark {}
 }
 
 let usage = lam.
@@ -90,11 +95,12 @@ let usage = lam.
         "  --format <html|md>        Output format. Default: html.\n",
         "  --output-folder <name>    Output folder name. Default: doc-gen-output.\n",
         "  --no-gen                  Do not parse anything, use the output folder as is.\n",
-        "  --skip-labeling           Skip type computation during parsing.\n"
+        "  --skip-labeling           Skip type computation during parsing.\n",
+        "  --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.\n"
     ])
 
 let parseOptions : [String] -> Options = lam argv.
-    recursive let parse : [String] -> Options -> Options = use Formats in lam args. lam opts.
+    recursive let parse : [String] -> Options -> Options = use Formats in use Themes in lam args. lam opts.
         switch args
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
         case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
@@ -119,6 +125,11 @@ let parseOptions : [String] -> Options = lam argv.
                 parse rest { opts with fmt = fmt }
             else usage ()
 
+        case ["--theme", theme] ++ rest then
+            match themeFromStr theme with Some theme then
+                parse rest { opts with theme = theme }
+            else usage ()
+
         case [s] ++ rest then
             if eqString opts.file "" then parse rest { opts with file = s }
             else usage ()
@@ -127,5 +138,5 @@ let parseOptions : [String] -> Options = lam argv.
         end
     in
     parse (tail argv) optionsDefault
-
+    
 let opt: Options = parseOptions argv

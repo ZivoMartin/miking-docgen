@@ -151,7 +151,7 @@ lang RowRenderer = RendererInterface
                 end
         }
 
-    sem renderHeader (obj : Object) =
+    sem renderHeader (obj : Object) (theme: Theme) =
     | _ -> ""
 
     sem renderFooter (obj : Object) =

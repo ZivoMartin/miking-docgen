@@ -44,6 +44,12 @@ include "../format.mc"
 include "../extracting/objects.mc"
 include "../util.mc"    
 
+type RenderingOptions = use Formats in use Themes in
+    {
+        theme: Theme,
+        format: Format
+    }
+
 -- ## render
 --
 -- Entrypoint to rendering. This function traverses the entire `ObjectTree` and writes
@@ -61,16 +67,17 @@ include "../util.mc"
 --     - Organizes them by type
 --     - Writes formatted output to file
 --     - Returns `RenderingData` for each node
-let render : use Formats in Format -> ObjectTree -> () = use Renderer in
-    lam fmt. lam obj.
+let render : RenderingOptions -> ObjectTree -> () = use Renderer in
+    lam renderingOpt. lam obj.
+    match renderingOpt with { format = fmt, theme = theme } in
     preprocess obj;
     renderingLog "Beggining of rendering stage.";
     recursive
-    let render : Format -> ObjectTree -> RenderingData = lam fmt. lam objTree.
+    let render : ObjectTree -> RenderingData = lam objTree.
         let emptyPreview = lam obj. { left = [], right = [], trimmed = [], obj = obj } in            
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then let res = render fmt p in emptyPreview obj
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then let res = render p in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
@@ -82,7 +89,7 @@ let render : use Formats in Format -> ObjectTree -> () = use Renderer in
                 let write = fileWriteString wc in
 
                 -- Push header of the output file
-                write (renderHeader obj fmt);
+                write (renderHeader obj theme fmt);
                 -- Pushing title and global documentation
                 write (renderObjTitle 1 obj fmt);
                 
@@ -106,7 +113,7 @@ let render : use Formats in Format -> ObjectTree -> () = use Renderer in
                 let sons = unwrapRecursives sons in
             
                 -- Recursive calls
-                let sons: [RenderingData] = map (render fmt) sons in
+                let sons: [RenderingData] = map render sons in
                 let trees = reconstructSourceCode (objSourceCode obj) sons in
                 let data = renderTreeSourceCode trees obj fmt in
     
@@ -167,7 +174,7 @@ let render : use Formats in Format -> ObjectTree -> () = use Renderer in
                 emptyPreview obj
         end
     in
-    let res = render opt.fmt obj in ()
+    let res = render obj in ()
 
 
 

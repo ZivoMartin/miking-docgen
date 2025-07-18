@@ -1,10 +1,12 @@
+include "../../theme.mc"
 include "../../extracting/objects.mc"
 include "../../format.mc"
+include "../../theme.mc"    
 include "../rendering-types.mc"
 
 include "mexpr/pprint.mc"
 
-lang RendererInterface = Formats + ObjectKinds + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
+lang RendererInterface = Formats + Themes + ObjectKinds + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
 
     sem renderTopPageDoc : RenderingData -> Format -> String
     
@@ -26,7 +28,7 @@ lang RendererInterface = Formats + ObjectKinds + Formatter + MExprPrettyPrint + 
 
     sem renderHidenCode : String -> Bool -> Format -> String
 
-    sem renderHeader : Object -> Format -> String
+    sem renderHeader : Object -> Theme -> Format -> String
 
     sem renderFooter : Object -> Format -> String
 
