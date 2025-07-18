@@ -39,11 +39,9 @@ Option	Description
 --output-folder <name>	Set output folder. Default: doc-gen-output
 --no-gen	Skip generation (reuse existing folder)
 --skip-labeling	Skip type inference / annotation
+```
 
-Stages include: `parsing`, `extracting`, `labeling`, `rendering`
-
-
-🧪 Internals
+Internals
 
 The documentation is built through a multi-phase pipeline:
 
