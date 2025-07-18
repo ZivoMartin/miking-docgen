@@ -20,5 +20,8 @@ lang Themes
     | ThWarmDark {} -> "WarmDark"
     | ThLight {} -> "Light"
     | ThWarm {} -> "Warm"
-       
+
+    sem defaultTheme =
+    | _ -> ThDark {}
+    
 end 

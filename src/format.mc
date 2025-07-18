@@ -38,7 +38,7 @@ lang Formats
 
     -- Returns the default rendering format to use when none is specified.    
     sem defaultFormat /- () -> Format -/ =
-        | _ -> Mdx {}
+    | _ -> Html {}
 
     
 end

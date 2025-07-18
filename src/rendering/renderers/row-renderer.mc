@@ -15,20 +15,20 @@ lang RowRenderer = RendererInterface
     sem renderTopPageDoc (data: RenderingData) =
     | fmt -> let fmt = unwrapRow fmt in
         let nl = renderNewLine fmt in
-        let top = switch data
+        let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } } then
             let parents = strJoin " + " (map (lam p. renderLink p (concat (getLangLink p) ".lang") fmt) parents) in
-            let sectionTitle = renderSectionTitle "Stem from:" fmt in
-            join [sectionTitle, nl, nl, parents]
+            let sectionTitle = renderBold "Stem from:" fmt in
+            strJoin nl [sectionTitle, parents]
         case { obj = { kind = ( ObjSyn {} | ObjSem {} )} & obj } then
             let langName = objGetLangName obj in
             let langName = renderLink langName (concat (getLangLink langName) ".lang") fmt in
-            let sectionTitle = renderSectionTitle "From:" fmt in
-            concat sectionTitle langName
+            let sectionTitle = renderBold "From:" fmt in
+            strJoin nl [sectionTitle, langName]
         case { obj = obj } then
             ""
         end in
-        renderBlocDefault data fmt top "" "" ""
+        renderBlocDefault data fmt "" "" details ""
     
     sem renderDocBloc (data : RenderingData) =
     | fmt -> let fmt = unwrapRow fmt in
@@ -45,29 +45,30 @@ lang RowRenderer = RendererInterface
 
     sem renderDocSignature (obj : Object) =
     | fmt -> let fmt = unwrapRow fmt in
-    let name = objName obj in
-    let kind = objKind obj in
-    let code = switch obj.kind
-    case ObjLet { rec = rec, args = args, ty = ty } then
-        let t = match ty with Some t then type2str t else "?" in
-        let args = strJoin " " args in
-        join [if rec then "recursive " else "", "let ", name, " ", args, " : ", t]
-    case ObjType { t = t } then
-        join ["type ", name, match t with Some t then concat " : " t else ""]
-    case ObjCon { t = t } then
-        join ["con ", name, " : ", t]
-    case (ObjMexpr {} | ObjUtest {}) & kind then
-        getFirstWord kind
-    case ObjLang {} then
-        concat "lang " name
-    case ObjProgram {} then ""
-    case ObjSem { ty = ty } then
-        let t = match ty with Some t then type2str t else "?" in
-        join ["sem ", name, " : ", t]
-    case kind then
-        join [getFirstWord kind, " ", name]
-    end in
-    renderSourceCodeStr code fmt
+        let type2str = lam t. strReplace "[Char]" "String" (type2str t) in
+        let name = objName obj in
+        let kind = objKind obj in
+        let code = switch obj.kind
+        case ObjLet { rec = rec, args = args, ty = ty } then
+            let t = match ty with Some t then type2str t else "?" in
+            let args = strJoin " " args in
+            join [if rec then "recursive " else "", "let ", name, " ", args, " : ", t]
+        case ObjType { t = t } then
+            join ["type ", name, match t with Some t then concat " : " t else ""]
+        case ObjCon { t = t } then
+            join ["con ", name, " : ", t]
+        case (ObjMexpr {} | ObjUtest {}) & kind then
+            getFirstWord kind
+        case ObjLang {} then
+            concat "lang " name
+        case ObjProgram {} then ""
+        case ObjSem { ty = ty } then
+            let t = match ty with Some t then type2str t else "?" in
+            join ["sem ", name, " : ", t]
+        case kind then
+            join [getFirstWord kind, " ", name]
+        end in
+        renderSourceCodeStr code fmt
 
     sem renderGotoLink (link: String) =
     | _ -> "[→]"

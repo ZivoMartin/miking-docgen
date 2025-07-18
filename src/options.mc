@@ -57,6 +57,7 @@ type Options = use Formats in use Themes in {
 let optionsDefault : Options = use Formats in use Themes in {
     noOpen = false,
     fmt = defaultFormat (),
+    theme = defaultTheme (),    
     file = "",
     debug = false,
     parsingDebug = false,
@@ -70,8 +71,7 @@ let optionsDefault : Options = use Formats in use Themes in {
     noExtractingWarn = false,
     noLabelingWarn = false,
     noRenderingWarn = false,
-    noWarn = false,
-    theme = ThDark {}
+    noWarn = false
 }
 
 let usage = lam.

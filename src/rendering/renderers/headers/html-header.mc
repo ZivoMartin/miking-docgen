@@ -65,6 +65,39 @@ h2 {
     padding-left: 0.6em;
 }
 
+
+pre {
+    white-space: pre-wrap;
+    overflow-wrap: break-word;
+}
+
+.top-doc {
+    background-color: #121212;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    line-height: 1.8;
+    font-size: 0.96em;
+    color: #d0d0d0;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.top-doc pre {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.top-doc code {
+    background-color: #1c1c1c;
+    padding: 0.2em 0.4em;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.95em;
+    color: #c5c5c5;
+}
+
+    
 .doc-block {
     background-color: ", theme.docBlockBGColor, ";
     border-left: 3px solid ", theme.docBlockBorderColor, ";
@@ -87,13 +120,16 @@ h2 {
 
 .doc-description {
     background-color: ", theme.docDescriptionBGColor, ";    
-    border-left: 2px solid ", theme.docDescriptionBorderColor, ";
     padding: 0.5em 1em;
     color: ", theme.docDescriptionTextColor, ";
     font-style: italic;
     font-size: 0.95em;
     margin-bottom: 0.5em;
+    white-space: pre-wrap; 
+    word-wrap: break-word; 
+    overflow-wrap: break-word;        
 }
+
 
 .code-block {
     background-color: ", theme.codeBlockBGColor, ";
@@ -136,6 +172,9 @@ h2 {
 a {
     color: ", theme.aColor, ";
     text-decoration: none;
+    font-size: 1.05em;
+    font-weight: 500;
+    transition: color 0.2s ease, text-decoration 0.2s ease;
 }
 
 a:hover {

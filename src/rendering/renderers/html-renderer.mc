@@ -68,10 +68,12 @@ lang HtmlRenderer = RendererInterface
     | left -> lam f. lam arg. lam right.
         let inner = f arg (Row { fmt = Html {} }) in
         match inner with "" then "" else join [left, inner, right]
-     
+
+    sem renderTopPageDoc (data: RenderingData) =
+    | Html {} -> htmlRenderWrapper "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
+    
     sem renderDocBloc (data : RenderingData) =
-    | Html {} ->
-        htmlRenderWrapper "<div class=\"doc-block\">\n" renderDocBloc data "</div>"
+    | Html {} -> htmlRenderWrapper "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
 
     sem renderDocDescription (obj: Object) =
     | Html {} -> htmlRenderWrapper "<div class = \"doc-description\"><pre>" renderDocDescription obj "</pre></div>"
