@@ -3,48 +3,51 @@ include "./renderer-interface.mc"
 
 lang RowRenderer = RendererInterface
 
-    sem renderBlocDefault : RenderingData -> Format -> String -> String -> String -> String -> String
+    sem renderBlocDefault : RenderingData -> RenderingOptions -> String -> String -> String -> String -> String
     sem renderBlocDefault =
-    | { obj = obj } & data -> lam fmt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
-        let signature = renderDocSignature obj fmt in
-        let description = renderDocDescription obj fmt in
-        let code = renderCodeWithoutPreview data fmt in
+    | { obj = obj } & data -> lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
+        let signature = renderDocSignature obj opt in
+        let description = renderDocDescription obj opt in
+        let code = renderCodeWithoutPreview data opt in
 
-        join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc] 
+        join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc]
+
+    sem fixOptFormat : RenderingOptions -> RenderingOptions
+    sem fixOptFormat = | opt -> { opt with fmt = unwrapRow opt.fmt }
             
     sem renderTopPageDoc (data: RenderingData) =
-    | fmt -> let fmt = unwrapRow fmt in
-        let nl = renderNewLine fmt in
+    | opt -> let opt = fixOptFormat opt in
+        let nl = renderNewLine opt in
         let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } } then
-            let parents = strJoin " + " (map (lam p. renderLink p (concat (getLangLink p) ".lang") fmt) parents) in
-            let sectionTitle = renderBold "Stem from:" fmt in
+            let parents = strJoin " + " (map (lam p. renderLink p (concat (getLangLink p) ".lang") opt) parents) in
+            let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents]
         case { obj = { kind = ( ObjSyn {} | ObjSem {} )} & obj } then
             let langName = objGetLangName obj in
-            let langName = renderLink langName (concat (getLangLink langName) ".lang") fmt in
-            let sectionTitle = renderBold "From:" fmt in
+            let langName = renderLink langName (concat (getLangLink langName) ".lang") opt in
+            let sectionTitle = renderBold "From:" opt in
             strJoin nl [sectionTitle, langName]
         case { obj = obj } then
             ""
         end in
-        renderBlocDefault data fmt "" "" details ""
+        renderBlocDefault data opt "" "" details ""
     
     sem renderDocBloc (data : RenderingData) =
-    | fmt -> let fmt = unwrapRow fmt in
+    | opt -> let opt = fixOptFormat opt in
         match data with { obj = obj } in
         let link = objLink obj in
         let link = concat (if strStartsWith "/" link then "" else "/") link in
-        let link = renderGotoLink link fmt in
-        renderBlocDefault data fmt "" "" link ""
+        let link = renderGotoLink link opt in
+        renderBlocDefault data opt "" "" link ""
     
     sem renderDocDescription (obj: Object) =
-    | fmt -> let fmt = unwrapRow fmt in
+    | opt -> let opt = fixOptFormat opt in
         let doc = objDoc obj in
-        concat (renderRemoveForbidenChars doc fmt) (renderNewLine fmt)
+        concat (renderRemoveForbidenChars doc opt) (renderNewLine opt)
 
     sem renderDocSignature (obj : Object) =
-    | fmt -> let fmt = unwrapRow fmt in
+    | opt -> let opt = fixOptFormat opt in
         let type2str = lam t. strReplace "[Char]" "String" (type2str t) in
         let name = objName obj in
         let kind = objKind obj in
@@ -68,49 +71,49 @@ lang RowRenderer = RendererInterface
         case kind then
             join [getFirstWord kind, " ", name]
         end in
-        renderSourceCodeStr code fmt
+        renderSourceCodeStr code opt
 
     sem renderGotoLink (link: String) =
-    | fmt -> let fmt = unwrapRow fmt in
-        renderLink "[→]" link fmt
+    | opt -> let opt = fixOptFormat opt in
+        renderLink "[→]" link opt
         
     sem renderLinkList (objects: [Object]) =
-    | fmt -> let fmt = unwrapRow fmt in
-        let doc = map (lam u. renderLink (objTitle u) (objLink u) fmt) objects in
+    | opt -> let opt = fixOptFormat opt in
+        let doc = map (lam u. renderLink (objTitle u) (objLink u) opt) objects in
         let doc = strJoin ", " doc in
         match doc with "" then "" else
-            concat (renderText doc fmt) (renderNewLine fmt)
+            concat (renderText doc opt) (renderNewLine opt)
     
     sem renderCodeWithoutPreview (data: RenderingData) = 
-    | fmt -> let fmt = unwrapRow fmt in
-        renderHidenCode (concat data.left data.right) false fmt
+    | opt -> let opt = fixOptFormat opt in
+        renderHidenCode (concat data.left data.right) false opt
 
     sem renderCodeWithPreview (data: RenderingData) =
-    | fmt -> let fmt = unwrapRow fmt in
+    | opt -> let opt = fixOptFormat opt in
         match data.right with [] then
             join [data.left, data.trimmed]
         else 
-            join [data.left, renderHidenCode data.right true fmt, data.trimmed]
+            join [data.left, renderHidenCode data.right true opt, data.trimmed]
 
     sem renderHidenCode (code : String) (withPreview: Bool) =
     | _ -> ""
 
     sem renderSourceCodeStr (code: String) =
-    | fmt -> let fmt = unwrapRow fmt in
-         renderSourceCode (strToSourceCode code) fmt
+    | opt -> let opt = fixOptFormat opt in
+         renderSourceCode (strToSourceCode code) opt
 
     sem renderSourceCode (code: SourceCode) =
-    | fmt -> let fmt = unwrapRow fmt in
-        join (map (lam code. match code with Some code then renderWord code fmt else "") code)
+    | opt -> let opt = fixOptFormat opt in
+        join (map (lam code. match code with Some code then renderWord code opt else "") code)
     
     sem renderWord (word: SourceCodeWord) = 
-    | fmt -> let fmt = match fmt with Row { fmt = fmt }  then fmt else fmt in
+    | opt -> let opt = fixOptFormat opt in
         let renderSkiped: [Token] -> String = lam skiped.
-            join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } ) fmt) skiped) in
+            join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } ) opt) skiped) in
 
         switch word
         case { word = Include { content = content, skiped = skiped } } then
-            join [renderKeyword "include" fmt, renderSkiped skiped, renderString (join ["\"", (renderRemoveForbidenChars content fmt), "\""]) fmt]    
+            join [renderKeyword "include" opt, renderSkiped skiped, renderString (join ["\"", (renderRemoveForbidenChars content opt), "\""]) opt]    
         case { word = word, kind = kind } then
             let renderer = (switch word
             case Str {} then renderString
@@ -125,20 +128,20 @@ lang RowRenderer = RendererInterface
                 case CodeDefault {} then renderDefault
                 end       
             end) in
-            let word = renderRemoveForbidenChars (lit word) fmt in
-            renderer word fmt
+            let word = renderRemoveForbidenChars (lit word) opt in
+            renderer word opt
         end
 
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (obj : Object) =
-    | fmt -> let fmt = unwrapRow fmt in
+    | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
 
-        let renderSourceCode = lam b. renderSourceCode (wordBufferToSourceCode b) fmt in
+        let renderSourceCode = lam b. renderSourceCode (wordBufferToSourceCode b) opt in
     
         let getFormatedString : [TreeSourceCode] -> String = lam code.
             foldl (lam s. lam node.
                 concat (switch node 
-                case TreeSourceCodeNode son then renderCodeWithPreview son fmt
+                case TreeSourceCodeNode son then renderCodeWithPreview son opt
                 case TreeSourceCodeSnippet code then renderSourceCode code
                 end) s
                 ) "" (reverse code) in
@@ -153,15 +156,15 @@ lang RowRenderer = RendererInterface
                 end
         }
 
-    sem renderHeader (obj : Object) (theme: Theme) =
+    sem renderHeader (obj : Object) =
     | _ -> ""
 
     sem renderFooter (obj : Object) =
     | _ -> ""
 
     sem renderSectionTitle (title: String) =
-    | fmt -> let fmt = unwrapRow fmt in
-        renderTitle 2 title fmt
+    | opt -> let opt = fixOptFormat opt in
+        renderTitle 2 title opt
 
     sem renderBold (text : String) =
     | _ -> text
@@ -174,8 +177,8 @@ lang RowRenderer = RendererInterface
     | _ -> s
 
     sem renderObjTitle (size : Int) (obj : Object) =
-    | fmt -> let fmt = unwrapRow fmt in
-        renderTitle size (objTitle obj) fmt
+    | opt -> let opt = fixOptFormat opt in
+        renderTitle size (objTitle obj) opt
     
     sem renderText (text : String) =
     | _ -> text

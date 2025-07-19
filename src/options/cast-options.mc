@@ -1,6 +1,6 @@
 include "./options.mc"
 include "../server/server-options.mc"
-include "../rendering/renderer.mc"
+include "../rendering/rendering-options.mc"
 
 let getServeOption : () -> ServerOptions  = lam.
     {
@@ -13,7 +13,8 @@ let getServeOption : () -> ServerOptions  = lam.
 let getRenderingOption : () -> RenderingOptions  = lam.
     {
         theme = opt.theme,
-        format = opt.fmt,
+        fmt = opt.fmt,
         noStdlib = opt.noStdlib,
-        outputFolder = opt.outputFolder    
+        outputFolder = opt.outputFolder,
+        urlPrefix = opt.urlPrefix    
     }

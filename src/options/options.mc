@@ -27,7 +27,8 @@
 --   --no-gen                               Do not parse anything, use the output folder as is.
 --   --skip-labeling                        Skip type computation during parsing.
 --   --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.
---   --no-stdlib                            Disable stdlib includes in output.    
+--   --no-stdlib                            Disable stdlib includes in output.
+--   --url-prefix <prefix>                  The link of each files will be prefixed by this argument
 -- ```
 
 include "../global/format.mc"
@@ -53,7 +54,8 @@ type Options = use Formats in use Themes in {
     outputFolder: String,
     noGen: Bool,
     skipLabeling: Bool,
-    noStdlib: Bool
+    noStdlib: Bool,
+    urlPrefix: String
 }
 
 let optionsDefault : Options = use Formats in use Themes in {
@@ -74,7 +76,8 @@ let optionsDefault : Options = use Formats in use Themes in {
     noLabelingWarn = false,
     noRenderingWarn = false,
     noWarn = false,
-    noStdlib = false
+    noStdlib = false,
+    urlPrefix = ""
 }
 
 let usage = lam.
@@ -82,24 +85,25 @@ let usage = lam.
         "Usage:\n",
         "  my-doc-gen [options] <file>\n\n",
         "Required:\n",
-        "  <file>                    Path to the Miking source file to process.\n\n",
+        "  <file>                                 Path to the Miking source file to process.\n\n",
         "Options:\n",
-        "  --no-open                 Do not open the result in a browser.\n",
-        "  --debug                   Enable all debug modes.\n",
-        "  --parsing-debug           Enable debug logs for parsing stage.\n",
-        "  --extracting-debug        Enable debug logs for extracting stage.\n",
-        "  --labeling-debug          Enable debug logs for labeling stage.\n",
-        "  --rendering-debug         Enable debug logs for rendering stage.\n",
-        "  --no-warn                 Disable all warnings.\n",
-        "  --no-parsing-warn         Disable parsing warnings.\n",
-        "  --no-extracting-warn      Disable extracting warnings.\n",
-        "  --no-labeling-warn        Disable labeling warnings.\n",
-        "  --no-rendering-warn       Disable rendering warnings.\n",
-        "  --format <html|md>        Output format. Default: html.\n",
-        "  --output-folder <name>    Output folder name. Default: doc-gen-output.\n",
-        "  --no-gen                  Do not parse anything, use the output folder as is.\n",
-        "  --skip-labeling           Skip type computation during parsing.\n",
-        "  --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.\n"
+        "  --no-open                              Do not open the result in a browser.\n",
+        "  --debug                                Enable all debug modes.\n",
+        "  --parsing-debug                        Enable debug logs for parsing stage.\n",
+        "  --extracting-debug                     Enable debug logs for extracting stage.\n",
+        "  --labeling-debug                       Enable debug logs for labeling stage.\n",
+        "  --rendering-debug                      Enable debug logs for rendering stage.\n",
+        "  --no-warn                              Disable all warnings.\n",
+        "  --no-parsing-warn                      Disable parsing warnings.\n",
+        "  --no-extracting-warn                   Disable extracting warnings.\n",
+        "  --no-labeling-warn                     Disable labeling warnings.\n",
+        "  --no-rendering-warn                    Disable rendering warnings.\n",
+        "  --format <html|md>                     Output format. Default: html.\n",
+        "  --output-folder <name>                 Output folder name. Default: doc-gen-output.\n",
+        "  --no-gen                               Do not parse anything, use the output folder as is.\n",
+        "  --skip-labeling                        Skip type computation during parsing.\n",
+        "  --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.\n",
+        "  --url-prefix <prefix>                  The link of each files will be prefixed by this argument.\n"
     ])
 
 let parseOptions : [String] -> Options = lam argv.
@@ -133,6 +137,8 @@ let parseOptions : [String] -> Options = lam argv.
             match themeFromStr theme with Some theme then
                 parse rest { opts with theme = theme }
             else usage ()
+
+        case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
 
         case [s] ++ rest then
             if eqString opts.file "" then parse rest { opts with file = s }

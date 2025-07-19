@@ -3,31 +3,30 @@ include "./renderer-interface.mc"
 lang MdxRenderer = RendererInterface
 
     sem renderTitle size s =
-    | Mdx {} -> renderTitle size s (Md {})
+    | { fmt = Mdx {} } & opt -> renderTitle size s { opt with fmt = Md {} }
 
     sem renderBold (text : String) =
-    | Mdx {} -> renderBold text (Md {})
+    | { fmt = Mdx {} } & opt -> renderBold text { opt with fmt = Md {} }
 
     sem renderNewLine =
-    | Mdx {} -> renderTitle (Md {})
+    | { fmt = Mdx {} } & opt -> renderNewLine { opt with fmt = Md {} }
 
     sem renderRemoveForbidenChars (s: String) =
-    | Mdx {} -> renderRemoveForbidenChars s (Md {})
+    | { fmt = Mdx {} } & opt -> renderRemoveForbidenChars s { opt with fmt = Md {} }
 
     sem renderDocDescription obj =
-    | Mdx {} -> renderDocDescription obj (Md {})
+    | { fmt = Mdx {} } & opt -> renderDocDescription obj { opt with fmt = Md {} }
         
     sem renderDocSignature (obj: Object) =
-    | Mdx {}  -> renderDocSignature size s (Md {})
+    | { fmt = Mdx {} } & opt -> renderDocSignature obj { opt with fmt = Md {} }
 
     sem renderGotoLink (link: String) =
-    | Mdx {} -> renderGotoLink link (Md {})
+    | { fmt = Mdx {} } & opt -> renderGotoLink link { opt with fmt = Md {} }
     
     sem renderLink (title : String) (link : String) =
-    | Mdx {} -> renderLink title (Md {})
-
-
+    | { fmt = Mdx {} } & opt -> renderLink title link { opt with fmt = Md {} }
+    
     sem renderLinkList (objects: [Object]) =
-    | Mdx {} -> renderLinkList objects (Md {})
+    | { fmt = Mdx {} } & opt -> renderLinkList objects { opt with fmt = Md {} }
     
 end

@@ -10,31 +10,31 @@ include "./headers/html-themes.mc"
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
 
-    sem renderHeader obj theme =
-    | Html {} -> getHeader theme (objName obj)
+    sem renderHeader obj =
+    | { fmt = Html {}, theme = theme } & opt -> getHeader theme (objName obj)
 
     sem renderTitle size s =
-    | Html {} ->
+    | { fmt = Html {} } & opt ->
         let sizeStr = int2string (if gti size 6 then 6 else size) in
-        join ["<h", sizeStr, ">", renderTitle size s (Row { fmt = Html {}}), "</h", sizeStr, ">", renderNewLine (Html {})]
+        join ["<h", sizeStr, ">", renderTitle size s { opt with fmt = Row { fmt = Html {}} }, "</h", sizeStr, ">", renderNewLine opt]
     
     sem renderBold (text : String) =
-    | Html {} -> join ["<strong>", text, "</strong>"]
+    | { fmt = Html {} } & opt -> join ["<strong>", text, "</strong>"]
 
     sem renderFooter obj =
-    | Html {} -> "</div></body>\n</html>"   
+    | { fmt = Html {} } & opt -> "</div></body>\n</html>"   
 
     sem renderNewLine =
-    | Html {} -> "<br>"
+    | { fmt = Html {} } & opt -> "<br>"
 
     sem renderRemoveForbidenChars (s: String) =
-    | Html {} ->
+    | { fmt = Html {} } & opt ->
         switch s
-        case "&" ++ s then concat "&amp;" (renderRemoveForbidenChars s (Html {}))
-        case "<br>" ++ s then cons '\n' (renderRemoveForbidenChars s (Html {}))
-        case "<" ++ s then concat "&lt;" (renderRemoveForbidenChars s (Html {}))
-        case ">" ++ s then concat "&gt;" (renderRemoveForbidenChars s (Html {}))    
-        case [x] ++ s then cons x (renderRemoveForbidenChars s (Html {}))
+        case "&" ++ s then concat "&amp;" (renderRemoveForbidenChars s opt)
+        case "<br>" ++ s then cons '\n' (renderRemoveForbidenChars s opt)
+        case "<" ++ s then concat "&lt;" (renderRemoveForbidenChars s opt)
+        case ">" ++ s then concat "&gt;" (renderRemoveForbidenChars s opt)    
+        case [x] ++ s then cons x (renderRemoveForbidenChars s opt)
         case "" then ""
         end
 
@@ -43,57 +43,57 @@ lang HtmlRenderer = RendererInterface
     | content -> lam kind. join ["<span class=\"", kind, "\">", content, "</span>"]
 
     sem renderType (content : String) = 
-    | Html {} -> htmlRenderSpan content "tp"
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "tp"
 
     sem renderVar (content : String) =
-    | Html {} -> htmlRenderSpan content "var"
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "var"
     
     sem renderKeyword (content : String) =
-    | Html {} -> htmlRenderSpan content "kw"
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "kw"
     
     sem renderComment (content : String) =
-    | Html {} -> htmlRenderSpan content "comment"
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "comment"
     
     sem renderString (content : String) =
-    | Html {} -> htmlRenderSpan content "string"
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "string"
     
     sem renderWeakComment (content : String) =
-    | Html {} -> htmlRenderSpan content "weak"
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "weak"
 
     sem renderNumber (content : String) =
-    | Html {} -> htmlRenderSpan content "number"
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "number"
 
-    sem htmlRenderWrapper : all a. String -> (a -> Format -> String) -> a -> String -> String
+    sem htmlRenderWrapper : all a. RenderingOptions -> String -> (a -> RenderingOptions -> String) -> a -> String -> String
     sem htmlRenderWrapper =
-    | left -> lam f. lam arg. lam right.
-        let inner = f arg (Row { fmt = Html {} }) in
+    | opt -> lam left. lam f. lam arg. lam right.
+        let inner = f arg opt in
         match inner with "" then "" else join [left, inner, right]
 
     sem renderTopPageDoc (data: RenderingData) =
-    | Html {} -> htmlRenderWrapper "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
     
     sem renderDocBloc (data : RenderingData) =
-    | Html {} -> htmlRenderWrapper "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
 
     sem renderDocDescription (obj: Object) =
-    | Html {} -> htmlRenderWrapper "<div class = \"doc-description\"><pre>" renderDocDescription obj "</pre></div>"
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class = \"doc-description\"><pre>" renderDocDescription obj "</pre></div>"
 
     sem renderDocSignature (obj: Object) =
-    | Html {} -> htmlRenderWrapper "<div class=\"doc-signature\">" renderDocSignature obj "</div>"
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-signature\">" renderDocSignature obj "</div>"
     
     sem renderCodeWithoutPreview (data: RenderingData) =
-    | Html {} -> htmlRenderWrapper "<div class=\"code-block\"><pre>" renderCodeWithoutPreview data "</pre></div>"
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"code-block\"><pre>" renderCodeWithoutPreview data "</pre></div>"
 
     sem renderGotoLink (link: String) =
-    | Html {} -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
+    | { fmt = Html {} } & opt -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
     sem renderHidenCode (code: String) (withPreview: Bool) =
-    | Html {} ->
+    | { fmt = Html {} } & opt ->
         let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div class=\"hiden-code\" style=\"display: none;\">" in
         join [jsDisplay, if withPreview then "" else "\n", code, "</div>"]
     
     sem renderLink (title : String) (link : String) =
-    | Html {} -> join ["<a href=\"", link, "\">", title, "</a>"]
+    | { fmt = Html {}, urlPrefix = urlPrefix } & opt -> join ["<a href=\"", concat urlPrefix link, "\">", title, "</a>"]
 
     
 end

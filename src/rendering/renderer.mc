@@ -39,20 +39,13 @@
 include "preprocessor.mc"
 include "./renderers/main-renderer.mc"
 include "./source-code-reconstruction.mc"
+include "./rendering-options.mc"
 
 include "../extracting/objects.mc"
 
 include "../global/util.mc"
 include "../global/logger.mc"
 include "../global/format.mc"    
-
-type RenderingOptions = use Formats in use Themes in
-    {
-        theme: Theme,
-        format: Format,
-        noStdlib: Bool,
-        outputFolder: String
-    }
 
 -- ## render
 --
@@ -72,8 +65,7 @@ type RenderingOptions = use Formats in use Themes in
 --     - Writes formatted output to file
 --     - Returns `RenderingData` for each node
 let render : RenderingOptions -> ObjectTree -> () = use Renderer in
-    lam renderingOpt. lam obj.
-    match renderingOpt with { format = fmt, theme = theme, noStdlib = noStdlib, outputFolder = outputFolder } in
+    lam opt. lam obj.
     preprocess obj;
     renderingLog "Beggining of rendering stage.";
     recursive
@@ -82,23 +74,23 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude { isStdlib = isStdlib } } & obj, sons = [ p ] } then
-            if and isStdlib noStdlib then emptyPreview obj else
+            if and isStdlib opt.noStdlib then emptyPreview obj else
             let res = render p in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
-            let path = concat outputFolder (objLink obj) in
-            let path = concat path (match fmt with Html {} then ".html" else ".md") in
+            let path = concat opt.outputFolder (objLink obj) in
+            let path = concat path (match opt.fmt with Html {} then ".html" else ".md") in
             renderingLog (concat "Rendering file " path);
    
             match fileWriteOpen path with Some wc then
                 let write = fileWriteString wc in
 
                 -- Push header of the output file
-                write (renderHeader obj theme fmt);
+                write (renderHeader obj opt);
                 -- Pushing title and global documentation
-                write (renderObjTitle 1 obj fmt);
+                write (renderObjTitle 1 obj opt);
                 
                 -- Extract all the `ObjectNode`s in an array of ObjectTree
                 let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
@@ -122,9 +114,9 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 -- Recursive calls
                 let sons: [RenderingData] = map render sons in
                 let trees = reconstructSourceCode (objSourceCode obj) sons in
-                let data = renderTreeSourceCode trees obj fmt in
+                let data = renderTreeSourceCode trees obj opt in
     
-                write (renderTopPageDoc data fmt);
+                write (renderTopPageDoc data opt);
 
                 -- Ordering objects in a set
                 let set = 
@@ -153,27 +145,27 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                  -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
-                            renderSectionTitle title fmt in
+                            renderSectionTitle title opt in
                     write title;
-                    write (renderLinkList arr fmt)
+                    write (renderLinkList arr opt)
                 in
     
                 -- Displays types and con
                 let displayDefault = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
-                            renderSectionTitle title fmt in
+                            renderSectionTitle title opt in
                     write title;
-                    iter (lam u. write (renderDocBloc u fmt)) arr
+                    iter (lam u. write (renderDocBloc u opt)) arr
                 in
     
-                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if noStdlib then [] else set.LibInclude)];
+                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if opt.noStdlib then [] else set.LibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
     
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
                 ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr), ("Tests", set.Utest)];
     
                 -- Push the footer of the page
-                write (renderFooter obj fmt);
+                write (renderFooter obj opt);
                 fileWriteClose wc;
                 data
             else

@@ -2,74 +2,75 @@ include "../../extracting/objects.mc"
 include "../../global/format.mc"
 include "../../global/theme.mc"
 include "../rendering-types.mc"
+include "../rendering-options.mc"
 
 include "mexpr/type-check.mc"
 include "mexpr/pprint.mc"
 
 lang RendererInterface = Formats + Themes + ObjectKinds + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
 
-    sem renderTopPageDoc : RenderingData -> Format -> String
+    sem renderTopPageDoc : RenderingData -> RenderingOptions -> String
     
-    sem renderDocBloc : RenderingData -> Format -> String
+    sem renderDocBloc : RenderingData -> RenderingOptions -> String
     
-    sem renderDocSignature : Object -> Format -> String
+    sem renderDocSignature : Object -> RenderingOptions -> String
 
-    sem renderDocDescription : Object -> Format -> String    
+    sem renderDocDescription : Object -> RenderingOptions -> String    
 
-    sem renderLinkList : [Object] -> Format -> String
+    sem renderLinkList : [Object] -> RenderingOptions -> String
 
-    sem renderGotoLink : String -> Format -> String
+    sem renderGotoLink : String -> RenderingOptions -> String
 
-    sem renderStringColorized : Object -> Format -> String  
+    sem renderStringColorized : Object -> RenderingOptions -> String  
 
-    sem renderCodeWithoutPreview : RenderingData -> Format -> String
+    sem renderCodeWithoutPreview : RenderingData -> RenderingOptions -> String
 
-    sem renderCodeWithPreview : RenderingData -> Format -> String
+    sem renderCodeWithPreview : RenderingData -> RenderingOptions -> String
 
-    sem renderHidenCode : String -> Bool -> Format -> String
+    sem renderHidenCode : String -> Bool -> RenderingOptions -> String
 
-    sem renderHeader : Object -> Theme -> Format -> String
+    sem renderHeader : Object -> RenderingOptions -> String
 
-    sem renderFooter : Object -> Format -> String
+    sem renderFooter : Object -> RenderingOptions -> String
 
-    sem renderSectionTitle : String -> Format -> String
+    sem renderSectionTitle : String -> RenderingOptions -> String
 
-    sem renderBold : String -> Format -> String
+    sem renderBold : String -> RenderingOptions -> String
 
-    sem renderRemoveForbidenChars : String -> Format -> String
+    sem renderRemoveForbidenChars : String -> RenderingOptions -> String
 
-    sem renderSourceCodeStr : String -> Format -> String
+    sem renderSourceCodeStr : String -> RenderingOptions -> String
     
-    sem renderSourceCode : SourceCode -> Format -> String
+    sem renderSourceCode : SourceCode -> RenderingOptions -> String
     
-    sem renderWord : SourceCodeWord -> Format -> String
+    sem renderWord : SourceCodeWord -> RenderingOptions -> String
 
-    sem renderTreeSourceCode : [TreeSourceCode] -> Object -> Format -> RenderingData
+    sem renderTreeSourceCode : [TreeSourceCode] -> Object -> RenderingOptions -> RenderingData
 
-    sem renderTitle : Int -> String -> Format -> String
+    sem renderTitle : Int -> String -> RenderingOptions -> String
 
-    sem renderObjTitle : Int -> Object -> Format -> String
+    sem renderObjTitle : Int -> Object -> RenderingOptions -> String
     
-    sem renderText : String -> Format -> String
+    sem renderText : String -> RenderingOptions -> String
 
-    sem renderLink : String -> String -> Format -> String
+    sem renderLink : String -> String -> RenderingOptions -> String
     
-    sem renderType : String -> Format -> String
+    sem renderType : String -> RenderingOptions -> String
 
-    sem renderVar : String -> Format -> String
+    sem renderVar : String -> RenderingOptions -> String
     
-    sem renderKeyword : String -> Format -> String
+    sem renderKeyword : String -> RenderingOptions -> String
     
-    sem renderComment : String -> Format -> String
+    sem renderComment : String -> RenderingOptions -> String
     
-    sem renderString : String -> Format -> String
+    sem renderString : String -> RenderingOptions -> String
 
-    sem renderNumber : String -> Format -> String
+    sem renderNumber : String -> RenderingOptions -> String
     
-    sem renderDefault : String -> Format -> String
+    sem renderDefault : String -> RenderingOptions -> String
     
-    sem renderWeakComment : String -> Format -> String
+    sem renderWeakComment : String -> RenderingOptions -> String
 
-    sem renderNewLine : Format -> String
+    sem renderNewLine : RenderingOptions -> String
     
 end
