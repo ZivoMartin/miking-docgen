@@ -8,10 +8,10 @@
 -- It builds a PathMap and runs a system command at the end.
 
 include "../extracting/objects.mc"
-include "../util.mc"
+include "../global/util.mc"
 include "fileutils.mc"
 include "hashmap.mc"
-include "../options.mc"
+include "../options/options.mc"
 
 let preprocess : ObjectTree -> () = lam obj.
     -- Map of all output paths (acts as a Set)

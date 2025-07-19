@@ -4,11 +4,11 @@
 
 include "../parsing/doc-tree.mc"
 include "../parsing/token-readers.mc"
-include "../util.mc"
+include "../global/util.mc"
 include "string.mc"
 include "stdlib.mc"
 include "sys.mc"
-include "../logger.mc"
+include "../global/logger.mc"
 
 
 -- Concatenates a namespace and a name with a slash between them.

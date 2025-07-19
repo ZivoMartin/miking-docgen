@@ -48,7 +48,7 @@ include "fileutils.mc"
 include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
-include "../logger.mc"
+include "../global/logger.mc"
         
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens

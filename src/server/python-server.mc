@@ -15,10 +15,10 @@
 --   python3 script.py <output-folder dir> <initial object>
 --   ```
 
-include "extracting/objects.mc"
-include "rendering/renderer.mc"
-
-let pythonScript = use Renderer in lam fmt. join ["
+include "sys.mc"
+include "./server-options.mc"
+    
+let pythonScript = lam servesMd. join ["
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import unquote
@@ -26,7 +26,7 @@ import mimetypes
 import webbrowser
 import threading
 ",
-match fmt with Md {} | Mdx {} then
+if servesMd then
 "import markdown"
 else
 "", "
@@ -50,9 +50,9 @@ class Handler(BaseHTTPRequestHandler):
         with open(file_path, 'r', encoding='utf-8') as f:
             content = f.read()
 
-        html_output = ", match fmt with Md {} | Mdx {} then " markdown.markdown(content)" else "content", "
+        html_output = ", if servesMd then " markdown.markdown(content)" else "content", "
 
-        full_html = ", match fmt with Md {} | Mdx {} then "f\"\"\"<!DOCTYPE html>
+        full_html = ", if servesMd then "f\"\"\"<!DOCTYPE html>
 <html>
     <head>
         <meta charset=\"utf-8\">
@@ -108,19 +108,17 @@ finally:
     httpd.server_close()
 "
 ]    
-let startServer = lam.
-    if opt.noOpen then () else
-    if sysFileExists opt.file then
+
+let pythonServerStart : Bool -> ServerOptions -> () = lam servesMd. lam opt.
     let file = sysTempFileMake () in
     match fileWriteOpen file with Some wc then
         let write = fileWriteString wc in
-        write (pythonScript opt.fmt);
+        write (pythonScript servesMd);
         fileWriteFlush wc;
         fileWriteClose wc;
         let pwd = sysGetCwd () in
-        let path = join [pwd, "/", opt.outputFolder] in
-        match goHere pwd opt.file with { path = first } in
+        let path = join [pwd, "/", opt.folder] in
+        match goHere pwd opt.firstFile with { path = first } in
         let res = sysRunCommand ["python3", file, path, concat "File/" first] "" "/" in ()
         
     else error "Failed to open temporary file. The browser failed to start but the files have been generated."
-    else error (join ["Failed to start server, file ", opt.file, " doesn't exist."])

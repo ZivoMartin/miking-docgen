@@ -7,7 +7,7 @@
 --
 -- Used in doc generation and object representation.
 
-include "../util.mc"
+include "../global/util.mc"
 include "./source-code-builder.mc"
 include "util.mc"
 

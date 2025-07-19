@@ -30,8 +30,8 @@
 --   --no-stdlib                            Disable stdlib includes in output.    
 -- ```
 
-include "./format.mc"
-include "./theme.mc"
+include "../global/format.mc"
+include "../global/theme.mc"
         
 include "string.mc"
 
@@ -142,5 +142,6 @@ let parseOptions : [String] -> Options = lam argv.
         end
     in
     parse (tail argv) optionsDefault
-    
+
+
 let opt: Options = parseOptions argv

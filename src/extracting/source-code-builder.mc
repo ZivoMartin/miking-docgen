@@ -10,7 +10,7 @@
 include "../parsing/doc-tree.mc"
 include "./source-code-word.mc"
 include "./source-code-formatting.mc"
-include "../logger.mc"
+include "../global/logger.mc"
 
 -- An empty source code
 let sourceCodeEmpty : () -> SourceCode = lam . []

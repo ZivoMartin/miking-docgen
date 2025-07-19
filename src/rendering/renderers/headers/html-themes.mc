@@ -2,7 +2,7 @@ include "./html-warm-dark.mc"
 include "./html-dark.mc"
 include "./html-light.mc"
 include "./html-warm.mc"
-include "../../../theme.mc"
+include "../../../global/theme.mc"
 
 let getHeader : use Themes in Theme -> String -> String = use Themes in lam theme. lam title.
     let theme = switch theme

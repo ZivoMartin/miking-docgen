@@ -21,7 +21,7 @@
 
 include "./types-stream.mc"
 include "../extracting/objects.mc"
-include "../util.mc"
+include "../global/util.mc"
 
 let label : ObjectTree -> ObjectTree =
     use ObjectKinds in use TypeStream in use RemoveMetaVar in lam tree.

@@ -9,7 +9,7 @@
 -- The display function prints the hierarchy clearly for debugging or visualization.
 
 include "./breaker-choosers.mc"
-include "../logger.mc"
+include "../global/logger.mc"
 
 -- Main DocTree types, will contains Leafs and Nodes
 type DocTree

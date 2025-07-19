@@ -1,4 +1,4 @@
--- # Global Rendering Pipeline
+-- # Global Renderingipeline
 --
 -- This module defines the entry point for rendering an object tree into formatted output.
 -- It traverses the parsed object structure, organizes its children,
@@ -39,16 +39,19 @@
 include "preprocessor.mc"
 include "./renderers/main-renderer.mc"
 include "./source-code-reconstruction.mc"
-include "../logger.mc"
-include "../format.mc"
+
 include "../extracting/objects.mc"
-include "../util.mc"    
+
+include "../global/util.mc"
+include "../global/logger.mc"
+include "../global/format.mc"    
 
 type RenderingOptions = use Formats in use Themes in
     {
         theme: Theme,
         format: Format,
-        noStdlib: Bool
+        noStdlib: Bool,
+        outputFolder: String
     }
 
 -- ## render
@@ -70,7 +73,7 @@ type RenderingOptions = use Formats in use Themes in
 --     - Returns `RenderingData` for each node
 let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     lam renderingOpt. lam obj.
-    match renderingOpt with { format = fmt, theme = theme, noStdlib = noStdlib } in
+    match renderingOpt with { format = fmt, theme = theme, noStdlib = noStdlib, outputFolder = outputFolder } in
     preprocess obj;
     renderingLog "Beggining of rendering stage.";
     recursive
@@ -85,7 +88,8 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
-            let path = concat "doc-gen-output/" (objLink obj) in
+            let path = concat outputFolder (objLink obj) in
+            let path = concat path (match fmt with Html {} then ".html" else ".md") in
             renderingLog (concat "Rendering file " path);
    
             match fileWriteOpen path with Some wc then

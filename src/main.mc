@@ -8,12 +8,13 @@
 -- - labeling: Annotates each objects with an enventual type using compiler's AST 
 -- - rendering: Renders the `ObjectTree` into Markdown pages (HTML support planned).
 
-include "./options.mc"
+include "./options/options.mc"
+include "./options/cast-options.mc"    
 include "./parsing/parser.mc"
 include "./extracting/extracter.mc"
 include "./labeling/labeler.mc"
 include "./rendering/renderer.mc"
-include "./server.mc"
+include "./server/server.mc"
 
 mexpr
     (if opt.noGen then () else
@@ -21,6 +22,6 @@ mexpr
         let tree = parseFile opt.file in
         let obj = extract tree in
         let obj = if opt.skipLabeling then obj else label obj in
-        render { format = opt.fmt, theme = opt.theme, noStdlib = opt.noStdlib } obj);
-    startServer ()
+        render (getRenderingOption ()) obj);
+    startServer (getServeOption ())
     

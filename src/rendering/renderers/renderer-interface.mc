@@ -1,9 +1,9 @@
-include "../../theme.mc"
 include "../../extracting/objects.mc"
-include "../../format.mc"
-include "../../theme.mc"    
+include "../../global/format.mc"
+include "../../global/theme.mc"
 include "../rendering-types.mc"
 
+include "mexpr/type-check.mc"
 include "mexpr/pprint.mc"
 
 lang RendererInterface = Formats + Themes + ObjectKinds + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint

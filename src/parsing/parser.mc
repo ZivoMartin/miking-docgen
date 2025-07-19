@@ -31,8 +31,8 @@
 
 include "./lexer.mc"
 include "./doc-tree.mc"
-include "../util.mc"
-include "../options.mc"
+include "../global/util.mc"
+include "../options/options.mc"
 
 include "seq.mc"
 include "hashmap.mc"

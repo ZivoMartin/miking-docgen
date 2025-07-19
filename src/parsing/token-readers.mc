@@ -3,8 +3,8 @@
 -- All token readers implement a common interface: `TokenReaderInterface`.
 -- The module ends with the composition of all these token readers into one combined `TokenReader`.
 
-include "../util.mc"
-include "../logger.mc"
+include "../global/util.mc"
+include "../global/logger.mc"
 include "hashmap.mc"
 
 -- Interface definition for a generic TokenReader

@@ -16,8 +16,8 @@ include "pmexpr/demote.mc"
 include "ocaml/external.mc"
 include "mexpr/type-check.mc"
 
-include "../logger.mc"
-include "../util.mc"
+include "../global/logger.mc"
+include "../global/util.mc"
     
 lang TypeStreamInterface = MExprAst
 
