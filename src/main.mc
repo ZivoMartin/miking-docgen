@@ -21,6 +21,6 @@ mexpr
         let tree = parseFile opt.file in
         let obj = extract tree in
         let obj = if opt.skipLabeling then obj else label obj in
-        render { format = opt.fmt, theme = opt.theme } obj);
+        render { format = opt.fmt, theme = opt.theme, noStdlib = opt.noStdlib } obj);
     startServer ()
     

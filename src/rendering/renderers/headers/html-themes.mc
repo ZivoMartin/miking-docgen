@@ -8,7 +8,7 @@ let getHeader : use Themes in Theme -> String -> String = use Themes in lam them
     let theme = switch theme
     case ThDark {} then htmlDark
     case ThWarmDark {} then htmlWarmDark
-    case ThDark {} then htmlWarm
-    case ThDark {} then htmlLight
+    case ThWarm {} then htmlWarm
+    case ThLight {} then htmlLight
     end in
     getHeader theme title

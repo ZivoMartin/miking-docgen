@@ -6,9 +6,12 @@ type HtmlTheme = {
     h1BorderColor: String,              
     h1Color: String,                    
     h2Color: String,                    
-    h2BorderColor: String,              
+    h2BorderColor: String,
+    topDocBorderColor: String,
+    topDocColor: String,
+    topDocBgColor: String,        
     docBlockBGColor: String,            
-    docBlockBorderColor: String,        
+    docBlockBorderColor: String,
     docBlockOutlineColor: String,       
     docSignatureBGColor: String,        
     docDescriptionBGColor: String,      
@@ -72,14 +75,14 @@ pre {
 }
 
 .top-doc {
-    background-color: #121212;
-    border: 1px solid #2a2a2a;
+    background-color: ", theme.topDocBgColor, ";
+    border: 1px solid ", theme.topDocBorderColor, ";
     border-radius: 6px;
     padding: 1.5rem;
     margin-bottom: 2rem;
     line-height: 1.8;
     font-size: 0.96em;
-    color: #d0d0d0;
+    color: ", theme.topDocColor, ";
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
@@ -89,12 +92,10 @@ pre {
 }
 
 .top-doc code {
-    background-color: #1c1c1c;
     padding: 0.2em 0.4em;
     border-radius: 3px;
     font-family: monospace;
     font-size: 0.95em;
-    color: #c5c5c5;
 }
 
     

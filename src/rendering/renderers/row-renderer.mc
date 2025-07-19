@@ -71,7 +71,8 @@ lang RowRenderer = RendererInterface
         renderSourceCodeStr code fmt
 
     sem renderGotoLink (link: String) =
-    | _ -> "[→]"
+    | fmt -> let fmt = unwrapRow fmt in
+        renderLink "[→]" link fmt
         
     sem renderLinkList (objects: [Object]) =
     | fmt -> let fmt = unwrapRow fmt in

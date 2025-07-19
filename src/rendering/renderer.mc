@@ -47,7 +47,8 @@ include "../util.mc"
 type RenderingOptions = use Formats in use Themes in
     {
         theme: Theme,
-        format: Format
+        format: Format,
+        noStdlib: Bool
     }
 
 -- ## render
@@ -69,7 +70,7 @@ type RenderingOptions = use Formats in use Themes in
 --     - Returns `RenderingData` for each node
 let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     lam renderingOpt. lam obj.
-    match renderingOpt with { format = fmt, theme = theme } in
+    match renderingOpt with { format = fmt, theme = theme, noStdlib = noStdlib } in
     preprocess obj;
     renderingLog "Beggining of rendering stage.";
     recursive
@@ -77,7 +78,9 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         let emptyPreview = lam obj. { left = [], right = [], trimmed = [], obj = obj } in            
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then let res = render p in emptyPreview obj
+        case ObjectNode { obj = { kind = ObjInclude { isStdlib = isStdlib } } & obj, sons = [ p ] } then
+            if and isStdlib noStdlib then emptyPreview obj else
+            let res = render p in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
@@ -159,7 +162,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                     iter (lam u. write (renderDocBloc u fmt)) arr
                 in
     
-                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", set.LibInclude)];
+                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if noStdlib then [] else set.LibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
     
                 [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),

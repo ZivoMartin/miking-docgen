@@ -27,6 +27,7 @@
 --   --no-gen                               Do not parse anything, use the output folder as is.
 --   --skip-labeling                        Skip type computation during parsing.
 --   --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.
+--   --no-stdlib                            Disable stdlib includes in output.    
 -- ```
 
 include "./format.mc"
@@ -37,6 +38,7 @@ include "string.mc"
 type Options = use Formats in use Themes in {
     noOpen: Bool,
     fmt: Format,
+    theme: Theme,    
     file: String,
     debug: Bool,
     parsingDebug: Bool,
@@ -51,7 +53,7 @@ type Options = use Formats in use Themes in {
     outputFolder: String,
     noGen: Bool,
     skipLabeling: Bool,
-    theme: Theme
+    noStdlib: Bool
 }
 
 let optionsDefault : Options = use Formats in use Themes in {
@@ -71,7 +73,8 @@ let optionsDefault : Options = use Formats in use Themes in {
     noExtractingWarn = false,
     noLabelingWarn = false,
     noRenderingWarn = false,
-    noWarn = false
+    noWarn = false,
+    noStdlib = false
 }
 
 let usage = lam.
@@ -113,6 +116,7 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
 
         case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
+        case ["--no-stdlib"] ++ rest then parse rest { opts with noStdlib = true }    
         case ["--no-parsing-warn"] ++ rest then parse rest { opts with noParsingWarn = true }
         case ["--no-extracting-warn"] ++ rest then parse rest { opts with noExtractingWarn = true }
         case ["--no-labeling-warn"] ++ rest then parse rest { opts with noLabelingWarn = true }       
