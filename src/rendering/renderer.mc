@@ -81,7 +81,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
             let path = concat opt.outputFolder (objLink obj) in
-            let path = concat path (match opt.fmt with Html {} then "" else ".md") in
+            let path = concat path (match opt.fmt with Html {} then ".html" else ".md") in
             renderingLog (concat "Rendering file " path);
    
             match fileWriteOpen path with Some wc then
