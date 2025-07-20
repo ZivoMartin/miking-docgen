@@ -66,7 +66,7 @@ lang HtmlRenderer = RendererInterface
     sem htmlRenderWrapper : all a. RenderingOptions -> String -> (a -> RenderingOptions -> String) -> a -> String -> String
     sem htmlRenderWrapper =
     | opt -> lam left. lam f. lam arg. lam right.
-        let inner = f arg opt in
+        let inner = f arg { opt with fmt = Row { fmt = Html {} } } in
         match inner with "" then "" else join [left, inner, right]
 
     sem renderTopPageDoc (data: RenderingData) =

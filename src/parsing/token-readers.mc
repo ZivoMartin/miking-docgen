@@ -5,6 +5,8 @@
 
 include "../global/util.mc"
 include "../global/logger.mc"
+include "./include-set.mc"
+    
 include "hashmap.mc"
 
 -- Interface definition for a generic TokenReader
@@ -254,7 +256,7 @@ lang EofTokenReader = TokenReaderInterface
 end
     
 -- This lexer only support fundamental words.
-lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + ProgramTokenReader end
+lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader end
 
 -- Contains skip utility function allowing to jump all the comments and separator until the next important token
 lang CommAndSepSkiper = SimpleWordTokenReader
@@ -336,7 +338,19 @@ lang RecursiveTokenReader = CommAndSepSkiper
 end
 
 
-lang ComposedWordTokenReader = RecursiveTokenReader + IncludeTokenReader end
+-- This token is not readable but is at the root of a DocTree, the content is the name of the file and the includeSet a set will all the files.
+lang ProgramTokenReader = TokenReaderInterface
+    syn Token =
+        | ProgramToken { content: String, includeSet: IncludeSet }
+
+    sem lit =
+        | ProgramToken {} -> ""
+
+    sem tokenToString =
+        | ProgramToken {} -> "Program"
+end
+
+lang ComposedWordTokenReader = RecursiveTokenReader + IncludeTokenReader + ProgramTokenReader end
         
 -- Combine all token readers into a single TokenReader
 lang TokenReader = ComposedWordTokenReader end

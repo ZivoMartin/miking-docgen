@@ -29,7 +29,6 @@
 -- Result is a `DocTree` for the entire file. 
 
 
-include "./program-token.mc"
 include "./lexer.mc"
 include "./doc-tree.mc"
 include "../global/util.mc"
@@ -47,8 +46,6 @@ include "sys.mc"
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
 let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChooser in lam code. lam basePath.
-
-    let baseLoc = sysGetCwd () in
     
     let logBegin = lam loc. parsingLog (concat "Beggining of parsing stage on " loc) in
     logBegin basePath;
@@ -58,7 +55,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
     let headSnippets =
         foldl
         (lam m. lam k. hmInsert k () m)
-        (hashmapEmpty ())
+            (hashmapEmpty ())
         ["let", "lang", "type", "syn", "sem", "con", "mexpr", "use", "utest", "recursive"] in
 
     -- Extra breakers (manually added).
@@ -138,18 +135,15 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
             let state = topState breakers in
         
             match token with Include { content = content } then
-                match goHere (dirname loc) content with { path = path, isStdlib = isStdlib } in
-                match goHere baseLoc path with { path = abs, isStdlib = isStdlib } in
-                match (if hmMem abs includeSet then (None {}, includeSet) else
-                    let isStdlib = false in
-                    let includeSet = hmInsert abs () includeSet in
-                    let s = readOrNever abs in
+                match includeSetInsert includeSet loc content with
+                { includeSet = includeSet, inserted = inserted, path = path, isStdlib = isStdlib } in
+                match (if inserted then        
+                    let s = readOrNever path in
                     logBegin path;
                     let stream = lex s in
                     let snippet = parseRec includeSet path stream { x = 1, y = 1 } baseBreaker [] in
-                    (Some (snippet2tree snippet path), snippet.includeSet)) with
-                (tree, includeSet) in
-
+                    (Some (snippet2tree snippet path), snippet.includeSet)
+                else (None {}, includeSet)) with (tree, includeSet) in
                 let includeNode = IncludeNode { token = token, tree = tree, state = state, path = path, isStdlib = isStdlib, pos = pos } in
                 parseRec includeSet loc stream pos breakers (cons includeNode treeAcc)
             -- If current token is a breaker
@@ -186,7 +180,8 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
     in
     let stream = lex code in
-    let snippet = parseRec (hashmapEmpty ()) basePath stream { x = 1, y = 1 } baseBreaker [] in
+    let includeSet = includeSetNew (sysGetCwd ()) in
+    let snippet = parseRec includeSet basePath stream { x = 1, y = 1 } baseBreaker [] in
     snippet2tree snippet basePath
 
 
