@@ -252,18 +252,6 @@ lang EofTokenReader = TokenReaderInterface
                 pos = pos
             }
 end
-
--- This token is not readable but is at the root of a DocTree, the content is the name of the file.
-lang ProgramTokenReader = TokenReaderInterface
-    syn Token =
-        | ProgramToken { content: String }
-
-    sem lit =
-        | ProgramToken {} -> ""
-
-    sem tokenToString =
-        | ProgramToken {} -> "Program"
-end
     
 -- This lexer only support fundamental words.
 lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader + ProgramTokenReader end

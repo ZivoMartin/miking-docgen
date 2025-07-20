@@ -29,6 +29,7 @@
 -- Result is a `DocTree` for the entire file. 
 
 
+include "./program-token.mc"
 include "./lexer.mc"
 include "./doc-tree.mc"
 include "../global/util.mc"
@@ -39,7 +40,6 @@ include "hashmap.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 include "sys.mc"
-
     
 -- # The parse function
 -- - Takes in input a miking program
@@ -47,8 +47,6 @@ include "sys.mc"
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
 let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChooser in lam code. lam basePath.
-    -- HashSet of included files
-    type IncludeSet = HashMap String () in
 
     let baseLoc = sysGetCwd () in
     
@@ -69,7 +67,8 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
 
     -- Snippet type = partial parse result
     type Snippet = { pos: Pos, tree: [DocTree], stream: TokenStream, breaker: String, toAdd: [DocTree], absorbed: Bool, includeSet: IncludeSet } in
-    let snippet2tree : Snippet -> String -> DocTree = lam snippet. lam progName. Node { sons = snippet.tree, pos = { x = 1, y = 1 }, token = ProgramToken { content = progName }, state = Program {} } in
+    let snippet2tree : Snippet -> String -> DocTree =
+    lam snippet. lam progName. Node { sons = snippet.tree, pos = { x = 1, y = 1 }, token = ProgramToken { content = progName, includeSet = snippet.includeSet }, state = Program {} } in
     
     -- Access top of breaker stack
     let topState = lam breakers. let h = (head breakers).0 in h.state in
