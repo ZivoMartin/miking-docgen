@@ -49,7 +49,7 @@ lang ObjectKinds = MExprAst
 end
 
 -- Object structure
-type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode }
+type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, absolutePath: String, prefix: String }
 
 -- The position of where the program started
 let basePosition : String = concat (sysGetCwd ()) "/"
@@ -57,8 +57,7 @@ let basePosition : String = concat (sysGetCwd ()) "/"
 -- Build lang link prefix
 let getLangLink = lam name. concat "/Lang/" name
     
--- Returns the absolute path of the object
-let objAbsolutePath : Object -> String = lam obj. normalizePath (concat basePosition obj.namespace)
+
 
 -- Prefix length to truncate stdlib paths
 let toTruncate = addi 1 (length stdlibLoc)
@@ -67,6 +66,22 @@ let objName : Object -> String = lam obj. obj.name
 let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind
 let objDoc : Object -> String = lam obj. obj.doc
 let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode    
+let objAbsolutePath : Object -> String = lam obj. obj.absolutePath
+
+let objNamespace : Object -> String = use ObjectKinds in lam obj.
+    match obj.kind with ObjProgram {} | ObjInclude {} then obj.name else join [obj.namespace, "/", obj.name]
+
+let objPrefix : Object -> String = lam obj. obj.prefix
+
+let objWithName : Object -> String -> Object = lam obj. lam name. { obj with name = name }
+let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. lam kind. { obj with kind = kind }
+let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
+let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
+let objWithNamespace : Object -> String -> Object = lam obj. lam namespace. { obj with namespace = namespace }
+let objWithPrefix: Object -> String -> Object = lam obj. lam prefix. { obj with absolutePath = concat prefix obj.namespace, prefix = prefix }
+
+-- Empty default object
+let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty (), absolutePath = "", prefix = "" }
 
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.
     match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
@@ -90,17 +105,7 @@ let objTitle : Object -> String = use ObjectKinds in lam obj.
     case { kind = ObjUtest {} } then "utest"
     case _ then obj.name
     end
-    
--- Get full namespace of object
-let objNamespace : Object -> String = use ObjectKinds in lam obj.
-    switch obj
-    case { kind = (ObjProgram {} | ObjInclude {}), name = name } then name
-    case { name = name, namespace = namespace } then join [namespace, "/", name]
-    end
 
--- Empty default object
-let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty () }
-    
 -- Returns a string representation of the object
 let objToString = use ObjectKinds in lam kind. lam name.
     switch kind

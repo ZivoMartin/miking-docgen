@@ -57,8 +57,13 @@ let extract : DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
     lam tree.
     extractingLog "Beggining of extraction...";
-    
 
+
+     -- Entry point: tree must be Program node
+    match tree with Node { token = ProgramToken { content = content, includeSet = includeSet }, state = Program {} } then
+
+    let prefix = includeSetPrefix includeSet in
+    
     -- Buffer of collected comments
     type CommentBuffer = [String] in
 
@@ -83,7 +88,8 @@ let extract : DocTree -> ObjectTree =
                 { obj = { obj with sourceCode = sourceCode.sourceCode }, builder = sourceCode.builder } in
     
             -- Start new object
-            let obj = { defaultObject with namespace = namespace } in
+            let obj = objWithNamespace defaultObject namespace in
+            let obj = objWithPrefix obj prefix in    
             let doc = buildDoc (reverse commentBuffer) in
             
 
@@ -207,7 +213,9 @@ let extract : DocTree -> ObjectTree =
         end
     in
 
-    -- Entry point: tree must be Program node
-    match tree with Node { token = ProgramToken { content = content }, state = Program {} } then
-        match (extractRec tree content [] (newSourceCodeBuilder ()) false 0).obj with Some obj then obj else error "Extraction failed: extractRec returned None"
+    match (extractRec tree content [] (newSourceCodeBuilder ()) false 0).obj with Some obj then
+        obj
+    else
+        error "Extraction failed: extractRec returned None"
+
     else error "Extraction failed: the top node of the output tree should always be a program."

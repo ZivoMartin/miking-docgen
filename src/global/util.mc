@@ -166,3 +166,11 @@ let readOrNever : String -> String = lam fileName.
         s
     else
         error (join ["Failed to read a file: file ", fileName, " doesn't exists."])
+
+
+let strLongestCommonPrefix : String -> String -> String = lam a. lam b.
+    match a with "" then ""
+    else match b with "" then ""
+    else match findi (lam x. neqChar x.0 x.1) (zip a b) with Some i then subsequence a 0 i
+    else if gti (length a) (length b) then b
+    else a
