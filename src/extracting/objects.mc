@@ -57,9 +57,6 @@ let basePosition : String = concat (sysGetCwd ()) "/"
 -- Build lang link prefix
 let getLangLink = lam name. concat "/Lang/" name
 
--- Prefix length to truncate stdlib paths
-let toTruncate = addi 1 (length stdlibLoc)
-
 let objName : Object -> String = lam obj. obj.name
 let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind
 let objDoc : Object -> String = lam obj. obj.doc
@@ -71,24 +68,28 @@ let objWithName : Object -> String -> Object = lam obj. lam name. { obj with nam
 let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. lam kind. { obj with kind = kind }
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
+
+let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
+    let process = lam.
+        let basePrefix = normalizePath (concat basePosition obj.namespace) in
+        let lengthBasePrefix = length basePrefix in
+        let lengthPrefix = length prefix in
+        if gti lengthPrefix lengthBasePrefix then
+             extractingWarn "The prefix is longer than one of the object's namespace";
+             basePrefix
+        else subsequence basePrefix lengthPrefix lengthBasePrefix
+    in
+    let namespace = match prefix with "" then obj.namespace else process () in
+    let namespace = if strStartsWith "/" namespace then namespace else cons '/' namespace in
+    { obj with namespace = namespace, prefix = prefix }
+    
 let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     let namespace =
     if strStartsWith stdlibLoc namespace then
         subsequence namespace (length stdlibLoc) (length namespace)
     else namespace in
-    { obj with namespace = namespace }
-
-let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
-    let basePrefix = normalizePath (concat basePosition obj.namespace) in
-    let lengthBasePrefix = length basePrefix in
-    let lengthPrefix = length prefix in
-    let namespace =
-        if gti lengthPrefix lengthBasePrefix then
-            extractingWarn "The prefix is longer than one of the object's namespace";
-            basePrefix
-        else subsequence basePrefix lengthPrefix lengthBasePrefix in
-    let namespace = if strStartsWith "/" namespace then namespace else cons '/' namespace in
-    { obj with namespace = namespace, prefix = prefix }
+    let obj = { obj with namespace = namespace } in
+    objWithPrefix obj obj.prefix
 
 let objAbsolutePath : Object -> String = lam obj. concat obj.prefix obj.namespace
 
@@ -98,25 +99,6 @@ let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.
     match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
 
--- Get URL link for an object
-let objLink : Object -> String = use ObjectKinds in lam obj.
-    let link = switch obj
-    case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
-    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then join ["File", namespace]
-    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then join ["Lib", namespace] 
-    case { name = name, kind = (ObjSem { langName = langName } | ObjSyn { langName = langName }) & kind } then
-        join [getLangLink langName, "/", getFirstWord kind, "/", name]    
-    case { name = name, namespace = namespace, kind = kind } then join [getFirstWord kind, namespace, "/", name, ".", getFirstWord kind] end in
-    if strStartsWith "/" link then link else cons '/' link
-        
--- Get display title for an object
-let objTitle : Object -> String = use ObjectKinds in lam obj.
-    switch obj
-    case { namespace = namespace, kind = ObjProgram { isStdlib = true } } then strTruncate namespace toTruncate
-    case { kind = ObjInclude { pathInFile = pathInFile } } then pathInFile
-    case { kind = ObjUtest {} } then "utest"
-    case _ then obj.name
-    end
 
 -- Returns a string representation of the object
 let objToString = use ObjectKinds in lam kind. lam name.

@@ -4,10 +4,12 @@ include "../../global/theme.mc"
 include "../rendering-types.mc"
 include "../rendering-options.mc"
 
+include "./objects-renderer.mc"
+
 include "mexpr/type-check.mc"
 include "mexpr/pprint.mc"
 
-lang RendererInterface = Formats + Themes + ObjectKinds + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
+lang RendererInterface = Formats + Themes + ObjectsRenderer + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
 
     sem renderTopPageDoc : RenderingData -> RenderingOptions -> String
     

@@ -8,12 +8,14 @@
 -- It builds a PathMap and runs a system command at the end.
 
 include "../extracting/objects.mc"
+include "./renderers/objects-renderer.mc"
 include "../global/util.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 include "../options/options.mc"
+include "../global/format.mc"    
 
-let preprocess : ObjectTree -> () = lam obj.
+let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in lam obj. lam opt.
     -- Map of all output paths (acts as a Set)
     type PathMap = HashMap String () in
     -- Recursively visit the ObjectTree and collect paths
@@ -23,7 +25,7 @@ let preprocess : ObjectTree -> () = lam obj.
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then preprocessRec pathMap p
         case ObjectNode { obj = { kind = ObjUse {} | ObjInclude {} }, sons = sons } then pathMap
         case ObjectNode { obj = obj, sons = sons } then
-            let path = dirname (join [opt.outputFolder, "/", objLink obj]) in
+            let path = dirname (join [opt.outputFolder, "/", objLink obj opt]) in
             foldl preprocessRec (hmInsert path () pathMap) sons
 
         case _ then pathMap end

@@ -36,6 +36,14 @@ lang Formats
     | Mdx {} -> "Mdx"
     | Row { fmt = fmt } -> join ["Row { fmt = ", formatToStr fmt, " }"]
 
+    -- Converts a `Format` value into its file extention
+    sem formatGetExtention : Format -> String
+    sem formatGetExtention =
+    | Html {} -> "html"
+    | Md {} | Mdx {} -> "md"
+    | Row { fmt = fmt } -> formatGetExtention fmt
+
+
     -- Returns the default rendering format to use when none is specified.    
     sem defaultFormat /- () -> Format -/ =
     | _ -> Html {}

@@ -36,7 +36,7 @@ lang RowRenderer = RendererInterface
     sem renderDocBloc (data : RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         match data with { obj = obj } in
-        let link = objLink obj in
+        let link = objLink obj opt in
         let link = concat (if strStartsWith "/" link then "" else "/") link in
         let link = renderGotoLink link opt in
         renderBlocDefault data opt "" "" link ""
@@ -79,7 +79,7 @@ lang RowRenderer = RendererInterface
         
     sem renderLinkList (objects: [Object]) =
     | opt -> let opt = fixOptFormat opt in
-        let doc = map (lam u. renderLink (objTitle u) (objLink u) opt) objects in
+        let doc = map (lam u. renderLink (objTitle u) (objLink u opt) opt) objects in
         let doc = strJoin ", " doc in
         match doc with "" then "" else
             concat (renderText doc opt) (renderNewLine opt)

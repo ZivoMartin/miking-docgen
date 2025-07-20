@@ -63,7 +63,6 @@ let extract : DocTree -> ObjectTree =
     match tree with Node { token = ProgramToken { content = content, includeSet = includeSet }, state = Program {} } then
 
     let prefix = includeSetPrefix includeSet in
-    printLn prefix;
     
     -- Buffer of collected comments
     type CommentBuffer = [String] in
@@ -87,12 +86,11 @@ let extract : DocTree -> ObjectTree =
             let finish : Object -> SourceCodeBuilder -> { builder: SourceCodeBuilder, obj: Object } = lam obj. lam sourceCodeBuilder.
                 let sourceCode = finish sourceCodeBuilder in
                 { obj = { obj with sourceCode = sourceCode.sourceCode }, builder = sourceCode.builder } in
-    
+
             -- Start new object
             let obj = objWithNamespace defaultObject namespace in
-            let obj = objWithPrefix obj prefix in    
+            let obj = objWithPrefix obj prefix in
             let doc = buildDoc (reverse commentBuffer) in
-            
 
             -- Process children nodes
             let process : State -> [DocTree] -> String -> String -> String -> ObjectKind -> Int -> ExtractRecOutput =
@@ -106,6 +104,7 @@ let extract : DocTree -> ObjectTree =
                         { sons = sons, ctx = ctx })
                     { sons = [], ctx = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount, obj = None {} } }
                     sons in
+                let obj = objWithNamespace obj namespace in
                 let obj = { obj with name = name, kind = kind, doc = doc } in
                 match finish obj foldResult.ctx.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 let obj = ObjectNode { obj = obj, sons = reverse foldResult.sons } in
@@ -128,7 +127,7 @@ let extract : DocTree -> ObjectTree =
                     utestCount
 
             case Mexpr {} then
-                process state sons "mexpr" (getNamespace namespace "mexpr") doc (ObjMexpr {}) utestCount
+                process state sons "mexpr" (getNamespace namespace "mexpr" "") doc (ObjMexpr {}) utestCount
 
             case (Use {} | TopUse {}) then
                 let name = getName sons in
@@ -139,7 +138,7 @@ let extract : DocTree -> ObjectTree =
 
             case TopUtest {} | Utest {} then
                 let name = int2string utestCount in
-                process state sons name (getNamespace namespace name) doc (ObjUtest {}) (addi utestCount 1)
+                process state sons name (getNamespace namespace name "utest") doc (ObjUtest {}) (addi utestCount 1)
     
             case state then
                 -- Look for '=' in children
@@ -179,7 +178,8 @@ let extract : DocTree -> ObjectTree =
                         ObjType { t = t }
 
                     end in
-                process state sons name.word (getNamespace namespace name.word) doc kind utestCount
+                let namespace = getNamespace namespace name.word (getFirstWord kind) in
+                process state sons name.word namespace doc kind utestCount
                 end
             case _ then
                 error (concat "Not covered: " (toString state))

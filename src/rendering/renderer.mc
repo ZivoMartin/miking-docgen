@@ -66,7 +66,7 @@ include "../global/format.mc"
 --     - Returns `RenderingData` for each node
 let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     lam opt. lam obj.
-    preprocess obj;
+    preprocess obj opt;
     renderingLog "Beggining of rendering stage.";
     recursive
     let render : ObjectTree -> RenderingData = lam objTree.
@@ -80,8 +80,8 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
-            let path = concat opt.outputFolder (objLink obj) in
-            let path = concat path (match opt.fmt with Html {} then ".html" else ".md") in
+            let path = concat opt.outputFolder (objLink obj opt) in
+
             renderingLog (concat "Rendering file " path);
    
             match fileWriteOpen path with Some wc then

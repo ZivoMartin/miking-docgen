@@ -11,14 +11,11 @@ include "sys.mc"
 include "../global/logger.mc"
 
 
--- Concatenates a namespace and a name with a slash between them.
--- Example: getNamespace "foo/bar" "baz" returns "foo/bar/baz"
-let getNamespace = lam namespace. lam name.
-    join [namespace, "/", name]
 
-utest getNamespace "foo" "bar" with "foo/bar"
-utest getNamespace "" "bar" with "/bar"
-utest getNamespace "ns" "" with "ns/"
+let getNamespace = lam namespace. lam name. lam ext.
+    let ext = match ext with "" then "" else concat ext "-" in
+    join [namespace, "/", ext, name]
+
 
 -- Extracts the last segment of a namespace (split by '/').
 -- Example: extractLastNamespaceElement "foo/bar/baz" returns "baz"
