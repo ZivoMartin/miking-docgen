@@ -71,7 +71,12 @@ let objWithName : Object -> String -> Object = lam obj. lam name. { obj with nam
 let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. lam kind. { obj with kind = kind }
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
-let objWithNamespace : Object -> String -> Object = lam obj. lam namespace. { obj with namespace = namespace }
+let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
+    let namespace =
+    if strStartsWith stdlibLoc namespace then
+        subsequence namespace (length stdlibLoc) (length namespace)
+    else namespace in
+    { obj with namespace = namespace }
 
 let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
     let basePrefix = normalizePath (concat basePosition obj.namespace) in
