@@ -49,15 +49,13 @@ lang ObjectKinds = MExprAst
 end
 
 -- Object structure
-type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, absolutePath: String, prefix: String }
+type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, prefix: String }
 
 -- The position of where the program started
 let basePosition : String = concat (sysGetCwd ()) "/"
     
 -- Build lang link prefix
 let getLangLink = lam name. concat "/Lang/" name
-    
-
 
 -- Prefix length to truncate stdlib paths
 let toTruncate = addi 1 (length stdlibLoc)
@@ -66,11 +64,7 @@ let objName : Object -> String = lam obj. obj.name
 let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind
 let objDoc : Object -> String = lam obj. obj.doc
 let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode    
-let objAbsolutePath : Object -> String = lam obj. obj.absolutePath
-
-let objNamespace : Object -> String = use ObjectKinds in lam obj.
-    match obj.kind with ObjProgram {} | ObjInclude {} then obj.name else join [obj.namespace, "/", obj.name]
-
+let objNamespace : Object -> String = use ObjectKinds in lam obj. obj.namespace
 let objPrefix : Object -> String = lam obj. obj.prefix
 
 let objWithName : Object -> String -> Object = lam obj. lam name. { obj with name = name }
@@ -78,10 +72,23 @@ let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. l
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
 let objWithNamespace : Object -> String -> Object = lam obj. lam namespace. { obj with namespace = namespace }
-let objWithPrefix: Object -> String -> Object = lam obj. lam prefix. { obj with absolutePath = concat prefix obj.namespace, prefix = prefix }
+
+let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
+    let basePrefix = normalizePath (concat basePosition obj.namespace) in
+    let lengthBasePrefix = length basePrefix in
+    let lengthPrefix = length prefix in
+    let namespace =
+        if gti lengthPrefix lengthBasePrefix then
+            extractingWarn "The prefix is longer than one of the object's namespace";
+            basePrefix
+        else subsequence basePrefix lengthPrefix lengthBasePrefix in
+    let namespace = if strStartsWith "/" namespace then namespace else cons '/' namespace in
+    { obj with namespace = namespace, prefix = prefix }
+
+let objAbsolutePath : Object -> String = lam obj. concat obj.prefix obj.namespace
 
 -- Empty default object
-let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty (), absolutePath = "", prefix = "" }
+let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty (), prefix = "" }
 
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.
     match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
@@ -90,11 +97,11 @@ let objGetLangName : Object -> String = use ObjectKinds in lam obj.
 let objLink : Object -> String = use ObjectKinds in lam obj.
     let link = switch obj
     case { name = name, kind = (ObjLang {} | ObjUse {}) } then concat (getLangLink name) ".lang"
-    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then join ["File", objAbsolutePath obj]
-    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then join ["Lib", namespace]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = false } | ObjProgram { isStdlib = false } } then join ["File", namespace]
+    case { namespace = namespace, kind = ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } } then join ["Lib", namespace] 
     case { name = name, kind = (ObjSem { langName = langName } | ObjSyn { langName = langName }) & kind } then
         join [getLangLink langName, "/", getFirstWord kind, "/", name]    
-    case { name = name, namespace = namespace, kind = kind } then join [getFirstWord kind, objAbsolutePath obj, "/", name, ".", getFirstWord kind] end in
+    case { name = name, namespace = namespace, kind = kind } then join [getFirstWord kind, namespace, "/", name, ".", getFirstWord kind] end in
     if strStartsWith "/" link then link else cons '/' link
         
 -- Get display title for an object

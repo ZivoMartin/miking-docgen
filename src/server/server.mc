@@ -3,6 +3,7 @@ include "./python-server.mc"
 include "./server-options.mc"
 
 let startServer : ServerOptions -> () = use Formats in lam opt.
+    printLn opt.firstFile;
     if sysFileExists opt.firstFile then    
      if opt.noOpen then () else
         switch opt.fmt

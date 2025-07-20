@@ -119,6 +119,6 @@ let pythonServerStart : Bool -> ServerOptions -> () = lam servesMd. lam opt.
         let pwd = sysGetCwd () in
         let path = join [pwd, "/", opt.folder] in
         match goHere pwd opt.firstFile with { path = first } in
-        let res = sysRunCommand ["python3", file, path, concat "File/" first] "" "/" in ()
+        let res = sysRunCommand ["python3", file, path, concat "File" first] "" "/" in ()
         
     else error "Failed to open temporary file. The browser failed to start but the files have been generated."

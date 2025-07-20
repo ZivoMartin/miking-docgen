@@ -63,7 +63,6 @@ let extract : DocTree -> ObjectTree =
     match tree with Node { token = ProgramToken { content = content, includeSet = includeSet }, state = Program {} } then
 
     let prefix = includeSetPrefix includeSet in
-    
     -- Buffer of collected comments
     type CommentBuffer = [String] in
 

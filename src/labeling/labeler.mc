@@ -114,7 +114,8 @@ let label : ObjectTree -> ObjectTree =
             end
         else default
     in
-    match tree with ObjectNode { obj = { namespace = filePath } } then
+    match tree with ObjectNode { obj = obj } then
+        let filePath = objAbsolutePath obj in
         labelingLog "Computing ast...";
         let ctx = buildTypeStream filePath in
         labelingLog "Labeling types..";
