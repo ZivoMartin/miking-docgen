@@ -15,10 +15,9 @@ lang ObjectsRenderer = ObjectKinds + Formats
                 concat (getLangLink name) ".lang"
             case ObjSem { langName = langName } | ObjSyn { langName = langName } then
                 join [getLangLink langName, "/", getFirstWord kind, "/", name]        
-            case ObjInclude { isStdlib = true } | ObjProgram { isStdlib = true } then
-                concat "Lib" namespace
             case _ then
-                concat "File" namespace
+                let prefix = if objIsStdlib obj then "Lib" else "Files" in
+                concat prefix namespace
             end
         in
         let link = if strStartsWith "/" link then link else cons '/' link in
@@ -32,7 +31,6 @@ lang ObjectsRenderer = ObjectKinds + Formats
         let kind = objKind obj in
         let namespace = objNamespace obj in
         switch kind
-        case ObjProgram { isStdlib = true } then strTruncate namespace (addi 1 (length stdlibLoc))
         case ObjInclude { pathInFile = pathInFile } then pathInFile
         case ObjUtest {} then "utest"
         case _ then name

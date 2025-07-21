@@ -17,7 +17,7 @@ lang ObjectKinds = MExprAst
 
     -- All possible object kinds
     syn ObjectKind = 
-    | ObjProgram { isStdlib: Bool }
+    | ObjProgram {}
     | ObjLet { rec : Bool, args : [String], ty: Option Type }
     | ObjLang { parents : [String] }
     | ObjType { t: Option String }
@@ -28,7 +28,7 @@ lang ObjectKinds = MExprAst
     | ObjMexpr {}
     | ObjUtest {}
     | ObjRecursiveBlock {}
-    | ObjInclude { isStdlib: Bool, pathInFile: String }
+    | ObjInclude { pathInFile: String }
 
     -- First keyword associated to this object kind (for printing / links)
     sem getFirstWord =
@@ -49,7 +49,7 @@ lang ObjectKinds = MExprAst
 end
 
 -- Object structure
-type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, prefix: String }
+type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, prefix: String, isStdlib: Bool }
 
 -- The position of where the program started
 let basePosition : String = concat (sysGetCwd ()) "/"
@@ -63,10 +63,12 @@ let objDoc : Object -> String = lam obj. obj.doc
 let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode    
 let objNamespace : Object -> String = use ObjectKinds in lam obj. obj.namespace
 let objPrefix : Object -> String = lam obj. obj.prefix
+let objIsStdlib : Object -> Bool = lam obj. obj.isStdlib
 
 let objWithName : Object -> String -> Object = lam obj. lam name. { obj with name = name }
 let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. lam kind. { obj with kind = kind }
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
+let objWithIsStdlib : Object -> Bool -> Object = lam obj. lam isStdlib. { obj with isStdlib = isStdlib }    
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
 
 let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
@@ -95,7 +97,7 @@ let objAbsolutePath : Object -> String = lam obj.
     concat obj.prefix obj.namespace
 
 -- Empty default object
-let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty (), prefix = "" }
+let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", isStdlib = false, kind = ObjProgram {}, sourceCode = sourceCodeEmpty (), prefix = "" }
 
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.
     match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""

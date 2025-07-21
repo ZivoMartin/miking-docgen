@@ -89,6 +89,7 @@ let extract : DocTree -> ObjectTree =
             -- Start new object
             let obj = objWithNamespace defaultObject namespace in
             let obj = objWithPrefix obj prefix in
+            let obj = objWithIsStdlib obj inStdlib in
             let doc = buildDoc (reverse commentBuffer) in
 
             -- Process children nodes
@@ -122,7 +123,7 @@ let extract : DocTree -> ObjectTree =
                 let extractRes = extractProgramComments sons in
                 process state sons content content
                     (buildDoc extractRes.comments)
-                    (ObjProgram { isStdlib = inStdlib })
+                    (ObjProgram {})
                     utestCount
 
             case Mexpr {} then
@@ -198,14 +199,14 @@ let extract : DocTree -> ObjectTree =
             end
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file
-            let emptyInclude = ObjectNode { obj = { defaultObject with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content }, name = path, namespace = path }, sons = [] } in    
+            let emptyInclude = ObjectNode { obj = { defaultObject with isStdlib = isStdlib, kind = ObjInclude { pathInFile = content }, name = path, namespace = path }, sons = [] } in    
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = Some emptyInclude, utestCount = utestCount } in
             match tree with Some tree then
                 extractingLog (concat "Extracting on: " path);
                 let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount in
                 match res with
                     { obj = Some (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
-                    let includeObj = { progObj with kind = ObjInclude { isStdlib = isStdlib, pathInFile = content } } in
+                    let includeObj = { progObj with isStdlib = isStdlib, kind = ObjInclude { pathInFile = content } } in
                     { defaultRes with obj = Some (ObjectNode { obj = includeObj, sons = [ progObjTree ] })  }
                 else
                     extractingWarn "Found a leaf at the root of a Program"; defaultRes

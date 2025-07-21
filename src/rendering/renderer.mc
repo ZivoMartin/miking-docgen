@@ -73,8 +73,8 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         let emptyPreview = lam obj. { left = [], right = [], trimmed = [], obj = obj } in            
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude { isStdlib = isStdlib } } & obj, sons = [ p ] } then
-            if and isStdlib opt.noStdlib then emptyPreview obj else
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
+            if and (objIsStdlib obj) opt.noStdlib then emptyPreview obj else
             let res = render p in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
@@ -134,8 +134,8 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                             case ObjMexpr {} then { set with Mexpr = cons son set.Mexpr }
                             case ObjType {} then { set with Type = cons son set.Type }
                             case ObjUtest {} then { set with Utest = cons son set.Utest }
-                            case ObjInclude { isStdlib = true } then { set with LibInclude = cons son.obj set.LibInclude }
-                            case ObjInclude { isStdlib = false } then { set with Include = cons son.obj set.Include }
+                            case ObjInclude {} then
+                                if objIsStdlib son.obj then { set with LibInclude = cons son.obj set.LibInclude } else { set with Include = cons son.obj set.Include }
                             case ObjRecursiveBlock {} then renderingWarn "We should not get to RecursiveBlock at this stage."; set
                             end) sons
                         case [] then set
