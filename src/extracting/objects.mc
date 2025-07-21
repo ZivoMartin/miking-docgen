@@ -91,7 +91,8 @@ let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     let obj = { obj with namespace = namespace } in
     objWithPrefix obj obj.prefix
 
-let objAbsolutePath : Object -> String = lam obj. concat obj.prefix obj.namespace
+let objAbsolutePath : Object -> String = lam obj.
+    concat obj.prefix obj.namespace
 
 -- Empty default object
 let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", kind = ObjProgram { isStdlib = false }, sourceCode = sourceCodeEmpty (), prefix = "" }

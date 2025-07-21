@@ -181,6 +181,7 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
     in
     let stream = lex code in
     let includeSet = includeSetNew (sysGetCwd ()) in
+    match includeSetInsert includeSet "." basePath with { includeSet = includeSet } in
     let snippet = parseRec includeSet basePath stream { x = 1, y = 1 } baseBreaker [] in
     snippet2tree snippet basePath
 

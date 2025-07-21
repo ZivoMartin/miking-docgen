@@ -61,7 +61,6 @@ let extract : DocTree -> ObjectTree =
 
      -- Entry point: tree must be Program node
     match tree with Node { token = ProgramToken { content = content, includeSet = includeSet }, state = Program {} } then
-
     let prefix = includeSetPrefix includeSet in
     
     -- Buffer of collected comments

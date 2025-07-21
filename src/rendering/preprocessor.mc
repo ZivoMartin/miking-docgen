@@ -25,7 +25,9 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
         case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then preprocessRec pathMap p
         case ObjectNode { obj = { kind = ObjUse {} | ObjInclude {} }, sons = sons } then pathMap
         case ObjectNode { obj = obj, sons = sons } then
-            let path = dirname (join [opt.outputFolder, "/", objLink obj opt]) in
+            printLn (objLink obj opt);
+            let path = dirname (join [opt.outputFolder, objLink obj opt]) in
+            printLn path;
             foldl preprocessRec (hmInsert path () pathMap) sons
 
         case _ then pathMap end

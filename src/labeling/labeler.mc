@@ -116,7 +116,7 @@ let label : ObjectTree -> ObjectTree =
     in
     match tree with ObjectNode { obj = obj } then
         let filePath = objAbsolutePath obj in
-        labelingLog "Computing ast...";
+        labelingLog (concat "Labeling on " filePath);
         let ctx = buildTypeStream filePath in
         labelingLog "Labeling types..";
         (labelRec ctx filePath (None {}) tree).tree 
