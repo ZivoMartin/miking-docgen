@@ -146,6 +146,15 @@ lang RowRenderer = RendererInterface
                 end) s
                 ) "" (reverse code) in
 
+        let buildSourceCodeRow = lam code. join (map (lam w. lit w.word) code) in
+        let row = foldl (lam row. lam tree.
+             concat (switch tree 
+                case TreeSourceCodeNode son then son.row
+                case TreeSourceCodeSnippet code then buildSourceCodeRow code
+                end) row)
+                "" (reverse (concat left right)) in
+        let row = concat row (match trimmed with TrimmedNotFormated code then buildSourceCodeRow code else "") in
+    
         {
             obj = obj,
             left = getFormatedString left,
@@ -153,7 +162,8 @@ lang RowRenderer = RendererInterface
             trimmed = switch trimmed
                 case TrimmedFormated s then s
                 case TrimmedNotFormated b then renderSourceCode b
-                end
+                end,
+            row = row
         }
 
     sem renderHeader (obj : Object) =

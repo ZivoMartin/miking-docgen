@@ -70,7 +70,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     renderingLog "Beggining of rendering stage.";
     recursive
     let render : ObjectTree -> RenderingData = lam objTree.
-        let emptyPreview = lam obj. { left = [], right = [], trimmed = [], obj = obj } in            
+        let emptyPreview = lam obj. { left = [], right = [], trimmed = [], row = "", obj = obj } in            
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then

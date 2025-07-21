@@ -18,6 +18,7 @@ type RenderingData = {
     left : String,
     right : String,
     trimmed : String,
+    row: String,
     obj: Object
 }
 
