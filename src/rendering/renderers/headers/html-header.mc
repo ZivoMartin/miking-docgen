@@ -26,7 +26,9 @@ type HtmlTheme = {
     variableColor: String,              
     typeColor: String,                  
     numberColor: String,                
-    commentColor: String
+    commentColor: String,
+    stringColor: String,
+    multiColor: String
 }
 
 let getHeader : HtmlTheme -> String -> String = lam theme. lam title.
@@ -193,7 +195,9 @@ a:hover {
 .tp      { color: ", theme.typeColor, "; }
 .number  { color: ", theme.numberColor, "; }
 .comment { color: ", theme.commentColor, "; font-style: italic; }
-
+.string  { color: ", theme.stringColor, "}
+.multi  { color: ", theme.multiColor, "}
+    
 </style>
 </head>
 <body>

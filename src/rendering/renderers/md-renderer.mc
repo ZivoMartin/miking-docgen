@@ -30,8 +30,8 @@ lang MarkdownRenderer = RendererInterface
         let doc = objDoc obj in
         let doc = join [doc, nl, nl] in
         match splitOnR (lam c. match c with ' ' | '\n' then false else true) doc with { right = doc } in
-        strReplace "\n " "\n" doc
-        
+        let doc = strReplace "\n " "\n" doc in
+        renderRemoveForbidenChars doc opt
     
 
     sem renderDocSignature (obj: Object) =
@@ -41,7 +41,7 @@ lang MarkdownRenderer = RendererInterface
         match sign with "" then
             ""
         else
-            join ["```", sign, "```", nl]
+            join ["```mc\n", sign, "\n```", nl]
 
     sem renderGotoLink (link: String) =
     | { fmt = Md {} } & opt -> let nl = renderNewLine opt in

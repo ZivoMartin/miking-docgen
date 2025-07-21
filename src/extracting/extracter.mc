@@ -199,7 +199,13 @@ let extract : DocTree -> ObjectTree =
             end
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file
-            let emptyInclude = ObjectNode { obj = { defaultObject with isStdlib = isStdlib, kind = ObjInclude { pathInFile = content }, name = path, namespace = path }, sons = [] } in    
+            let defaultObject = objWithNamespace defaultObject path in
+            let defaultObject = objWithIsStdlib defaultObject isStdlib in
+            let defaultObject = objWithKind defaultObject (ObjInclude { pathInFile = content }) in
+            let defaultObject = objWithName defaultObject path in
+
+            let emptyInclude = ObjectNode { obj = defaultObject, sons = [] } in
+
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = Some emptyInclude, utestCount = utestCount } in
             match tree with Some tree then
                 extractingLog (concat "Extracting on: " path);

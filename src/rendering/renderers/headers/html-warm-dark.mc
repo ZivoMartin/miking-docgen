@@ -27,5 +27,7 @@ let htmlWarmDark =
         variableColor = "#93c5fd",
         typeColor = "#fcd34d",
         numberColor = "#fbbf24",
-        commentColor = "#86efac"
+        commentColor = "#86efac",
+        stringColor = "#ffcb0b",
+        multiColor = "#c792e0"
     }

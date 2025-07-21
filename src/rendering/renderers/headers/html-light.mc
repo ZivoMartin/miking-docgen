@@ -27,6 +27,8 @@ let htmlLight =
         variableColor = "#2563eb",
         typeColor = "#7c3aed",
         numberColor = "#0284c7",
-        commentColor = "#16a34a"
+        commentColor = "#16a34a",
+        stringColor = "#008000",
+        multiColor = "#a0a1a7"
     }
 

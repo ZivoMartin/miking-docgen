@@ -31,6 +31,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
         let kind = objKind obj in
         let namespace = objNamespace obj in
         switch kind
+        case ObjProgram {} then if objIsStdlib obj then strTruncate name (addi 1 (length stdlibLoc)) else name
         case ObjInclude { pathInFile = pathInFile } then pathInFile
         case ObjUtest {} then "utest"
         case _ then name

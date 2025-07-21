@@ -27,5 +27,7 @@ let htmlWarm =
         variableColor = "#7048e8",
         typeColor = "#d97706",
         numberColor = "#c2410c",
-        commentColor = "#5c940d"
+        commentColor = "#5c940d",
+        stringColor = "#d19a66",
+        multiColor = "#b294bb"
     }
