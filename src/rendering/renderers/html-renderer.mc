@@ -60,8 +60,8 @@ lang HtmlRenderer = RendererInterface
     sem renderString (content : String) =
     | { fmt = Html {} } & opt -> htmlRenderSpan content "string"
     
-    sem renderWeakComment (content : String) =
-    | { fmt = Html {} } & opt -> htmlRenderSpan content "weak"
+    sem renderMultiLigneComment (content : String) =
+    | { fmt = Html {} } & opt -> htmlRenderSpan content "multi"
 
     sem renderNumber (content : String) =
     | { fmt = Html {} } & opt -> htmlRenderSpan content "number"

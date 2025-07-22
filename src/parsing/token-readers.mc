@@ -53,16 +53,16 @@ lang TokenReaderInterface
      
 end
     
--- Reader for weak comments ( /* ... */ style )
-lang WeakCommentTokenReader = TokenReaderInterface
+-- Reader for multi lignes comments ( /* ... */ style )
+lang MultiLigneCommentTokenReader = TokenReaderInterface
     syn Token =
-      | WeakComment { content: String, lit: String }
+      | MultiLigneComment { content: String, lit: String }
 
     sem lit =
-        | WeakComment { content = content, lit = lit } -> lit
+        | MultiLigneComment { content = content, lit = lit } -> lit
 
     sem tokenToString =
-        | WeakComment {} -> "WeakComment"
+        | MultiLigneComment {} -> "MultiLigneComment"
     
     sem next =
         | "/-" ++ str -> lam pos.
@@ -84,7 +84,7 @@ lang WeakCommentTokenReader = TokenReaderInterface
                 end
             in
             let extracted = extract str 0 in
-            buildResult (WeakComment {
+            buildResult (MultiLigneComment {
                     content = extracted.0,
                     lit = concat (concat "/-" extracted.0) "-/"
             }) pos extracted.1
@@ -256,7 +256,7 @@ lang EofTokenReader = TokenReaderInterface
 end
     
 -- This lexer only support fundamental words.
-lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + WeakCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader end
+lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + MultiLigneCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader end
 
 -- Contains skip utility function allowing to jump all the comments and separator until the next important token
 lang CommAndSepSkiper = SimpleWordTokenReader
@@ -267,7 +267,7 @@ lang CommAndSepSkiper = SimpleWordTokenReader
         let pos = { x = 1, y = 1 } in
         let firstSkiped = match first with "" then [] else [Separator { content = first }] in
         switch next str pos 
-            case { token = (Separator {} | Comment {} | WeakComment {}) & token, stream = stream } then
+            case { token = (Separator {} | Comment {} | MultiLigneComment {}) & token, stream = stream } then
                 let res = skip stream "" in
                 let skiped = concat firstSkiped (cons token res.skiped) in
                 { res with skiped = skiped }
@@ -359,9 +359,9 @@ let pos0 = { x = 1, y = 1 }
 
 mexpr use TokenReader in
 
--- WeakComment tests
-utest (next "/- hello -/" pos0).token with WeakComment { lit = "/- hello -/", content = " hello "} in
-utest (next "/- /- nested -/ -/" pos0).token with WeakComment { lit = "/- /- nested -/ -/", content = " /- nested -/ "} in
+-- MultiLigneComment tests
+utest (next "/- hello -/" pos0).token with MultiLigneComment { lit = "/- hello -/", content = " hello "} in
+utest (next "/- /- nested -/ -/" pos0).token with MultiLigneComment { lit = "/- /- nested -/ -/", content = " /- nested -/ "} in
 
 -- Comment tests
 utest (next "-- a comment\n" pos0).token with Comment { lit = "-- a comment\n", content = " a comment"} in
@@ -394,17 +394,17 @@ utest (next "include\t\"lib.miking\"" pos0).token with Include { lit = "include\
 utest (next "include\n\"abc\"" pos0).token with Include { lit = "include\n\"abc\"", content = "abc", skiped = [Separator { content = "\n"}] } in
 
 -- Recursive tests
-utest (next "recursive /- hello -/ let" pos0).token with Recursive { lit = "recursive /- hello -/ let", skiped = [Separator { content = " "}, WeakComment { content = " hello ", lit = "/- hello -/" }, Separator { content = " " }] } in
+utest (next "recursive /- hello -/ let" pos0).token with Recursive { lit = "recursive /- hello -/ let", skiped = [Separator { content = " "}, MultiLigneComment { content = " hello ", lit = "/- hello -/" }, Separator { content = " " }] } in
 utest (next "recursive \n\t let" pos0).token with Recursive { lit = "recursive \n\t let", skiped = [Separator { content = " " }, Separator { content = "\n\t "}] } in
 
 -- Complex mixed test
-utest (next "/- a comment -/ include \"x.mc\"" pos0).token with WeakComment { lit = "/- a comment -/", content = " a comment " } in
+utest (next "/- a comment -/ include \"x.mc\"" pos0).token with MultiLigneComment { lit = "/- a comment -/", content = " a comment " } in
 
 
 -- Position after a simple word
 utest (next "hello" pos0).pos with { x = 5, y = 1 } in
 
--- Position after weak comment
+-- Position after multi lignes comment
 utest (next "/- hi -/" pos0).pos with { x = 8, y = 1 } in
 
 -- Position after line comment with newline
@@ -442,7 +442,7 @@ utest (next "recursive\n\tlet" pos0).pos with { x = 7, y = 1 } in
 -- EOF position should remain unchanged
 utest (next "" pos0).pos with { x = 1, y = 1 } in
 
--- WeakComment
+-- MultiLigneComment
 utest (next "/- a -/next" pos0).stream with "next" in
 
 -- Line comment
@@ -481,7 +481,7 @@ utest (next "\"a\";" pos0).stream with ";" in
 -- Comment followed by string
 utest (next "-- comment\n\"string\"" pos0).stream with "\"string\"" in
 
--- Weak comment followed by recursive let
+-- MultiLigne comment followed by recursive let
 utest (next "/- c -/recursive let" pos0).stream with "recursive let" in
 
 -- Include with newline then word

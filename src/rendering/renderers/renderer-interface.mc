@@ -76,7 +76,7 @@ lang RendererInterface = Formats + Themes + ObjectsRenderer + Formatter + MExprP
     
     sem renderDefault : String -> RenderingOptions -> String
     
-    sem renderWeakComment : String -> RenderingOptions -> String
+    sem renderMultiLigneComment : String -> RenderingOptions -> String
 
     sem renderNewLine : RenderingOptions -> String
     

@@ -195,7 +195,7 @@ let extract : DocTree -> ObjectTree =
                 if strContains content '\n' then defaultRes
                 else { defaultRes with commentBuffer = commentBuffer }
 
-            case WeakComment {} | Str {} | Word {} then defaultRes
+            case MultiLigneComment {} | Str {} | Word {} then defaultRes
             end
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file

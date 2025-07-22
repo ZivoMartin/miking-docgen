@@ -46,7 +46,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
         switch rightRev
         case [TreeSourceCodeSnippet arr] ++ rightRev then
             let arr = reverse arr in
-            match splitOnR (lam w. match w with { word = WeakComment {} | Comment {} | Separator {} } then false else true) arr with
+            match splitOnR (lam w. match w with { word = MultiLigneComment {} | Comment {} | Separator {} } then false else true) arr with
                 { left = trimmedRight, right = trimmedLeft } in
             let trimmedLeft = TreeSourceCodeSnippet (reverse trimmedLeft) in
             let trimmedRight = TrimmedNotFormated (reverse trimmedRight) in

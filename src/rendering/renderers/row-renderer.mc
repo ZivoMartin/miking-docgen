@@ -120,7 +120,7 @@ lang RowRenderer = RendererInterface
         case { word = word, kind = kind } then
             let renderer = (switch word
             case Str {} then renderString
-            case WeakComment {} then renderWeakComment
+            case MultiLigneComment {} then renderMultiLigneComment
             case Comment {} then renderComment
             case _ then
                 switch kind
@@ -223,7 +223,7 @@ lang RowRenderer = RendererInterface
     sem renderDefault (content : String) =
     | _ -> content
     
-    sem renderWeakComment (content : String) =
+    sem renderMultiLigneComment (content : String) =
     | _ -> content
 
     sem renderNewLine =
