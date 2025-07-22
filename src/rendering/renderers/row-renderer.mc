@@ -3,6 +3,9 @@ include "./renderer-interface.mc"
 
 lang RowRenderer = RendererInterface
 
+    sem renderSetup =
+    | opt -> ()
+    
     sem renderBlocDefault : RenderingData -> RenderingOptions -> String -> String -> String -> String -> String
     sem renderBlocDefault =
     | { obj = obj } & data -> lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
@@ -44,7 +47,7 @@ lang RowRenderer = RendererInterface
     sem renderDocDescription (obj: Object) =
     | opt -> let opt = fixOptFormat opt in
         let doc = objDoc obj in
-        concat (renderRemoveForbidenChars doc opt) (renderNewLine opt)
+        concat (renderRemoveDocForbidenChars doc opt) (renderNewLine opt)
 
     sem renderDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
@@ -113,7 +116,7 @@ lang RowRenderer = RendererInterface
 
         switch word
         case { word = Include { content = content, skiped = skiped } } then
-            join [renderKeyword "include" opt, renderSkiped skiped, renderString (join ["\"", (renderRemoveForbidenChars content opt), "\""]) opt]    
+            join [renderKeyword "include" opt, renderSkiped skiped, renderString (join ["\"", (renderRemoveCodeForbidenChars content opt), "\""]) opt]    
         case { word = word, kind = kind } then
             let renderer = (switch word
             case Str {} then renderString
@@ -128,7 +131,7 @@ lang RowRenderer = RendererInterface
                 case CodeDefault {} then renderDefault
                 end       
             end) in
-            let word = renderRemoveForbidenChars (lit word) opt in
+            let word = renderRemoveCodeForbidenChars (lit word) opt in
             renderer word opt
         end
 
@@ -179,7 +182,10 @@ lang RowRenderer = RendererInterface
     sem renderBold (text : String) =
     | _ -> text
 
-    sem renderRemoveForbidenChars (s: String) =
+    sem renderRemoveDocForbidenChars (s: String) =
+    | _ -> s
+
+     sem renderRemoveCodeForbidenChars (s: String) =
     | _ -> s
 
 

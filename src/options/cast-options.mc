@@ -10,11 +10,12 @@ let getServeOption : () -> ServerOptions  = lam.
         noOpen = opt.noOpen
     }
 
-let getRenderingOption : () -> RenderingOptions  = lam.
+let getRenderingOption : () -> RenderingOptions = use FormatLanguages in lam.
     {
         theme = opt.theme,
         fmt = opt.fmt,
         noStdlib = opt.noStdlib,
         outputFolder = opt.outputFolder,
-        urlPrefix = opt.urlPrefix    
+        urlPrefix = opt.urlPrefix,
+        fmtLang = opt.fmtLang
     }

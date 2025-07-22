@@ -26,7 +26,8 @@ lang Formats
     sem formatFromStr =
      | "html" | "HTML" | "Html" | ".html" -> Some (Html {})
      | "md" | "Markdown" | "markdown" | "MARKDOWN" | "MD" | ".md" -> Some (Md {})
-     | "mdx" | "MarkdownExtended" | "MarkdownExt" | "markdownest" | "MARKDOWNEXT" | "MDX" | ".mdx" -> Some (Mdx {})    
+     | "mdx" | "MarkdownExtended" | "MarkdownExt" | "markdownest" | "MARKDOWNEXT" | "MDX" | ".mdx" -> Some (Mdx {})
+     | _ -> None {}
 
     -- Converts a `Format` value back into a printable string.    
     sem formatToStr : Format -> String

@@ -33,13 +33,15 @@
 
 include "../global/format.mc"
 include "../global/theme.mc"
+include "../global/format-language.mc"    
         
 include "string.mc"
 
-type Options = use Formats in use Themes in {
+type Options = use Formats in use Themes in use FormatLanguages in {
     noOpen: Bool,
     fmt: Format,
-    theme: Theme,    
+    theme: Theme,
+    fmtLang: FormatLanguage,     
     file: String,
     debug: Bool,
     parsingDebug: Bool,
@@ -58,10 +60,11 @@ type Options = use Formats in use Themes in {
     urlPrefix: String
 }
 
-let optionsDefault : Options = use Formats in use Themes in {
+let optionsDefault : Options = use Formats in use Themes in use FormatLanguages in {
     noOpen = false,
     fmt = defaultFormat (),
-    theme = defaultTheme (),    
+    theme = defaultTheme (),
+    fmtLang = defaultFormatLanguage (),
     file = "",
     debug = false,
     parsingDebug = false,
@@ -107,7 +110,7 @@ let usage = lam.
     ])
 
 let parseOptions : [String] -> Options = lam argv.
-    recursive let parse : [String] -> Options -> Options = use Formats in use Themes in lam args. lam opts.
+    recursive let parse : [String] -> Options -> Options = use Formats in use Themes in use FormatLanguages in  lam args. lam opts.
         switch args
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
         case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
@@ -126,7 +129,11 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--no-labeling-warn"] ++ rest then parse rest { opts with noLabelingWarn = true }       
         case ["--no-rendering-warn"] ++ rest then parse rest { opts with noRenderingWarn = true }                
 
+        case ["--javascript"] ++ rest then parse rest { opts with fmtLang = Js {} }
+        case ["--typescript"] ++ rest then parse rest { opts with fmtLang = Ts {} }
+
         case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
+        case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
 
         case ["--format", fmt] ++ rest then
             match formatFromStr fmt with Some fmt then
@@ -137,8 +144,6 @@ let parseOptions : [String] -> Options = lam argv.
             match themeFromStr theme with Some theme then
                 parse rest { opts with theme = theme }
             else usage ()
-
-        case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
 
         case [s] ++ rest then
             if eqString opts.file "" then parse rest { opts with file = s }

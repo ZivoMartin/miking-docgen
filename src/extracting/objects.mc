@@ -55,7 +55,7 @@ type Object = use ObjectKinds in { name: String, doc : String, namespace: String
 let basePosition : String = concat (sysGetCwd ()) "/"
     
 -- Build lang link prefix
-let getLangLink = lam name. concat "/Lang/" name
+let getLangLink = lam name. concat "/Lang/lang-" name
 
 let objName : Object -> String = lam obj. obj.name
 let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind

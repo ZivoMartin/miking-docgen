@@ -14,7 +14,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
             case ObjLang {} | ObjUse {} then
                 concat (getLangLink name) ".lang"
             case ObjSem { langName = langName } | ObjSyn { langName = langName } then
-                join [getLangLink langName, "/", getFirstWord kind, "/", name]        
+                join [getLangLink langName, "/", getFirstWord kind, "-", name]        
             case _ then
                 let prefix = if objIsStdlib obj then "Lib" else "Files" in
                 concat prefix namespace

@@ -174,3 +174,7 @@ let strLongestCommonPrefix : String -> String -> String = lam a. lam b.
     else match findi (lam x. neqChar x.0 x.1) (zip a b) with Some i then subsequence a 0 i
     else if gti (length a) (length b) then b
     else a
+
+
+let concatIfNot : all a. [a] -> ([a] -> Bool) -> [a] -> [a] =
+    lam x1. lam f. lam x2. if not (f x1) then concat x1 x2 else x1

@@ -14,12 +14,21 @@ lang MarkdownRenderer = RendererInterface
     sem renderNewLine =
     | { fmt = Md {} } & opt -> "  \n"
 
-    sem renderRemoveForbidenChars (s: String) =
+    sem renderRemoveDocForbidenChars (s: String) =
     | { fmt = Md {} } & opt ->
         switch s
-        case "*" ++ r | "_" ++ r | "`" ++ r | "[" ++ r | "]" ++ r | "(" ++ r | ")" ++ r | "#" ++ r | "+" ++ r | "-" ++ r | "!" ++ r | "\\" ++ r | "<" ++ r | ">" ++ r then
-             concat ['\\', head s] (renderRemoveForbidenChars r opt)
-        case [x] ++ r then cons x (renderRemoveForbidenChars r opt)
+        case "*" ++ r | "_" ++ r | "`" ++ r | "[" ++ r | "]" ++ r | "(" ++ r | ")" ++ r | "#" ++ r | "+" ++ r | "-" ++ r | "!" ++ r | "\\" ++ r | "<" ++ r | ">" ++ r | "`" ++ r | "{" ++ r | "}" ++ r then
+             concat ['\\', head s] (renderRemoveDocForbidenChars r opt)
+        case [x] ++ r then cons x (renderRemoveDocForbidenChars r opt)
+        case "" then ""
+        end
+
+    sem renderRemoveCodeForbidenChars (s: String) =
+    | { fmt = Md {} } & opt ->
+        switch s
+        case "`" ++ r then
+             concat ['\\', head s] (renderRemoveCodeForbidenChars r opt)
+        case [x] ++ r then cons x (renderRemoveCodeForbidenChars r opt)
         case "" then ""
         end
 
@@ -31,7 +40,7 @@ lang MarkdownRenderer = RendererInterface
         let doc = join [doc, nl, nl] in
         match splitOnR (lam c. match c with ' ' | '\n' then false else true) doc with { right = doc } in
         let doc = strReplace "\n " "\n" doc in
-        renderRemoveForbidenChars doc opt
+        renderRemoveDocForbidenChars doc opt
     
 
     sem renderDocSignature (obj: Object) =

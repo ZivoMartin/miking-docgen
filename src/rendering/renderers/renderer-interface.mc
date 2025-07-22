@@ -1,6 +1,7 @@
 include "../../extracting/objects.mc"
 include "../../global/format.mc"
 include "../../global/theme.mc"
+include "../../global/format-language.mc"    
 include "../rendering-types.mc"
 include "../rendering-options.mc"
 
@@ -9,8 +10,10 @@ include "./objects-renderer.mc"
 include "mexpr/type-check.mc"
 include "mexpr/pprint.mc"
 
-lang RendererInterface = Formats + Themes + ObjectsRenderer + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint
+lang RendererInterface = Formats + Themes + ObjectsRenderer + Formatter + MExprPrettyPrint + MetaVarTypePrettyPrint + FormatLanguages
 
+    sem renderSetup : RenderingOptions -> ()
+     
     sem renderTopPageDoc : RenderingData -> RenderingOptions -> String
     
     sem renderDocBloc : RenderingData -> RenderingOptions -> String
@@ -39,7 +42,9 @@ lang RendererInterface = Formats + Themes + ObjectsRenderer + Formatter + MExprP
 
     sem renderBold : String -> RenderingOptions -> String
 
-    sem renderRemoveForbidenChars : String -> RenderingOptions -> String
+    sem renderRemoveDocForbidenChars : String -> RenderingOptions -> String
+
+    sem renderRemoveCodeForbidenChars : String -> RenderingOptions -> String    
 
     sem renderSourceCodeStr : String -> RenderingOptions -> String
     

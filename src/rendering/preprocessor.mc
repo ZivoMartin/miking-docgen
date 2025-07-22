@@ -22,7 +22,9 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
     recursive let preprocessRec : PathMap -> ObjectTree -> PathMap = use ObjectKinds in
         lam pathMap. lam obj.
         switch obj
-        case ObjectNode { obj = { kind = ObjInclude {} }, sons = [ p ] } then preprocessRec pathMap p
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
+            if and (objIsStdlib obj) opt.noStdlib then pathMap else
+                preprocessRec pathMap p
         case ObjectNode { obj = { kind = ObjUse {} | ObjInclude {} }, sons = sons } then pathMap
         case ObjectNode { obj = obj, sons = sons } then
             let path = dirname (join [opt.outputFolder, objLink obj opt]) in

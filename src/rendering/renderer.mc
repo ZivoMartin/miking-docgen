@@ -67,6 +67,7 @@ include "../global/format.mc"
 let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     lam opt. lam obj.
     preprocess obj opt;
+    renderSetup opt;
     renderingLog "Beggining of rendering stage.";
     recursive
     let render : ObjectTree -> RenderingData = lam objTree.

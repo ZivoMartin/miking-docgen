@@ -27,16 +27,19 @@ lang HtmlRenderer = RendererInterface
     sem renderNewLine =
     | { fmt = Html {} } & opt -> "<br>"
 
-    sem renderRemoveForbidenChars (s: String) =
+    sem renderRemoveDocForbidenChars (s: String) =
     | { fmt = Html {} } & opt ->
         switch s
-        case "&" ++ s then concat "&amp;" (renderRemoveForbidenChars s opt)
-        case "<br>" ++ s then cons '\n' (renderRemoveForbidenChars s opt)
-        case "<" ++ s then concat "&lt;" (renderRemoveForbidenChars s opt)
-        case ">" ++ s then concat "&gt;" (renderRemoveForbidenChars s opt)    
-        case [x] ++ s then cons x (renderRemoveForbidenChars s opt)
+        case "&" ++ s then concat "&amp;" (renderRemoveDocForbidenChars s opt)
+        case "<br>" ++ s then cons '\n' (renderRemoveDocForbidenChars s opt)
+        case "<" ++ s then concat "&lt;" (renderRemoveDocForbidenChars s opt)
+        case ">" ++ s then concat "&gt;" (renderRemoveDocForbidenChars s opt)    
+        case [x] ++ s then cons x (renderRemoveDocForbidenChars s opt)
         case "" then ""
         end
+
+    sem renderRemoveCodeForbidenChars (s: String) =
+    | { fmt = Html {} } & opt -> renderRemoveDocForbidenChars s opt
 
     sem htmlRenderSpan : String -> String -> String
     sem htmlRenderSpan =
