@@ -97,7 +97,7 @@ lang CommentTokenReader = TokenReaderInterface
       | Comment { content: String, lit: String }
 
     sem lit =
-        | Comment { content = content, lit = lit } -> lit        
+        | Comment { lit = lit } -> lit        
 
     sem tokenToString =
         | Comment {} -> "Comment"
@@ -108,7 +108,7 @@ lang CommentTokenReader = TokenReaderInterface
             let extract =
             lam str.
                 match str with "\n" ++ xs then
-                    ("", xs)                    
+                    ("", str)                    
                 else match str with [x] ++ xs then
                     let extracted = extract xs in
                     (cons x extracted.0, extracted.1)
@@ -116,7 +116,7 @@ lang CommentTokenReader = TokenReaderInterface
                     ("", "")
             in
             let extracted = extract str in
-            buildResult (Comment { content = extracted.0, lit = join ["--", extracted.0, "\n"] }) pos extracted.1
+            buildResult (Comment { content = extracted.0, lit = concat "--" extracted.0 }) pos extracted.1
 end
 
 -- Reader for string literals ( "..." )

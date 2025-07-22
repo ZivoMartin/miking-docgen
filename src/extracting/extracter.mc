@@ -20,10 +20,10 @@
 --    To retrieve it, we maintain a comment buffer throughout the extraction process.  
 --    Each time we encounter a comment, it is added to the buffer. If we encounter something other than a comment, there are three cases:
 --      * It is a `DocTree` node -> the current state of the buffer becomes the documentation for that node, and the buffer is cleared.
---      * It is a separator **without** a newline -> we simply keep the buffer unchanged.  
+--      * It is a separator with less than 2 newlines -> we simply keep the buffer unchanged.  
 --        This is crucial, for example in cases where the documented object is indented.  
 --        In that case, the documentation (i.e., the comments) is likely also indented and separated by separators.  
---        However, if the separator **contains** a newline, we must still clear the buffer, because it represents a break.  
+--        However, if the separator **contains** more than one newline, we must still clear the buffer, because it represents a break.  
 --      * It is anything else -> we clear the buffer.
 --
 --  - `namespace`: The namespace reflects the current position of the node in the tree.  
@@ -72,6 +72,8 @@ let extract : DocTree -> ObjectTree =
     recursive
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> Bool -> Int -> ExtractRecOutput ) =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam inStdlib. lam utestCount.
+
+        let shouldClear : String -> Bool = lam content. gti (count (eqChar '\n') content) 1 in
     
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         switch tree 
@@ -116,10 +118,16 @@ let extract : DocTree -> ObjectTree =
             case Program {} then
                 recursive
                 let extractProgramComments = lam sons.
-                    match sons with [Leaf { token = Comment { content = content } }] ++ rest then
+                    switch sons
+                    case [Leaf { token = Comment { content = content } | MultiLigneComment { content = content } }] ++ rest then
                         let output = extractProgramComments rest in
                         { output with comments = cons content output.comments }
-                    else { comments = [], sons = sons } in
+                    case [Leaf { token = Separator { content = content } }] ++ rest then
+                        if shouldClear content then { comments = [], sons = sons }
+                        else extractProgramComments rest
+                    case _ then { comments = [], sons = sons }
+                    end
+                in
                 let extractRes = extractProgramComments sons in
                 process state sons content content
                     (buildDoc extractRes.comments)
@@ -188,14 +196,14 @@ let extract : DocTree -> ObjectTree =
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = None {}, utestCount = utestCount } in
             -- Leaf dispatch
             switch token
-            case Comment { content = content } then
+            case Comment { content = content } | MultiLigneComment { content = content }then
                 { defaultRes with commentBuffer = cons content commentBuffer }
             case Separator { content = content } then
-                -- Clear comment buffer if \n found
-                if strContains content '\n' then defaultRes
+                -- Clear comment buffer if more than  one \n found
+                if shouldClear content then defaultRes
                 else { defaultRes with commentBuffer = commentBuffer }
 
-            case MultiLigneComment {} | Str {} | Word {} then defaultRes
+            case Str {} | Word {} then defaultRes
             end
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file

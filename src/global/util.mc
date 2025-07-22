@@ -178,3 +178,7 @@ let strLongestCommonPrefix : String -> String -> String = lam a. lam b.
 
 let concatIfNot : all a. [a] -> ([a] -> Bool) -> [a] -> [a] =
     lam x1. lam f. lam x2. if not (f x1) then concat x1 x2 else x1
+
+
+let count : all a. (a -> Bool) -> [a] -> Int = lam f. lam arr.
+    foldl (lam counter. lam x. if f x then addi 1 counter else counter) 0 arr
