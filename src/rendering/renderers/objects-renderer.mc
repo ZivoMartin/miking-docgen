@@ -2,7 +2,11 @@ include "../../extracting/objects.mc"
 include "../rendering-options.mc"
     
 lang ObjectsRenderer = ObjectKinds + Formats
-
+    
+    sem objLangLink : String -> RenderingOptions -> String
+    sem objLangLink =
+    | name -> lam opt. join ["/Lang/lang-", name, ".lang.", formatGetExtention opt.fmt]
+    
     -- Get URL link for an object
     sem objLink : Object -> RenderingOptions -> String
     sem objLink =
@@ -10,18 +14,18 @@ lang ObjectsRenderer = ObjectKinds + Formats
         let name = objName obj in
         let kind = objKind obj in
         let namespace = objNamespace obj in
+        let ext = concat "." (formatGetExtention opt.fmt) in
         let link = switch kind
             case ObjLang {} | ObjUse {} then
-                concat (getLangLink name) ".lang"
+                objLangLink name opt
             case ObjSem { langName = langName } | ObjSyn { langName = langName } then
-                join [getLangLink langName, "/", getFirstWord kind, "-", name]        
+                join ["/Lang/lang-", langName, "/", getFirstWord kind, "-", name, ext]        
             case _ then
                 let prefix = if objIsStdlib obj then "Lib" else "Files" in
-                concat prefix namespace
+                join [prefix, namespace, ext]
             end
         in
-        let link = if strStartsWith "/" link then link else cons '/' link in
-        join [link, ".", formatGetExtention opt.fmt]
+        if strStartsWith "/" link then link else cons '/' link 
             
     -- Get display title for an object
     sem objTitle : Object -> String

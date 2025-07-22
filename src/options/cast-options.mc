@@ -17,5 +17,6 @@ let getRenderingOption : () -> RenderingOptions = use FormatLanguages in lam.
         noStdlib = opt.noStdlib,
         outputFolder = opt.outputFolder,
         urlPrefix = opt.urlPrefix,
-        fmtLang = opt.fmtLang
+        fmtLang = opt.fmtLang,
+        letDepth = opt.letDepth
     }

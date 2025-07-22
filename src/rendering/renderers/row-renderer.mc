@@ -23,12 +23,12 @@ lang RowRenderer = RendererInterface
         let nl = renderNewLine opt in
         let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } } then
-            let parents = strJoin " + " (map (lam p. renderLink p (concat (getLangLink p) ".lang") opt) parents) in
+            let parents = strJoin " + " (map (lam p. renderLink p (objLangLink p opt) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents]
         case { obj = { kind = ( ObjSyn {} | ObjSem {} )} & obj } then
             let langName = objGetLangName obj in
-            let langName = renderLink langName (concat (getLangLink langName) ".lang") opt in
+            let langName = renderLink langName (objLangLink langName opt) opt in
             let sectionTitle = renderBold "From:" opt in
             strJoin nl [sectionTitle, langName]
         case { obj = obj } then

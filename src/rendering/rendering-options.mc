@@ -9,5 +9,6 @@ type RenderingOptions = use Formats in use Themes in use FormatLanguages in
         noStdlib: Bool,
         outputFolder: String,
         urlPrefix: String,
-        fmtLang: FormatLanguage
+        fmtLang: FormatLanguage,
+        letDepth: Option Int
     }

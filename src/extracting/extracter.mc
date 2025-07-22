@@ -74,7 +74,6 @@ let extract : DocTree -> ObjectTree =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam inStdlib. lam utestCount.
 
         let shouldClear : String -> Bool = lam content. gti (count (eqChar '\n') content) 1 in
-    
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         switch tree 
         case Node { sons = sons, token = token, state = state } then
@@ -202,7 +201,6 @@ let extract : DocTree -> ObjectTree =
                 -- Clear comment buffer if more than  one \n found
                 if shouldClear content then defaultRes
                 else { defaultRes with commentBuffer = commentBuffer }
-
             case Str {} | Word {} then defaultRes
             end
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then

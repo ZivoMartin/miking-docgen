@@ -53,9 +53,6 @@ type Object = use ObjectKinds in { name: String, doc : String, namespace: String
 
 -- The position of where the program started
 let basePosition : String = concat (sysGetCwd ()) "/"
-    
--- Build lang link prefix
-let getLangLink = lam name. concat "/Lang/lang-" name
 
 let objName : Object -> String = lam obj. obj.name
 let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind
@@ -125,4 +122,5 @@ let objSetType = use ObjectKinds in lam obj. lam ty.
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 
-let objTreeToString = lam obj. match obj with ObjectNode { obj = obj } in objToString obj.kind obj.name
+let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.kind obj.name
+let objTreeObj : ObjectTree -> Object = lam tree. match tree with ObjectNode { obj = obj } in obj

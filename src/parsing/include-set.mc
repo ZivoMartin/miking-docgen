@@ -8,11 +8,12 @@ type IncludeSet =
     {
         baseLoc: String,
         set: HashMap String (),
-        prefix: String
+        prefix: String,
+        programStartPos: String
     }
 
 let includeSetNew : String -> IncludeSet = lam baseLoc.
-    { baseLoc = baseLoc, set = hashmapEmpty (), prefix = baseLoc }
+    { baseLoc = baseLoc, set = hashmapEmpty (), prefix = baseLoc, programStartPos = sysGetCwd () }
 
 let includeSetPrefix : IncludeSet -> String = lam set. set.prefix
 
@@ -20,7 +21,7 @@ type IncludeSetInsertResult = { inserted: Bool, includeSet: IncludeSet, path: St
 
 let includeSetInsert : IncludeSet -> String -> String -> IncludeSetInsertResult = lam set. lam loc. lam includeContent.
     match goHere (dirname loc) includeContent with { path = path, isStdlib = isStdlib } in
-    match goHere set.baseLoc path with { path = absPath, isStdlib = isStdlib } in
+    match goHere set.programStartPos path with { path = absPath, isStdlib = isStdlib } in
 
     let set = if isStdlib then set else  { set with prefix = strLongestCommonPrefix (dirname absPath) set.prefix } in
     
