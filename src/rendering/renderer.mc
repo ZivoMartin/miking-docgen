@@ -174,10 +174,10 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 in
     
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if opt.noStdlib then [] else set.LibInclude)];
-                iter (lam a. displayDefault a.0 a.1)
-    
-                [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang),
-                ("Syntaxes", set.Syn), ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr), ("Tests", set.Utest)];
+
+                let vars = if optionEq and (Some true) (optionMap (lti depth) opt.letDepth) then [("Variables", set.Let), ("Sementics", set.Sem)] else [] in  
+                let toDisplay = join [[("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang), ("Syntaxes", set.Syn)], vars, [("Mexpr", set.Mexpr), ("Tests", set.Utest)]] in
+                iter (lam a. displayDefault a.0 a.1) toDisplay;
     
                 -- Push the footer of the page
                 write (renderFooter obj opt);
