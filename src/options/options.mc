@@ -57,7 +57,8 @@ type Options = use Formats in use Themes in use FormatLanguages in {
     noGen: Bool,
     skipLabeling: Bool,
     noStdlib: Bool,
-    urlPrefix: String
+    urlPrefix: String,
+    letDepth: Option Int 
 }
 
 let optionsDefault : Options = use Formats in use Themes in use FormatLanguages in {
@@ -80,7 +81,8 @@ let optionsDefault : Options = use Formats in use Themes in use FormatLanguages 
     noRenderingWarn = false,
     noWarn = false,
     noStdlib = false,
-    urlPrefix = ""
+    urlPrefix = "",
+    letDepth = None {}
 }
 
 let usage = lam.
@@ -134,6 +136,13 @@ let parseOptions : [String] -> Options = lam argv.
 
         case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
         case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
+
+        case ["--depth", letDepth] ++ rest then
+            match letDepth with "none" then
+                parse rest { opts with letDepth = None {} }
+            else if stringIsInt letDepth then
+                parse rest { opts with letDepth = Some (string2int letDepth) }
+            else usage ()
 
         case ["--format", fmt] ++ rest then
             match formatFromStr fmt with Some fmt then

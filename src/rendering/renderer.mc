@@ -70,24 +70,35 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     renderSetup opt;
     renderingLog "Beggining of rendering stage.";
     recursive
-    let render : ObjectTree -> RenderingData = lam objTree.
-        let emptyPreview = lam obj. { left = [], right = [], trimmed = [], row = "", obj = obj } in            
+    let render : ObjectTree -> Int -> RenderingData = lam objTree. lam depth.
+        let emptyPreview = lam obj. { left = [], right = [], trimmed = [], row = "", obj = obj } in
+    
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
             if and (objIsStdlib obj) opt.noStdlib then emptyPreview obj else
-            let res = render p in emptyPreview obj
+            let res = render p 0 in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
             -- Opening a file
             let path = concat opt.outputFolder (objLink obj opt) in
 
-            renderingLog (concat "Rendering file " path);
-   
-            match fileWriteOpen path with Some wc then
-                let write = fileWriteString wc in
+            let fileOpening =
+                let open = lam.
+                    match fileWriteOpen path with Some wc then
+                        Some { wc = Some wc, write = fileWriteString wc }
+                    else
+                        renderingWarn (concat "Failed to open " path); None {}
+                in
+                match opt.letDepth with Some letDepth then
+                    if gti depth letDepth then Some { wc = None {}, write = lam. ()}
+                    else open ()
+                else open ()
+            in
 
+            match fileOpening with Some { wc = wc, write = write } then
+                renderingLog (concat "Rendering file " path);
                 -- Push header of the output file
                 write (renderHeader obj opt);
                 -- Pushing title and global documentation
@@ -111,9 +122,12 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     
                 -- Removing words
                 let sons = unwrapRecursives sons in
-            
+
                 -- Recursive calls
-                let sons: [RenderingData] = map render sons in
+                let sons: [RenderingData] = map (lam son.
+                    let depth = match (objTreeObj son).kind with ObjLet {} | ObjSem {} then addi 1 depth else 0 in
+                    render son depth) sons in
+
                 let trees = reconstructSourceCode (objSourceCode obj) sons in
                 let data = renderTreeSourceCode trees obj opt in
     
@@ -167,14 +181,12 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     
                 -- Push the footer of the page
                 write (renderFooter obj opt);
-                fileWriteClose wc;
+                (match wc with Some wc then fileWriteClose wc else ());
                 data
-            else
-                renderingWarn (concat "Failed to open " path);
-                emptyPreview obj
+            else emptyPreview obj
         end
     in
-    let res = render obj in ()
+    let res = render obj 0 in ()
 
 
 
