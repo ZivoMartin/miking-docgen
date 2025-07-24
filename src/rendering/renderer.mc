@@ -40,6 +40,7 @@ include "preprocessor.mc"
 include "./renderers/main-renderer.mc"
 include "./source-code-reconstruction.mc"
 include "./rendering-options.mc"
+include "./files-opener.mc"
 
 include "../extracting/objects.mc"
 
@@ -70,35 +71,23 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     renderSetup opt;
     renderingLog "Beggining of rendering stage.";
     recursive
-    let render : ObjectTree -> Int -> RenderingData = lam objTree. lam depth.
-        let emptyPreview = lam obj. { left = [], right = [], trimmed = [], row = "", obj = obj } in
-    
+    let render : FileOpener -> ObjectTree -> RenderingData = lam opener. lam objTree. 
+        let emptyPreview = lam obj.
+            let trees = reconstructSourceCode (objSourceCode obj) [] in
+            renderTreeSourceCode trees obj opt
+        in
+
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
             if and (objIsStdlib obj) opt.noStdlib then emptyPreview obj else
-            let res = render p 0 in emptyPreview obj
+            let res = render (fileOpenerCreate opt.letDepth) p in emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
         case ObjectNode { obj = obj, sons = sons } then
-            -- Opening a file
-            let path = concat opt.outputFolder (objLink obj opt) in
 
-            let fileOpening =
-                let open = lam.
-                    match fileWriteOpen path with Some wc then
-                        Some { wc = Some wc, write = fileWriteString wc }
-                    else
-                        renderingWarn (concat "Failed to open " path); None {}
-                in
-                match opt.letDepth with Some letDepth then
-                    if gti depth letDepth then Some { wc = None {}, write = lam. ()}
-                    else open ()
-                else open ()
-            in
-
-            match fileOpening with Some { wc = wc, write = write } then
-                renderingLog (concat "Rendering file " path);
+            match fileOpenerOpen opener obj opt with Some { wc = wc, write = write, path = path, fileOpener = opener, displaySons = displaySons } then
+                (match path with "" then () else renderingLog (concat "Rendering file " path));
                 -- Push header of the output file
                 write (renderHeader obj opt);
                 -- Pushing title and global documentation
@@ -124,9 +113,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 let sons = unwrapRecursives sons in
 
                 -- Recursive calls
-                let sons: [RenderingData] = map (lam son.
-                    let depth = match (objTreeObj son).kind with ObjLet {} | ObjSem {} then addi 1 depth else 0 in
-                    render son depth) sons in
+                let sons: [RenderingData] = map (render opener) sons in
 
                 let trees = reconstructSourceCode (objSourceCode obj) sons in
                 let data = renderTreeSourceCode trees obj opt in
@@ -167,17 +154,19 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     
                 -- Displays types and con
                 let displayDefault = lam title. lam arr.
-                    let title = match arr with [] then "" else match title with "" then "" else
-                            renderSectionTitle title opt in
-                    write title;
-                    iter (lam u. write (renderDocBloc u opt)) arr
+                    if displaySons then
+                        let title = match arr with [] then "" else match title with "" then "" else
+                                renderSectionTitle title opt in
+                        write title;
+                        iter (lam u. write (renderDocBloc u opt)) arr
+                    else ()
                 in
     
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if opt.noStdlib then [] else set.LibInclude)];
-
-                let vars = if optionEq and (Some true) (optionMap (lti depth) opt.letDepth) then [("Variables", set.Let), ("Sementics", set.Sem)] else [] in  
-                let toDisplay = join [[("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang), ("Syntaxes", set.Syn)], vars, [("Mexpr", set.Mexpr), ("Tests", set.Utest)]] in
-                iter (lam a. displayDefault a.0 a.1) toDisplay;
+                iter (lam a. displayDefault a.0 a.1)
+                    [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang), ("Syntaxes", set.Syn),
+                    ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr)];
+                (if opt.keepTestsDoc then displayDefault "Tests" set.Utest else ());
     
                 -- Push the footer of the page
                 write (renderFooter obj opt);
@@ -186,7 +175,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
             else emptyPreview obj
         end
     in
-    let res = render obj 0 in ()
+    let res = render (fileOpenerCreate opt.letDepth) obj in ()
 
 
 

@@ -216,9 +216,8 @@ let extract : DocTree -> ObjectTree =
             match tree with Some tree then
                 extractingLog (concat "Extracting on: " path);
                 let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount in
-                match res with
-                    { obj = Some (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
-                    let includeObj = { progObj with isStdlib = isStdlib, kind = ObjInclude { pathInFile = content } } in
+                match res with { obj = Some (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
+                    let includeObj = { progObj with isStdlib = isStdlib, kind = ObjInclude { pathInFile = content }, sourceCode = sourceCodeEmpty () } in
                     { defaultRes with obj = Some (ObjectNode { obj = includeObj, sons = [ progObjTree ] })  }
                 else
                     extractingWarn "Found a leaf at the root of a Program"; defaultRes

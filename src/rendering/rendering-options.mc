@@ -10,5 +10,6 @@ type RenderingOptions = use Formats in use Themes in use FormatLanguages in
         outputFolder: String,
         urlPrefix: String,
         fmtLang: FormatLanguage,
-        letDepth: Option Int
+        letDepth: Option Int,
+        keepTestsDoc: Bool
     }

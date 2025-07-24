@@ -19,21 +19,33 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
     -- Map of all output paths (acts as a Set)
     type PathMap = HashMap String () in
     -- Recursively visit the ObjectTree and collect paths
-    recursive let preprocessRec : PathMap -> ObjectTree -> PathMap = use ObjectKinds in
-        lam pathMap. lam obj.
+    recursive let preprocessRec : Int -> PathMap -> ObjectTree -> PathMap = use ObjectKinds in
+        lam depth. lam pathMap. lam obj.
         switch obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
             if and (objIsStdlib obj) opt.noStdlib then pathMap else
-                preprocessRec pathMap p
+                preprocessRec 0 pathMap p
         case ObjectNode { obj = { kind = ObjUse {} | ObjInclude {} }, sons = sons } then pathMap
         case ObjectNode { obj = obj, sons = sons } then
             let path = dirname (join [opt.outputFolder, objLink obj opt]) in
-            foldl preprocessRec (hmInsert path () pathMap) sons
-
+            let map = hmInsert path () pathMap in
+            let go = lam depth. lam sons. foldl (preprocessRec depth) map sons in
+            switch obj.kind
+            case ObjSem {} | ObjLet {} then
+                let depth = addi 1 depth in
+                if optionEq and (Some true) (optionMap (gti depth) opt.letDepth) then -- depth > letDepth ?
+                    pathMap
+                else go depth sons
+            case ObjUtest {} then
+                if opt.keepTestsDoc then go depth sons
+                else pathMap
+            case _ then go depth sons
+            end
+            
         case _ then pathMap end
 
     in
-    let pathMap = preprocessRec (hashmapEmpty ()) obj in
+    let pathMap = preprocessRec 0 (hashmapEmpty ()) obj in
     recursive let create = lam arr.
         let batchSize = 1000 in
         match arr with [] then ()

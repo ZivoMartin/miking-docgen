@@ -58,7 +58,8 @@ type Options = use Formats in use Themes in use FormatLanguages in {
     skipLabeling: Bool,
     noStdlib: Bool,
     urlPrefix: String,
-    letDepth: Option Int 
+    letDepth: Option Int,
+    keepTestsDoc: Bool
 }
 
 let optionsDefault : Options = use Formats in use Themes in use FormatLanguages in {
@@ -82,7 +83,8 @@ let optionsDefault : Options = use Formats in use Themes in use FormatLanguages 
     noWarn = false,
     noStdlib = false,
     urlPrefix = "",
-    letDepth = None {}
+    letDepth = None {},
+    keepTestsDoc = false
 }
 
 let usage = lam.
@@ -124,6 +126,8 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--labeling-debug"] ++ rest then parse rest { opts with labelingDebug = true }       
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
 
+        case ["--keep-tests-doc"] ++ rest then parse rest { opts with keepTestsDoc = true }
+
         case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
         case ["--no-stdlib"] ++ rest then parse rest { opts with noStdlib = true }    
         case ["--no-parsing-warn"] ++ rest then parse rest { opts with noParsingWarn = true }
@@ -136,7 +140,7 @@ let parseOptions : [String] -> Options = lam argv.
 
         case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
         case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
-
+ 
         case ["--depth", letDepth] ++ rest then
             match letDepth with "none" then
                 parse rest { opts with letDepth = None {} }
