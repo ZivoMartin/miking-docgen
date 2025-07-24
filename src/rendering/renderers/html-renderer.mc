@@ -75,8 +75,8 @@ lang HtmlRenderer = RendererInterface
     sem renderTopPageDoc (data: RenderingData) =
     | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
     
-    sem renderDocBloc (data : RenderingData) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
+    sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" (renderDocBloc data) displayGotoLink "</pre>\n</div>"
 
     sem renderDocDescription (obj: Object) =
     | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class = \"doc-description\"><pre>" renderDocDescription obj "</pre></div>"

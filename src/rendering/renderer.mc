@@ -156,12 +156,10 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     
                 -- Displays types and con
                 let displayDefault = lam title. lam arr.
-                    if displaySons then
-                        let title = match arr with [] then "" else match title with "" then "" else
-                                renderSectionTitle title opt in
-                        write title;
-                        iter (lam u. write (renderDocBloc u opt)) arr
-                    else ()
+                    let title = match arr with [] then "" else match title with "" then "" else
+                            renderSectionTitle title opt in
+                    write title;
+                    iter (lam u. write (renderDocBloc u displaySons opt)) arr
                 in
     
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if opt.noStdlib then [] else set.LibInclude)];

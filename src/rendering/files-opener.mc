@@ -52,7 +52,7 @@ let fileOpenerOpen : FileOpener -> Object -> RenderingOptions -> Option FileOpen
         case (None {}, ObjUtest {}) then if opt.keepTestsDoc then open opener.currentDepth true else Some emptyNever
         case (Some d, ObjUtest {}) then if opt.keepTestsDoc then checkAndOpen d else Some emptyNever
         case (None {}, _) then open opener.currentDepth true
-        case (Some d, ObjProgram {} | ObjInclude {} | ObjLang {} | ObjMexpr {}) then open opener.currentDepth true
+        case (Some d, ObjProgram {} | ObjInclude {} | ObjLang {}) then open opener.currentDepth (neqi d 0)
         case (Some d, _) then checkAndOpen d
             
         end 

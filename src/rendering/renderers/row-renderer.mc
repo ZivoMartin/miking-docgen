@@ -36,12 +36,16 @@ lang RowRenderer = RendererInterface
         end in
         renderBlocDefault data opt "" "" details ""
     
-    sem renderDocBloc (data : RenderingData) =
+    sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
     | opt -> let opt = fixOptFormat opt in
         match data with { obj = obj } in
-        let link = objLink obj opt in
-        let link = concat (if strStartsWith "/" link then "" else "/") link in
-        let link = renderGotoLink link opt in
+        let link =
+            if displayGotoLink then
+                let link = objLink obj opt in
+                let link = concat (if strStartsWith "/" link then "" else "/") link in
+                renderGotoLink link opt
+            else ""
+        in
         renderBlocDefault data opt "" "" link ""
     
     sem renderDocDescription (obj: Object) =

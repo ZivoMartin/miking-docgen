@@ -16,7 +16,7 @@ lang RendererInterface = Formats + Themes + ObjectsRenderer + Formatter + MExprP
      
     sem renderTopPageDoc : RenderingData -> RenderingOptions -> String
     
-    sem renderDocBloc : RenderingData -> RenderingOptions -> String
+    sem renderDocBloc : RenderingData -> Bool -> RenderingOptions -> String
     
     sem renderDocSignature : Object -> RenderingOptions -> String
 
