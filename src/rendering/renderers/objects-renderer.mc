@@ -19,7 +19,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
             case ObjLang {} | ObjUse {} then
                 objLangLink name opt
             case ObjSem { langName = langName } | ObjSyn { langName = langName } then
-                join ["/Lang/", langName, "/", getFirstWord kind, "-", name, ext]        
+                join ["/Lang/lang-", langName, "/", getFirstWord kind, "-", name, ext]        
             case _ then
                 let prefix = if objIsStdlib obj then "Lib" else "Files" in
                 join [prefix, namespace, ext]
@@ -31,13 +31,24 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objTitle : Object -> String
     sem objTitle =    
     | obj ->
-        let name = objName obj in
+        let name = head (reverse (strSplit "/" (objName obj))) in
         let kind = objKind obj in
-        let namespace = objNamespace obj in
         switch kind
         case ObjProgram {} then if objIsStdlib obj then strTruncate name (addi 1 (length stdlibLoc)) else name
         case ObjInclude { pathInFile = pathInFile } then pathInFile
         case ObjUtest {} then "utest"
         case _ then name
         end
+
+
+    sem objLog : Object -> RenderingOptions -> ()
+    sem objLog =
+    | obj -> lam opt. renderingLog (join [
+        "Object ", objName obj, ":\n",
+        "   kind: ", objKindToString (objKind obj), "\n",
+        "   namespace: ", objNamespace obj, "\n",
+        "   prefix: ", objPrefix obj, "\n",
+        "   link: ", objLink obj opt, "\n",
+        "   isStdlib: ", bool2string (objIsStdlib obj), "\n"
+    ])
 end

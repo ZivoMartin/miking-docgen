@@ -28,9 +28,9 @@ lang RowRenderer = RendererInterface
             strJoin nl [sectionTitle, parents]
         case { obj = { kind = ( ObjSyn {} | ObjSem {} )} & obj } then
             let langName = objGetLangName obj in
-            let langName = renderLink langName (objLangLink langName opt) opt in
+            let langLink = renderLink langName (objLangLink langName opt) opt in
             let sectionTitle = renderBold "From:" opt in
-            strJoin nl [sectionTitle, langName]
+            strJoin nl [sectionTitle, langLink]
         case { obj = obj } then
             ""
         end in

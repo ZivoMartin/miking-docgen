@@ -77,6 +77,8 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
             renderTreeSourceCode trees obj opt
         in
 
+        objLog (objTreeObj objTree) opt;
+
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then

@@ -20,7 +20,8 @@ let getNamespace = lam namespace. lam name. lam ext.
 -- Extracts the last segment of a namespace (split by '/').
 -- Example: extractLastNamespaceElement "foo/bar/baz" returns "baz"
 let extractLastNamespaceElement = lam namespace.
-    match strSplit "/" namespace with ([_] ++ _) & namespace then head (reverse namespace) else ""
+    let namespace = match strSplit "/" namespace with ([_] ++ _) & namespace then head (reverse namespace) else "" in
+    match strSplit "-" namespace with ([_] ++ _) & namespace then head (reverse namespace) else namespace
 
 utest extractLastNamespaceElement "a/b/c" with "c"
 utest extractLastNamespaceElement "onlyone" with "onlyone"

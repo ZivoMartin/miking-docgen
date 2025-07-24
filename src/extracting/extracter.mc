@@ -75,6 +75,13 @@ let extract : DocTree -> ObjectTree =
 
         let shouldClear : String -> Bool = lam content. gti (count (eqChar '\n') content) 1 in
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
+
+        let defaultObject = lam namespace. lam isStdlib.
+            let defaultObject = objWithNamespace defaultObject namespace in
+            let defaultObject = objWithIsStdlib defaultObject isStdlib in
+            if isStdlib then defaultObject else objWithPrefix defaultObject prefix
+        in
+    
         switch tree 
         case Node { sons = sons, token = token, state = state } then
 
@@ -87,10 +94,7 @@ let extract : DocTree -> ObjectTree =
                 let sourceCode = finish sourceCodeBuilder in
                 { obj = { obj with sourceCode = sourceCode.sourceCode }, builder = sourceCode.builder } in
 
-            -- Start new object
-            let obj = objWithNamespace defaultObject namespace in
-            let obj = objWithPrefix obj prefix in
-            let obj = objWithIsStdlib obj inStdlib in
+            let obj = objWithIsStdlib (defaultObject namespace inStdlib) inStdlib in
             let doc = buildDoc (reverse commentBuffer) in
 
             -- Process children nodes
@@ -205,8 +209,7 @@ let extract : DocTree -> ObjectTree =
             end
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file
-            let defaultObject = objWithNamespace defaultObject path in
-            let defaultObject = objWithIsStdlib defaultObject isStdlib in
+            let defaultObject = defaultObject path isStdlib in
             let defaultObject = objWithKind defaultObject (ObjInclude { pathInFile = content }) in
             let defaultObject = objWithName defaultObject path in
 

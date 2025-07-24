@@ -30,6 +30,22 @@ lang ObjectKinds = MExprAst
     | ObjRecursiveBlock {}
     | ObjInclude { pathInFile: String }
 
+    sem objKindToString : ObjectKind -> String
+    sem objKindToString =
+    | ObjLet { rec = rec, args = args, ty = ty} -> join ["ObjLet, recursive: ", bool2string rec, ", args: [", strJoin ", " args, "]"]
+    | ObjLang { parents = parents } -> join ["ObjLang, parents: ", strJoin ", " parents]
+    | ObjType { t = t } -> join ["ObjType", match t with Some t then concat ", " t else ""]
+    | ObjUse {} -> "ObjUse"
+    | ObjSem { langName =  langName } ->  join ["ObjSem, langName = ", langName]
+    | ObjSyn { langName = langName } -> join ["ObjSyn, langName = ", langName]
+    | ObjCon { t = t } -> join ["ObjCon: ", t]
+    | ObjMexpr {} -> "ObjMexpr"
+    | ObjInclude { pathInFile = p } -> join ["ObjInclude, path = ", p]
+    | ObjUtest {} -> "ObjUtest"
+    | ObjRecursiveBlock {} -> "ObjRecursiveBlock"
+    | ObjProgram {} -> "ObjProgram"
+    | _ -> warn "All object kinds are not supported in objKindToString sementic"; ""
+         
     -- First keyword associated to this object kind (for printing / links)
     sem getFirstWord =
     | ObjLet {} -> "let"
@@ -70,13 +86,13 @@ let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode
 
 let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
     let process = lam.
-        let basePrefix = normalizePath (concat basePosition obj.namespace) in
+        let basePrefix: String = normalizePath (concat basePosition obj.namespace) in
         let lengthBasePrefix = length basePrefix in
         let lengthPrefix = length prefix in
-        if gti lengthPrefix lengthBasePrefix then
-             extractingWarn "The prefix is longer than one of the object's namespace";
-             basePrefix
-        else subsequence basePrefix lengthPrefix lengthBasePrefix
+        if strStartsWith prefix basePrefix then subsequence basePrefix lengthPrefix lengthBasePrefix
+        else
+            extractingWarn (join ["The namespace ", basePrefix, "does not start with the prefix ", prefix, "."]);
+            basePrefix
     in
     let namespace = match prefix with "" then obj.namespace else process () in
     let namespace = if strStartsWith "/" namespace then namespace else cons '/' namespace in
@@ -86,7 +102,9 @@ let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     let namespace =
     if strStartsWith stdlibLoc namespace then
         subsequence namespace (length stdlibLoc) (length namespace)
-    else namespace in
+    else
+        namespace
+    in
     let obj = { obj with namespace = namespace } in
     objWithPrefix obj obj.prefix
 
