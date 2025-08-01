@@ -11,5 +11,6 @@ type RenderingOptions = use Formats in use Themes in use FormatLanguages in
         urlPrefix: String,
         fmtLang: FormatLanguage,
         letDepth: Option Int,
-        keepTestsDoc: Bool
+        keepTestsDoc: Bool,
+        mdDoc: Bool        
     }

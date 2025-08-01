@@ -23,7 +23,7 @@ mexpr
         logOpt opt;
         let execCtx = parseFile execCtx opt.file in
         let execCtx = extract execCtx in
-        let execCtx = if opt.skipLabeling then execCtx else label execCtx in
+        let execCtx = label execCtx in
         render (getRenderingOption ()) execCtx;
         execCtx in
     startServer (getServeOption ()) execCtx

@@ -40,7 +40,7 @@ lang MarkdownRenderer = RendererInterface
         let doc = join [doc, nl, nl] in
         match splitOnR (lam c. match c with ' ' | '\n' then false else true) doc with { right = doc } in
         let doc = strReplace "\n " "\n" doc in
-        renderRemoveDocForbidenChars doc opt
+        if opt.mdDoc then doc else renderRemoveDocForbidenChars doc opt
     
 
     sem renderDocSignature (obj: Object) =

@@ -1,6 +1,6 @@
--- # Options Parser Module
+-- # Command-Line Options Parser
 --
--- This module parses command-line arguments for the doc generator.
+-- Parses command-line arguments for the `my-doc-gen` documentation generator.
 --
 -- ## Usage
 --
@@ -8,27 +8,41 @@
 -- my-doc-gen [options] <file>
 --
 -- Required:
---   <file>                    Path to the Miking source file to process.
+--   <file>                                 Path to the Miking source file to document.
 --
--- Options:
---   --no-open                              Do not open the result in a browser.
+-- General Options:
+--   --no-open                              Do not open the result in a web browser.
+--   --output-folder <name>                 Set the output folder (default: doc-gen-output).
+--   --format <html|md|mdx>                 Choose output format (default: html).
+--   --theme <dark|light|warm-dark|warm>    Choose output theme (default: dark).
+--   --url-prefix <prefix>                  Prefix for all generated URLs.
+--   --no-gen                               Skip parsing and use existing output folder as-is.
+--   --depth <n|none>                       Limit nesting depth of `let` bindings.
+--   --no-stdlib                            Do not include the standard library in output.
+--   --md-doc                               Generate Markdown documentation from inline comments.
+--   --keep-tests-doc                       Keep inline documentation of tests.
+--   --keep-dead-code                       Do not remove unused code from output.
+--
+-- Language Formatting:
+--   --javascript                           Use Javascript for the React components
+--   --typescript                           Use Typescript for the React components.
+--
+-- Debugging Options:
 --   --debug                                Enable all debug modes.
---   --parsing-debug                        Enable debug logs for parsing stage.
---   --extracting-debug                     Enable debug logs for extracting stage.
---   --labeling-debug                       Enable debug logs for labeling stage.
---   --rendering-debug                      Enable debug logs for rendering stage.
+--   --parsing-debug                        Enable debug logs for the parsing stage.
+--   --extracting-debug                     Enable debug logs for the extraction stage.
+--   --labeling-debug                       Enable debug logs for the labeling stage.
+--   --rendering-debug                      Enable debug logs for the rendering stage.
+--
+-- Warning Control:
 --   --no-warn                              Disable all warnings.
 --   --no-parsing-warn                      Disable parsing warnings.
---   --no-extracting-warn                   Disable extracting warnings.
+--   --no-extracting-warn                   Disable extraction warnings.
 --   --no-labeling-warn                     Disable labeling warnings.
 --   --no-rendering-warn                    Disable rendering warnings.
---   --format <html|md|mdx>                 Output format. Default: html.
---   --output-folder <name>                 Output folder name. Default: doc-gen-output.
---   --no-gen                               Do not parse anything, use the output folder as is.
---   --skip-labeling                        Skip type computation during parsing.
---   --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.
---   --no-stdlib                            Disable stdlib includes in output.
---   --url-prefix <prefix>                  The link of each files will be prefixed by this argument
+--
+-- Help:
+--   --help | --h                           Show this help message.
 -- ```
 
 include "../global/format.mc"
@@ -56,11 +70,12 @@ type Options = use Formats in use Themes in use FormatLanguages in {
     noWarn: Bool,
     outputFolder: String,
     noGen: Bool,
-    skipLabeling: Bool,
     noStdlib: Bool,
     urlPrefix: String,
     letDepth: Option Int,
-    keepTestsDoc: Bool
+    keepTestsDoc: Bool,
+    keepDeadCode: Bool,
+    mdDoc: Bool
 }
 
 let optionsDefault : Options = use Formats in use Themes in use FormatLanguages in {
@@ -74,7 +89,6 @@ let optionsDefault : Options = use Formats in use Themes in use FormatLanguages 
     extractingDebug = false,
     labelingDebug = false,
     renderingDebug = false,
-    skipLabeling = false,
     outputFolder = "doc-gen-output",
     noGen = false,
     noParsingWarn = false,
@@ -85,41 +99,61 @@ let optionsDefault : Options = use Formats in use Themes in use FormatLanguages 
     noStdlib = false,
     urlPrefix = "",
     letDepth = None {},
-    keepTestsDoc = false
+    keepTestsDoc = false,
+    keepDeadCode = false,
+    mdDoc = false
 }
 
 let usage = lam.
-    error (join [
-        "Usage:\n",
-        "  my-doc-gen [options] <file>\n\n",
-        "Required:\n",
-        "  <file>                                 Path to the Miking source file to process.\n\n",
-        "Options:\n",
-        "  --no-open                              Do not open the result in a browser.\n",
-        "  --debug                                Enable all debug modes.\n",
-        "  --parsing-debug                        Enable debug logs for parsing stage.\n",
-        "  --extracting-debug                     Enable debug logs for extracting stage.\n",
-        "  --labeling-debug                       Enable debug logs for labeling stage.\n",
-        "  --rendering-debug                      Enable debug logs for rendering stage.\n",
-        "  --no-warn                              Disable all warnings.\n",
-        "  --no-parsing-warn                      Disable parsing warnings.\n",
-        "  --no-extracting-warn                   Disable extracting warnings.\n",
-        "  --no-labeling-warn                     Disable labeling warnings.\n",
-        "  --no-rendering-warn                    Disable rendering warnings.\n",
-        "  --format <html|md>                     Output format. Default: html.\n",
-        "  --output-folder <name>                 Output folder name. Default: doc-gen-output.\n",
-        "  --no-gen                               Do not parse anything, use the output folder as is.\n",
-        "  --skip-labeling                        Skip type computation during parsing.\n",
-        "  --theme <dark|light|warm-dark|warm>    Output theme. Default: dark.\n",
-        "  --url-prefix <prefix>                  The link of each files will be prefixed by this argument.\n"
-    ])
+  error (join [
+    "Usage:\n",
+    "  my-doc-gen [options] <file>\n\n",
+
+    "Required:\n",
+    "  <file>                                 Path to the Miking source file to document.\n\n",
+
+    "General Options:\n",
+    "  --no-open                              Do not open the result in a web browser.\n",
+    "  --output-folder <name>                 Set the output folder (default: doc-gen-output).\n",
+    "  --format <html|md|mdx>                 Choose output format (default: html).\n",
+    "  --theme <dark|light|warm-dark|warm>    Choose output theme (default: dark).\n",
+    "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
+    "  --no-gen                               Skip parsing and use existing output folder as-is.\n",
+    "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
+    "  --no-stdlib                            Do not include the standard library in output.\n",
+    "  --md-doc                               Generate Markdown documentation from inline comments.\n",
+    "  --keep-tests-doc                       Keep inline documentation of tests.\n",
+    "  --keep-dead-code                       Do not remove unused code from output.\n\n",
+
+    "Language Formatting:\n",
+    "  --javascript                           Use Javascript for the React components\n",
+    "  --typescript                           Use Typescript for the React components.\n\n",
+
+    "Debugging Options:\n",
+    "  --debug                                Enable all debug modes.\n",
+    "  --parsing-debug                        Enable debug logs for the parsing stage.\n",
+    "  --extracting-debug                     Enable debug logs for the extraction stage.\n",
+    "  --labeling-debug                       Enable debug logs for the labeling stage.\n",
+    "  --rendering-debug                      Enable debug logs for the rendering stage.\n\n",
+
+    "Warning Control:\n",
+    "  --no-warn                              Disable all warnings.\n",
+    "  --no-parsing-warn                      Disable parsing warnings.\n",
+    "  --no-extracting-warn                   Disable extraction warnings.\n",
+    "  --no-labeling-warn                     Disable labeling warnings.\n",
+    "  --no-rendering-warn                    Disable rendering warnings.\n\n",
+
+    "Help:\n",
+    "  --help | --h                           Show this help message.\n"
+  ])
 
 let parseOptions : [String] -> Options = lam argv.
     recursive let parse : [String] -> Options -> Options = use Formats in use Themes in use FormatLanguages in  lam args. lam opts.
         switch args
+        case ["--help" | "--h"] then usage ()
+
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
         case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
-        case ["--skip-labeling"] ++ rest then parse rest { opts with skipLabeling = true }
 
         case ["--debug"] ++ rest then parse rest { opts with debug = true }
         case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
@@ -128,6 +162,9 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
 
         case ["--keep-tests-doc"] ++ rest then parse rest { opts with keepTestsDoc = true }
+        case ["--keep-dead-code"] ++ rest then parse rest { opts with keepDeadCode = true }
+
+        case ["--md-doc"] ++ rest then parse rest { opts with mdDoc = true }
 
         case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
         case ["--no-stdlib"] ++ rest then parse rest { opts with noStdlib = true }    
