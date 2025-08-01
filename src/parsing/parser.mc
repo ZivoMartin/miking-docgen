@@ -33,19 +33,21 @@ include "./lexer.mc"
 include "./doc-tree.mc"
 include "../global/util.mc"
 include "../options/options.mc"
+include "../execution-context.mc"
 
 include "seq.mc"
 include "hashmap.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 include "sys.mc"
-    
+include "../execution-context.mc"
+
 -- # The parse function
 -- - Takes in input a miking program
 -- - And the name of the output root
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
-let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChooser in lam code. lam basePath.
+let parse : (ExecutionContext -> String -> String -> ExecutionContext) = use TokenReader in use BreakerChooser in lam execCtx. lam code. lam basePath.
     
     let logBegin = lam loc. parsingLog (concat "Beggining of parsing stage on " loc) in
     logBegin basePath;
@@ -187,13 +189,13 @@ let parse : (String -> String -> DocTree) = use TokenReader in use BreakerChoose
     
     let snippet = parseRec includeSet basePath stream { x = 1, y = 1 } baseBreaker [] in
     parsingLog (join ["Parsing is over, computed prefix: ", includeSetPrefix snippet.includeSet, "."]);
-    snippet2tree snippet basePath
+    execContextWithTree execCtx (snippet2tree snippet basePath)
 
 
 -- Parse a Miking file, takes in argument a file, read it, and call parse with its content.
-let parseFile : String -> DocTree = lam fileName.
+let parseFile : ExecutionContext -> String -> ExecutionContext = lam execCtx. lam fileName.
     let s = readOrNever fileName in
-    parse s fileName
+    parse execCtx s fileName
 
 
 mexpr use BreakerChooser in

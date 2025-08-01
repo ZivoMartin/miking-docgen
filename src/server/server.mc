@@ -1,13 +1,17 @@
 include "./server-options.mc"
 include "./python-server.mc"
 include "./server-options.mc"
+include "../execution-context.mc"
+include "../rendering/renderers/objects-renderer.mc"
 
-let startServer : ServerOptions -> () = use Formats in lam opt.
-    if sysFileExists opt.firstFile then    
-     if opt.noOpen then () else
-        switch opt.fmt
-        case Md {} then pythonServerStart true opt
-        case Html {} then pythonServerStart false opt
-        case Mdx {} then printLn (join ["Mdx generated in ", opt.folder, "."])
-        end
-    else error (join ["Failed to start server, file ", opt.firstFile, " doesn't exist."])
+let startServer : ServerOptions -> ExecutionContext -> () = use Formats in use ObjectsRenderer in lam opt. lam execCtx.
+    
+    match execCtx.object with Some obj then
+        let link = objLink (objTreeObj obj) (getRenderingOption ()) in
+        if opt.noOpen then () else
+           switch opt.fmt
+           case Md {} then pythonServerStart true opt link
+           case Html {} then pythonServerStart false opt link 
+           case Mdx {} then printLn (join ["Mdx generated in ", opt.folder, "."])
+           end
+    else ()

@@ -36,6 +36,7 @@ include "../global/theme.mc"
 include "../global/format-language.mc"    
         
 include "string.mc"
+include "sys.mc"
 
 type Options = use Formats in use Themes in use FormatLanguages in {
     noOpen: Bool,
@@ -159,7 +160,11 @@ let parseOptions : [String] -> Options = lam argv.
             else usage ()
 
         case [s] ++ rest then
-            if eqString opts.file "" then parse rest { opts with file = s }
+            if eqString opts.file "" then
+               if sysFileExists s then
+                  parse rest { opts with file = s }
+               else
+                  error (join ["While parsing options: file", s, " does not exist."])
             else usage ()
 
         case [] then opts

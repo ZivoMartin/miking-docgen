@@ -23,8 +23,10 @@ include "./types-stream.mc"
 include "../extracting/objects.mc"
 include "../global/util.mc"
 
-let label : ObjectTree -> ObjectTree =
-    use ObjectKinds in use TypeStream in use RemoveMetaVar in lam tree.
+let label : ExecutionContext -> ExecutionContext =
+    use ObjectKinds in use TypeStream in use RemoveMetaVar in lam execCtx.
+
+    let tree = match execCtx.object with Some obj then obj else error "Object is none while labeling" in
 
     type SkippedContext = { ctx: TypeStreamContext, t: Type } in
     type LangContext = { langName: String, semMap: HashMap String SkippedContext } in
@@ -119,7 +121,8 @@ let label : ObjectTree -> ObjectTree =
         labelingLog (concat "Labeling on " filePath);
         let ctx = buildTypeStream filePath in
         labelingLog "Labeling types..";
-        (labelRec ctx filePath (None {}) tree).tree 
+        let tree = (labelRec ctx filePath (None {}) tree).tree in
+        { execCtx with object = Some tree }
     else
         labelingWarn "Labeling failed, top object should always be a Node.";
-        tree
+        execCtx

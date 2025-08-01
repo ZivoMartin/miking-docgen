@@ -15,13 +15,16 @@ include "./extracting/extracter.mc"
 include "./labeling/labeler.mc"
 include "./rendering/renderer.mc"
 include "./server/server.mc"
+include "./execution-context.mc"
 
 mexpr
-    (if opt.noGen then () else
+    let execCtx = execContextNew () in
+    let execCtx = if opt.noGen then execCtx else
         logOpt opt;
-        let tree = parseFile opt.file in
-        let obj = extract tree in
-        let obj = if opt.skipLabeling then obj else label obj in
-        render (getRenderingOption ()) obj);
-    startServer (getServeOption ())
+        let execCtx = parseFile execCtx opt.file in
+        let execCtx = extract execCtx in
+        let execCtx = if opt.skipLabeling then execCtx else label execCtx in
+        render (getRenderingOption ()) execCtx;
+        execCtx in
+    startServer (getServeOption ()) execCtx
     

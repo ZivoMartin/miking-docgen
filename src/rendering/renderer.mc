@@ -36,7 +36,7 @@
 --      Trimmed part should **not** be displayed in the current block’s source,
 --      but instead passed to the parent, who may need them for its own reconstruction.
     
-include "preprocessor.mc"
+include "./preprocessor.mc"
 include "./renderers/main-renderer.mc"
 include "./source-code-reconstruction.mc"
 include "./rendering-options.mc"
@@ -46,7 +46,9 @@ include "../extracting/objects.mc"
 
 include "../global/util.mc"
 include "../global/logger.mc"
-include "../global/format.mc"    
+include "../global/format.mc"
+
+include "../execution-context.mc"
 
 -- ## render
 --
@@ -65,8 +67,10 @@ include "../global/format.mc"
 --     - Organizes them by type
 --     - Writes formatted output to file
 --     - Returns `RenderingData` for each node
-let render : RenderingOptions -> ObjectTree -> () = use Renderer in
-    lam opt. lam obj.
+let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
+    lam opt. lam execCtx.
+    let obj = match execCtx.object with Some obj then obj else error "Object is None while rendering" in
+    
     preprocess obj opt;
     renderSetup opt;
     renderingLog "Beggining of rendering stage.";
