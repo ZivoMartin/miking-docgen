@@ -9,12 +9,7 @@
 -- - `typeStreamPop`: Pops the top expression from the context stack, useful for recursively analyzing inner expressions.
 --
 -- This interface supports scenarios where expressions are not encountered in their declaration order, and enables deferred or conditional type lookups, crucial for features like `Lang` and `Sem` handling in Miking's semantics.
-
-include "mexpr/keywords.mc"
 include "map.mc"
-include "pmexpr/demote.mc"
-include "ocaml/external.mc"
-include "mexpr/type-check.mc"
 
 include "../global/logger.mc"
 include "../global/util.mc"
@@ -116,7 +111,6 @@ lang MatchTypeStream = TypeStreamInterface
 
   sem typeStreamNext name =
   | { stack = [TmMatch { target = target, thn = thn, els = els }] ++ stack } ->
-
     typeStreamNext name { stack = concat [target, thn, els] stack }
     
 end
@@ -126,9 +120,12 @@ end
 lang UtestTypeStream = TypeStreamInterface
     
   sem typeStreamNext name =
-  | { stack = [TmUtest { next = next }] ++ stack }  ->
-
-    typeStreamNext name { stack = cons next stack }
+  | { stack = [TmUtest { test = test, expected = expected, tusing = tusing, tonfail = tonfail, next = next }] ++ stack }  ->
+    let arr = [next] in
+    let arr = match tusing with Some tusing then [tusing] else arr in
+    let arr = match tusing with Some tonfail then [tonfail] else arr in
+    let arr = concat [test, expected] arr in
+    typeStreamNext name { stack = concat arr stack }
 
 end    
     
@@ -147,29 +144,19 @@ lang SimpleSkip = TypeStreamInterface
 
 end
 
-lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + PMExprDemote + BootParser + SimpleSkip
+lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + SimpleSkip
     sem typeStreamFromExpr : Expr -> TypeStreamContext 
     sem typeStreamFromExpr =
         | ast -> { stack = [ast] }
 
     -- Builds a TypeStream, creates an AST via the compiler's parser. Then types this AST via compiler's typer.
     -- Note that meta vars are not removed here    
-    sem buildTypeStream : String -> TypeStreamContext
-    sem buildTypeStream = | file ->
-        let externalsExclude = mapKeys (externalGetSupportedExternalImpls ()) in
-        labelingLog "Genarating ast...";
-        let ast = parseMCoreFile {{{{{{ defaultBootParserParseMCoreFileArg
-          with keepUtests = false }
-          with pruneExternalUtests = true }
-          with externalsExclude = externalsExclude }
-          with pruneExternalUtestsWarning = false }
-          with eliminateDeadCode = false }
-          with keywords = mexprExtendedKeywords } file in
-        
-        labelingLog "Symbolizing ast...";
-        let ast = symbolize ast in
-        labelingLog "Typing ast...";
-        let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
-        { stack = [ast] }
+    sem buildTypeStream : ExecutionContext -> TypeStreamContext
+    sem buildTypeStream = | execCtx ->
+        match execCtx.ast with Some ast then
+            { stack = [ast.expr] }
+        else
+            labelingWarn "Ast is None while computing TypeStream";
+            { stack = [] }
 end 
     

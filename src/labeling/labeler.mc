@@ -59,11 +59,11 @@ let label : ExecutionContext -> ExecutionContext =
         in
     
         match tree with ObjectNode { obj = { kind = kind, name = name, namespace = namespace } & obj, sons = sons } then
-            let warn = lam. labelingWarn (join ["Found a typeless token : ", fileName]) in
+            let warn = lam name. labelingWarn (join ["Found a typeless token in ", fileName, " with name ", name, "."]) in
             switch kind
             case ObjLet {} then
                 match typeStreamNext name ctx with { t = t, ctx = ctx } in
-                (match t with None {} then warn () else ());
+                (match t with None {} then warn name else ());
                 match foldSons sons (None {}) ctx with { ctx = ctx, sons = sons} in
                buildRes obj ctx langContext sons t
             case ObjSem {} then
@@ -90,12 +90,11 @@ let label : ExecutionContext -> ExecutionContext =
                             let semMap = hmInsert name { t = t, ctx = tmpCtx } semMap in
                             buildRes obj ctx (updateLangContext semMap skipped) sons (Some t)    
                         case { t = None {}, ctx = ctx, skipped = skipped } then
-                            warn ();
+                            warn name;
                             buildRes obj ctx (updateLangContext semMap skipped) sons (None {})
                         end                    
                 else
                     labelingWarn "Lang context in None, should never happend while labeling a Sem"; default
-            case ObjUtest {} | ObjMexpr {} then default
             case ObjLang {} then
                 let langContext = Some { langName = name, semMap = hashmapEmpty () } in
                 match foldSons sons langContext ctx  with { ctx = ctx, sons = sons } in
@@ -119,7 +118,7 @@ let label : ExecutionContext -> ExecutionContext =
     match tree with ObjectNode { obj = obj } then
         let filePath = objAbsolutePath obj in
         labelingLog (concat "Labeling on " filePath);
-        let ctx = buildTypeStream filePath in
+        let ctx = buildTypeStream execCtx in
         labelingLog "Labeling types..";
         let tree = (labelRec ctx filePath (None {}) tree).tree in
         { execCtx with object = Some tree }

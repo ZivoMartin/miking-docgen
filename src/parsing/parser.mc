@@ -31,6 +31,8 @@
 
 include "./lexer.mc"
 include "./doc-tree.mc"
+include "./ast.mc"
+
 include "../global/util.mc"
 include "../options/options.mc"
 include "../execution-context.mc"
@@ -40,7 +42,7 @@ include "hashmap.mc"
 include "fileutils.mc"
 include "hashmap.mc"
 include "sys.mc"
-include "../execution-context.mc"
+
 
 -- # The parse function
 -- - Takes in input a miking program
@@ -194,6 +196,8 @@ let parse : (ExecutionContext -> String -> String -> ExecutionContext) = use Tok
 
 -- Parse a Miking file, takes in argument a file, read it, and call parse with its content.
 let parseFile : ExecutionContext -> String -> ExecutionContext = lam execCtx. lam fileName.
+    let ast = buildAstFromFile fileName in
+    let execCtx = { execCtx with ast = Some ast } in
     let s = readOrNever fileName in
     parse execCtx s fileName
 
