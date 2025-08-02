@@ -72,6 +72,9 @@ lang MdxRenderer = RendererInterface
         else
             mdxRenderCode sign
 
+    sem renderHidenCode code withPreview =
+    | { fmt = Mdx {} } & opt -> join ["\n<ToggleWrapper>", code, "</ToggleWrapper>\n"]    
+
     sem renderCodeWithoutPreview (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
         let split = strSplit "\n" data.row in
@@ -81,6 +84,7 @@ lang MdxRenderer = RendererInterface
         ) (reverse split) with { right = right } in
         let row = strJoin "\n" (reverse right) in
         let row = renderRemoveCodeForbidenChars row opt in
-        join ["\n<ToggleWrapper>", mdxRenderCode row, "</ToggleWrapper>\n"]    
+        renderHidenCode (mdxRenderCode row) false opt
+        
 
 end
