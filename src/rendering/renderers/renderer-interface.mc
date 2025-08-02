@@ -20,7 +20,9 @@ lang RendererInterface = Formats + Themes + ObjectsRenderer + Formatter + MExprP
     
     sem renderDocSignature : Object -> RenderingOptions -> String
 
-    sem renderDocDescription : Object -> RenderingOptions -> String    
+    sem renderDocDescription : Object -> RenderingOptions -> String
+
+    sem renderDocTests : RenderingData -> RenderingOptions -> String
 
     sem renderLinkList : [Object] -> RenderingOptions -> String
 

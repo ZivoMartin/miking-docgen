@@ -12,8 +12,9 @@ lang RowRenderer = RendererInterface
         let signature = renderDocSignature obj opt in
         let description = renderDocDescription obj opt in
         let code = renderCodeWithoutPreview data opt in
+        let tests = renderDocTests data opt in
 
-        join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc]
+        join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc, tests]
 
     sem fixOptFormat : RenderingOptions -> RenderingOptions
     sem fixOptFormat = | opt -> { opt with fmt = unwrapRow opt.fmt }
@@ -80,6 +81,13 @@ lang RowRenderer = RendererInterface
         end in
         renderSourceCodeStr code opt
 
+
+    sem renderDocTests (data: RenderingData) =
+    | opt -> let opt = fixOptFormat opt in
+        let nl = renderNewLine opt in
+        if eqString data.tests "" then ""
+        else join [nl, "Tests:", nl, renderHidenCode data.tests false opt]
+    
     sem renderGotoLink (link: String) =
     | opt -> let opt = fixOptFormat opt in
         renderLink "[→]" link opt
@@ -170,6 +178,7 @@ lang RowRenderer = RendererInterface
                 case TrimmedFormated s then s
                 case TrimmedNotFormated b then renderSourceCode b
                 end,
+            tests = "",
             row = row
         }
 

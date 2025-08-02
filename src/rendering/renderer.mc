@@ -121,6 +121,44 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                 -- Recursive calls
                 let sons: [RenderingData] = map (render opener) sons in
 
+                let injectTests = lam sons.
+                    type Arg = { current: Option RenderingData, acc: [RenderingData], tests: [RenderingData] } in
+
+                    let pushSonInAcc: [RenderingData] -> RenderingData -> [RenderingData] -> [RenderingData] = lam acc. lam current. lam tests.
+                        let testsStr =
+                            match tests with [last] ++ tests then
+                                let tests = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
+                                join [tests, last.left, last.right]
+                            else ""
+                        in
+                        let current: RenderingData = { current with tests = testsStr } in
+                        join [tests, [current], acc]
+                    in
+                    
+                    let foldRes: Arg = foldl (lam arg. lam son.
+                        match arg with { current = current, acc = acc, tests = tests } in
+                        let isUtest = match objKind son.obj with ObjUtest {} then true else false in
+                        switch current
+                        case Some current then
+                             if isUtest then { arg with tests = cons son tests }
+                             else { arg with current = Some son, tests = [], acc = pushSonInAcc acc current tests }
+                        case None {} then
+                             if isUtest then { arg with acc = cons son acc }
+                             else { arg with current =  Some son }
+                        end
+                    ) { current = None {}, acc = [], tests = [] } sons
+                    in
+                    
+                    let sons = switch foldRes.current
+                        case Some current then pushSonInAcc foldRes.acc current foldRes.tests
+                        case None {} then foldRes.acc
+                        end
+                    in
+                    reverse sons
+                in
+
+                let sons = injectTests sons in
+                 
                 let trees = reconstructSourceCode (objSourceCode obj) sons in
                 let data = renderTreeSourceCode trees obj opt in
     
