@@ -3,7 +3,7 @@
 -- This module defines the data structure used by the colorizer to represent a **highlighted token** from the source code.
 -- It associates a `Token` with a `SourceCodeWordKind`, which indicates how the token should be rendered (e.g., as a keyword, type, name, etc.).
 
-include "../parsing/token-readers.mc"
+include "../parsing/lexing/token-readers.mc"
 
 -- ## SourceCodeWordKinds
 --

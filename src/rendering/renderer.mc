@@ -103,13 +103,22 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                 let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
                     foldl (lam sons. lam son.
                         switch son
-                        case ObjectNode { obj = { kind = ObjRecursiveBlock {} }, sons = blockSons } then
+                        case ObjectNode { obj = { kind = ObjRecursiveBlock {}, doc = doc }, sons = blockSons } then
                             let blockSons = foldl (lam acc. lam son.
                                 switch son
-                                case ObjectNode { obj = { kind = ObjLet {} } } then cons son acc
-                                case ObjectNode {} then renderingWarn "We should only have let node at this stage."; cons son acc
-                                case _ then acc
+                                case ObjectNode { obj = { kind = ObjLet {}, name = name } } then cons son acc
+                                case ObjectNode { obj = { kind = kind, name = name } } then
+                                     
+                                     renderingWarn (join ["We should only have let node at this stage. Found ", objKindToString kind, " ", name]);
+                                     cons son acc
                                 end) [] blockSons in
+                            let blockSons = reverse blockSons in
+                            let blockSons =
+                                match blockSons with [h] ++ t then
+                                    let newDoc = concat (objTreeDoc son) (objTreeDoc h) in
+                                    cons (objTreeWithDoc h newDoc) t
+                                else blockSons
+                            in
                             concat blockSons sons
                         case ObjectNode {} then cons son sons
                         case _ then sons

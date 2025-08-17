@@ -9,7 +9,8 @@
 -- - rendering: Renders the `ObjectTree` into Markdown pages (HTML support planned).
 
 include "./options/options.mc"
-include "./options/cast-options.mc"    
+include "./options/cast-options.mc"
+include "./mast-gen/mast-generator.mc"
 include "./parsing/parser.mc"
 include "./extracting/extracter.mc"
 include "./labeling/labeler.mc"
@@ -18,10 +19,11 @@ include "./server/server.mc"
 include "./execution-context.mc"
 
 mexpr
-    let execCtx = execContextNew () in
+    logOpt opt;
+    let execCtx = execContextNew opt in
     let execCtx = if opt.noGen then execCtx else
-        logOpt opt;
-        let execCtx = parseFile execCtx opt.file in
+        let execCtx = gen execCtx in
+        let execCtx = parse execCtx in
         let execCtx = extract execCtx in
         let execCtx = label execCtx in
         render (getRenderingOption ()) execCtx;

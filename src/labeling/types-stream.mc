@@ -46,7 +46,7 @@ lang TypeStreamInterface = MExprAst
     sem checkAndEnd name ident t body =
     | ctx -> if eqString name ident.0 then
             { t = Some t, ctx = ctx, skipped = [] }
-        else
+        else  
             let res = typeStreamNext name ctx in
             { res with skipped = cons { name = ident.0, body = body, t = t } res.skipped }
 end
@@ -122,8 +122,8 @@ lang UtestTypeStream = TypeStreamInterface
   sem typeStreamNext name =
   | { stack = [TmUtest { test = test, expected = expected, tusing = tusing, tonfail = tonfail, next = next }] ++ stack }  ->
     let arr = [next] in
-    let arr = match tusing with Some tusing then [tusing] else arr in
-    let arr = match tusing with Some tonfail then [tonfail] else arr in
+    let arr = match tusing with Some tusing then cons tusing arr else arr in
+    let arr = match tusing with Some tonfail then cons tonfail arr else arr in
     let arr = concat [test, expected] arr in
     typeStreamNext name { stack = concat arr stack }
 
@@ -144,7 +144,7 @@ lang SimpleSkip = TypeStreamInterface
 
 end
 
-lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + SimpleSkip
+lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + SimpleSkip + MExprPrettyPrint
     sem typeStreamFromExpr : Expr -> TypeStreamContext 
     sem typeStreamFromExpr =
         | ast -> { stack = [ast] }

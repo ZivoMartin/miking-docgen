@@ -152,7 +152,8 @@ let extract : ExecutionContext -> ExecutionContext =
             case TopUtest {} | Utest {} then
                 let name = int2string utestCount in
                 process state sons name (getNamespace namespace name "utest") doc (ObjUtest {}) (addi utestCount 1)
-    
+            case Rec {} then
+                process state sons "" namespace doc (ObjRecursiveBlock {}) utestCount
             case state then
                 -- Look for '=' in children
                 recursive let goToEqual = lam sons.
@@ -164,7 +165,7 @@ let extract : ExecutionContext -> ExecutionContext =
                 
                 let name = getName sons in
                 let kind = switch state
-                    case (Let {} | TopLet {} | Rec {} | TopRec {}) then
+                    case (Let {} | TopLet {} | RecLet {}) then
                         let rec = match state with Let {} | TopLet {} then false else true in
                         let sons = goToEqual sons in
                         let sons = skipUseIn sons in
@@ -207,7 +208,7 @@ let extract : ExecutionContext -> ExecutionContext =
                 -- Clear comment buffer if more than  one \n found
                 if shouldClear content then defaultRes
                 else { defaultRes with commentBuffer = commentBuffer }
-            case Str {} | Word {} then defaultRes
+            case Str {} | Word {} | RecursiveEnderToken {} then defaultRes
             end
         case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file

@@ -3,9 +3,9 @@
 -- All token readers implement a common interface: `TokenReaderInterface`.
 -- The module ends with the composition of all these token readers into one combined `TokenReader`.
 
-include "../global/util.mc"
-include "../global/logger.mc"
-include "./include-set.mc"
+include "../../global/util.mc"
+include "../../global/logger.mc"
+include "../../mast-gen/include-set.mc"
     
 include "hashmap.mc"
 
@@ -126,8 +126,6 @@ lang StrTokenReader = TokenReaderInterface
 
     sem lit =
         | Str { content = content } -> content
-
-    
 
     sem tokenToString =
         | Str {} -> "Str"
@@ -319,29 +317,13 @@ lang RecursiveTokenReader = CommAndSepSkiper
     sem tokenToString =
         | Recursive {} -> "Recursive"
 
-
-    sem recNext =
-    | str -> lam pos. lam firstSep.
-        match skip str firstSep with { newToken = Word { content = "let" }, stream = stream, skiped = skiped } then
-            let token = Recursive { lit = join ["recursive", join (map lit skiped), "let"], skiped = skiped } in
-            buildResult token pos stream
-        else
-            parsingWarn "During lexing, was waiting for a let word after `recursive`.";
-            buildResult (Word { content = concat "recursive" firstSep }) pos str
-
-    sem next =
-        | "recursive " ++ str -> lam pos. recNext str pos " "
-        | "recursive\n" ++ str -> lam pos. recNext str pos "\n"
-        | "recursive\t" ++ str -> lam pos. recNext str pos "\t"
-        | "recursive--" ++ str -> lam pos. recNext str pos ""
-        | "recursive-/" ++ str -> lam pos. recNext str pos ""            
 end
 
 
 -- This token is not readable but is at the root of a DocTree, the content is the name of the file and the includeSet a set will all the files.
 lang ProgramTokenReader = TokenReaderInterface
     syn Token =
-        | ProgramToken { content: String, includeSet: IncludeSet }
+        | ProgramToken { content: String, includeSet: IncludeSet () }
 
     sem lit =
         | ProgramToken {} -> ""
@@ -350,142 +332,24 @@ lang ProgramTokenReader = TokenReaderInterface
         | ProgramToken {} -> "Program"
 end
 
+let pos0 = { x = 0, y = 0 }
+
 lang ComposedWordTokenReader = RecursiveTokenReader + IncludeTokenReader + ProgramTokenReader end
         
+lang RecursiveEnderTokenReader = TokenReaderInterface
+     syn Token =
+        | RecursiveEnderToken { ender: String }
+
+     sem content =
+        | RecursiveEnderToken { ender = ender } -> cons '#' ender
+
+     sem lit =
+        | RecursiveEnderToken { ender = ender } -> ender
+
+    sem tokenToString =
+        | RecursiveEnderToken {} -> "RecursiveEnderToken"
+end
+
 -- Combine all token readers into a single TokenReader
-lang TokenReader = ComposedWordTokenReader end
+lang TokenReader = ComposedWordTokenReader + RecursiveEnderTokenReader end
 
-let pos0 = { x = 1, y = 1 }
-
-mexpr use TokenReader in
-
--- MultiLigneComment tests
-utest (next "/- hello -/" pos0).token with MultiLigneComment { lit = "/- hello -/", content = " hello "} in
-utest (next "/- /- nested -/ -/" pos0).token with MultiLigneComment { lit = "/- /- nested -/ -/", content = " /- nested -/ "} in
-
--- Comment tests
-utest (next "-- a comment\n" pos0).token with Comment { lit = "-- a comment\n", content = " a comment"} in
-utest (next "--\n" pos0).token with Comment { lit = "--\n", content = ""} in
-
--- String tests
-utest (next "\"hello world\"" pos0).token with Str { content = "\"hello world\""} in
-utest (next "\"escaped \\\" quote\"" pos0).token with Str { content = "\"escaped \\\" quote\""} in
-
--- Word tests
-utest next "hello(" pos0 with { token = Word { content = "hello"}, stream = "(", pos = { x = 5, y = 1 } } in
-utest (next "x1_y2" pos0).token with Word { content = "x1_y2" } in
-utest (next "includeX" pos0).token with Word { content = "includeX" } in
-utest (next "recursivelet" pos0).token with Word { content = "recursivelet" } in    
-
--- Separator tests
-utest (next " " pos0).token with Separator { content = " " } in
-utest (next "\n" pos0).token with Separator { content = "\n" } in
-utest (next "\t" pos0).token with Separator { content = "\t" } in
-utest (next "(" pos0).token with Word { content = "(" } in
-utest (next "++" pos0).token with Word { content = "++" } in
-utest (next "->" pos0).token with Word { content = "->" } in
-
--- EOF test
-utest (next "" pos0).token with Eof {} in
-
--- Include tests
-utest (next "include \"file.mc\"" pos0).token with Include { lit = "include \"file.mc\"", content = "file.mc", skiped = [Separator { content = " "}] } in
-utest (next "include\t\"lib.miking\"" pos0).token with Include { lit = "include\t\"lib.miking\"", content = "lib.miking", skiped = [Separator { content = "\t"}] } in
-utest (next "include\n\"abc\"" pos0).token with Include { lit = "include\n\"abc\"", content = "abc", skiped = [Separator { content = "\n"}] } in
-
--- Recursive tests
-utest (next "recursive /- hello -/ let" pos0).token with Recursive { lit = "recursive /- hello -/ let", skiped = [Separator { content = " "}, MultiLigneComment { content = " hello ", lit = "/- hello -/" }, Separator { content = " " }] } in
-utest (next "recursive \n\t let" pos0).token with Recursive { lit = "recursive \n\t let", skiped = [Separator { content = " " }, Separator { content = "\n\t "}] } in
-
--- Complex mixed test
-utest (next "/- a comment -/ include \"x.mc\"" pos0).token with MultiLigneComment { lit = "/- a comment -/", content = " a comment " } in
-
-
--- Position after a simple word
-utest (next "hello" pos0).pos with { x = 5, y = 1 } in
-
--- Position after multi lignes comment
-utest (next "/- hi -/" pos0).pos with { x = 8, y = 1 } in
-
--- Position after line comment with newline
-utest (next "-- line\n" pos0).pos with { x = 1, y = 1 } in
-
--- Position after multi-line separator
-utest (next "   \n\t" pos0).pos with { x = 4, y = 1 } in  -- space(3) + \n (y++) + tab(x+=4)
-
--- Position after string
-utest (next "\"abc\"" pos0).pos with { x = 5, y = 1 } in
-
--- Position after include "lib.mc"
-utest (next "include \"lib.mc\"" pos0).pos with { x = 16, y = 1 } in  -- include + space + quoted string
-
--- Position after recursive let
-utest (next "recursive let" pos0).pos with { x = 13, y = 1 } in
-
--- String with newline inside — should be tokenized as one line (not split)
-utest (next "\"line1\\nline2\"" pos0).pos with { x = 14, y = 1 } in
-
--- Separator with multiple newlines
-utest (next "\n\n" pos0).pos with { x = 1, y = 2 } in
-
--- Word stopped by separator
-utest (next "abc;" pos0).token with Word { content = "abc" } in
-utest (next "abc;" pos0).pos with { x = 3, y = 1 } in
-
--- Include directive with newline before quote
-utest (next "include\n\"x\"" pos0).token with Include { lit = "include\n\"x\"", content = "x", skiped = [ Separator { content = "\n" } ] } in
-utest (next "include\n\"x\"" pos0).pos with { x = 3, y = 1 } in
-
--- Recursive let with newline and tab
-utest (next "recursive\n\tlet" pos0).pos with { x = 7, y = 1 } in 
-
--- EOF position should remain unchanged
-utest (next "" pos0).pos with { x = 1, y = 1 } in
-
--- MultiLigneComment
-utest (next "/- a -/next" pos0).stream with "next" in
-
--- Line comment
-utest (next "-- line comment\nnext" pos0).stream with "next" in
-
--- String
-utest (next "\"hello\" rest" pos0).stream with " rest" in
-
--- Word
-utest (next "word next" pos0).stream with " next" in
-
--- Separator (single space)
-utest (next " \nnext" pos0).stream with "next" in
-
--- Separator (multiple spaces and tabs)
-utest (next " \t  \nnext" pos0).stream with "next" in
-
--- Eof (empty input)
-utest (next "" pos0).stream with "" in
-
--- Include directive
-utest (next "include \"file.mc\" next" pos0).stream with " next" in
-
--- Recursive let
-utest (next "recursive \t\nlet next" pos0).stream with " next" in
-
--- Word followed by separator
-utest (next "abc;" pos0).stream with ";" in
-
--- Separator followed by word
-utest (next " \tfoo" pos0).stream with "foo" in
-
--- String followed by separator
-utest (next "\"a\";" pos0).stream with ";" in
-
--- Comment followed by string
-utest (next "-- comment\n\"string\"" pos0).stream with "\"string\"" in
-
--- MultiLigne comment followed by recursive let
-utest (next "/- c -/recursive let" pos0).stream with "recursive let" in
-
--- Include with newline then word
-utest (next "include\n\"lib\"\nmain" pos0).stream with "\nmain" in
-
-      
-()

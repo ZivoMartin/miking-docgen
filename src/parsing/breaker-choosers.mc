@@ -27,7 +27,7 @@
 --
 -- The whole system is composed at the bottom into one `BreakerChooser`.
 
-include "token-readers.mc"
+include "./lexing/token-readers.mc"
 
 
 -- Interface for a BreakerChoser, they will all implement it. 
@@ -38,8 +38,8 @@ lang BreakerChooserInterface = TokenReader
     syn State = 
         | Program {}
         | TopLet {}
+        | RecLet {}        
         | Let {}
-        | TopRec {}
         | Rec {}
         | Lang {}
         | TopType {}
@@ -58,9 +58,9 @@ lang BreakerChooserInterface = TokenReader
     sem toString =
         | Program {} -> "Program"
         | TopLet {} -> "TopLet"
+        | RecLet {} -> "TopLet"        
         | Let {} -> "Let"
         | Lang {} -> "Lang"
-        | TopRec {} -> "TopRec"    
         | Rec {} -> "Rec"
         | TopType {} -> "TopType"
         | Type {} -> "Type"
@@ -112,9 +112,9 @@ end
 let topBreak = ["let", "recursive", "con", "lang", "sem", "syn", "type", "mexpr", "utest"]
 let fullTopBreak = cons "in" topBreak
 
-let letBreak = ["lang", "mexpr", "sem", "syn"]
+let letBreak = ["lang", "mexpr", "sem", "syn", "#end", "#in"]
 let fullLetBreak = cons "in" letBreak
-let fullRecBreak = ["in", "end", "lang", "mexpr", "sem", "syn"]    
+let recBreak = ["#in", "#end"]    
     
 lang ProgramBreakerChooser = BreakerChooserInterface
     
@@ -125,7 +125,7 @@ lang ProgramBreakerChooser = BreakerChooserInterface
         | (Program {}, "mexpr", pos) -> build ["lang", "mexpr"] (Mexpr {})
         | (Program {}, "type", pos) -> build topBreak (TopType {})
         | (Program {}, "con", pos) -> build topBreak (TopCon {})
-        | (Program {}, "recursive", pos) -> build ["end"] (TopRec {})
+        | (Program {}, "recursive", pos) -> build recBreak (Rec {})
 
     sem continue =
         | (Program {}, "") -> false
@@ -140,59 +140,26 @@ end
 lang TopBreakerChooser = BreakerChooserInterface
     
     sem choose =
-        | (Mexpr {} | TopLet {} | TopUtest {}, "let", pos) -> build fullLetBreak (Let {})
-        | (Mexpr {} | TopLet {} | TopUtest {}, "utest", pos) -> build fullLetBreak (Utest {})    
-        | (Mexpr {} | TopLet {} | TopUtest {}, "recursive", pos) -> build fullRecBreak (TopRec {})
-        | (Mexpr {} | TopLet {} | TopUtest {}, "type", pos) -> build fullTopBreak (Type {})
-        | (Mexpr {} | TopLet {} | TopUtest {}, "con", pos) -> build fullTopBreak (Con {})
-        | (Mexpr {} | TopLet {} | TopUtest {}, "use", pos) -> build ["in"] (Use {})
+        | (Mexpr {} | TopLet {} | RecLet {} | TopUtest {}, "let", pos) -> build fullLetBreak (Let {})
+        | (Mexpr {} | TopLet {} | RecLet {} | TopUtest {}, "utest", pos) -> build fullLetBreak (Utest {})    
+        | (Mexpr {} | TopLet {} | RecLet {} | TopUtest {}, "recursive", pos) -> build recBreak (Rec {})
+        | (Mexpr {} | TopLet {} | RecLet {} | TopUtest {}, "type", pos) -> build fullTopBreak (Type {})
+        | (Mexpr {} | TopLet {} | RecLet {} | TopUtest {}, "con", pos) -> build fullTopBreak (Con {})
+        | (Mexpr {} | TopLet {} | RecLet {} | TopUtest {}, "use", pos) -> build ["in"] (Use {})
 
-end
-
-lang TopRecBreakerChooser = BreakerChooserInterface
-    
-    sem choose =
-        | (TopRec {}, "let", pos) -> build fullLetBreak (Let {})
-        | (TopRec {}, "utest", pos) -> build fullLetBreak (Utest {})    
-        | (TopRec {}, "recursive", pos) -> build fullRecBreak (Rec {})
-        | (TopRec {}, "type", pos) -> build fullTopBreak (Type {})
-        | (TopRec {}, "con", pos) -> build fullTopBreak (Con {})
-        | (TopRec {}, "use", pos) -> build ["in"] (Use {})
-
-    -- in: Downgrade et continuer le parent
-    -- Lang: Downgrade ET finir le parent
-    -- end: Restructurer l'arbre ET finir le parent
-    
     sem continue =
-        | (TopRec {}, "lang" | "mexpr" | "end") -> false
+        | (RecLet {}, _) -> false
 
-    sem reStructureTree =
-        | (TopRec {}, "end") -> true
-
-    sem absorbIt =
-        | (TopRec {}, "end") -> true
-
-    sem switchVersion =
-        | (TopRec {}, "in" | "mexpr" | "lang") -> Rec {}
 end
-
 
     
 lang RecBreakerChooser = BreakerChooserInterface
 
     sem choose =
-        | (Rec {}, "let", pos) -> build fullLetBreak (Let {})
-        | (Rec {}, "utest", pos) -> build fullLetBreak (Utest {})    
-        | (Rec {}, "recursive", pos) -> build fullRecBreak (Rec {})
-        | (Rec {}, "type", pos) -> build fullTopBreak (Type {})
-        | (Rec {}, "con", pos) -> build fullTopBreak (Con {})
-        | (Rec {}, "use", pos) -> build ["in"] (Use {})    
+        | (Rec {}, "let", pos) -> build letBreak (RecLet {})
 
-    sem continue =
-        | (Rec {}, !"in") -> false
-    
     sem absorbIt =
-        | (Rec {}, "in") -> true
+        | (Rec {}, _) -> true
 end
             
 lang LetUtestBreakerChooser = BreakerChooserInterface
@@ -200,7 +167,7 @@ lang LetUtestBreakerChooser = BreakerChooserInterface
     sem choose =
         | (Let {} | Utest {}, "let", pos) -> build fullLetBreak (Let {})
         | (Let {} | Utest {}, "utest", pos) -> build fullLetBreak (Utest {})    
-        | (Let {} | Utest {}, "recursive", pos) -> build fullRecBreak (TopRec {})
+        | (Let {} | Utest {}, "recursive", pos) -> build recBreak (Rec {})
         | (Let {} | Utest {}, "type", pos) -> build fullTopBreak (Type {})
         | (Let {} | Utest {}, "con", pos) -> build fullTopBreak (Con {})
         | (Let {} | Utest {}, "use", pos) -> build ["in"] (Use {})    
@@ -216,6 +183,7 @@ lang LetUtestBreakerChooser = BreakerChooserInterface
 
     sem switchVersion =
         | (Utest {}, !"in") -> TopUtest {}
+        | (Let {}, "#in" | "#end") -> RecLet {}        
         | (Let {}, !"in") -> TopLet {}
 
 end
@@ -269,7 +237,7 @@ lang SemBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (Sem {}, "let", pos) -> build ["in"] (Let {})
-        | (Sem {}, "recursive", pos) -> build ["in", "end", "syn", "sem"] (Rec {})
+        | (Sem {}, "recursive", pos) -> build recBreak (Rec {})
         | (Sem {}, "utest", pos) -> build ["in"] (Utest {})
 
         | (Sem {}, "type", pos) -> build langFullBreakIn (Type {})
@@ -306,4 +274,4 @@ end
 
 
     
-lang BreakerChooser = ProgramBreakerChooser + RecBreakerChooser + TopRecBreakerChooser + TopBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end
+lang BreakerChooser = ProgramBreakerChooser + RecBreakerChooser + TopBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end

@@ -9,7 +9,7 @@
 -- - What code comes after
 -- - What part should be `trimmed` and passed along for formatting or omission
 
-include "../parsing/token-readers.mc"
+include "../parsing/lexing/token-readers.mc"
 include "./rendering-types.mc"
 
 

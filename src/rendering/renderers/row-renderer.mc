@@ -60,10 +60,10 @@ lang RowRenderer = RendererInterface
         let name = objName obj in
         let kind = objKind obj in
         let code = switch obj.kind
-        case ObjLet { rec = rec, args = args, ty = ty } then
+        case ObjLet { args = args, ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
             let args = strJoin " " args in
-            join [if rec then "recursive " else "", "let ", name, " ", args, " : ", t]
+            join ["let ", name, " ", args, " : ", t]
         case ObjType { t = t } then
             join ["type ", name, match t with Some t then concat " : " t else ""]
         case ObjCon { t = t } then

@@ -1,6 +1,7 @@
 include "./server-options.mc"
 include "./python-server.mc"
 include "./server-options.mc"
+include "../options/cast-options.mc"
 include "../execution-context.mc"
 include "../rendering/renderers/objects-renderer.mc"
 

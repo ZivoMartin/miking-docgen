@@ -3,7 +3,7 @@
 -- These functions are essentialy used in the extracting.mc file.
 
 include "../parsing/doc-tree.mc"
-include "../parsing/token-readers.mc"
+include "../parsing/lexing/token-readers.mc"
 include "../global/util.mc"
 include "string.mc"
 include "stdlib.mc"

@@ -1,4 +1,4 @@
-include "../parsing/token-readers.mc"
+include "../parsing/lexing/token-readers.mc"
 include "./source-code-word.mc"
 
 lang FormatterInterface = SourceCodeWordKinds + TokenReader

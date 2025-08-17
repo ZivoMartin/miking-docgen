@@ -142,3 +142,6 @@ con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 
 let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.kind obj.name
 let objTreeObj : ObjectTree -> Object = lam tree. match tree with ObjectNode { obj = obj } in obj
+let objTreeDoc : ObjectTree -> String = lam tree. objDoc (objTreeObj tree)
+let objTreeWithDoc : ObjectTree -> String -> ObjectTree = lam tree. lam doc.
+    match tree with ObjectNode { obj = obj, sons = sons } in ObjectNode { obj = { obj with doc = doc}, sons = sons }
