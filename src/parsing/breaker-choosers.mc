@@ -175,8 +175,11 @@ lang RecBreakerChooser = BreakerChooserInterface
     sem reStructureTree =
         | (Rec {}, "#end") -> true
 
+    sem continue =
+        | (Rec {}, "#end") -> false
+
     sem switchVersion =
-        | (TopRec {}, "#end") -> TopRec {}
+        | (Rec {}, "#end") -> TopRec {}
 end
 
             
