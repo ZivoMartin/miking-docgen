@@ -40,6 +40,7 @@ lang BreakerChooserInterface = TokenReader
         | TopLet {}
         | RecLet {}        
         | Let {}
+        | TopRec {}
         | Rec {}
         | Lang {}
         | TopType {}
@@ -61,6 +62,7 @@ lang BreakerChooserInterface = TokenReader
         | RecLet {} -> "TopLet"        
         | Let {} -> "Let"
         | Lang {} -> "Lang"
+        | TopRec {} -> "TopRec"
         | Rec {} -> "Rec"
         | TopType {} -> "TopType"
         | Type {} -> "Type"
@@ -125,7 +127,7 @@ lang ProgramBreakerChooser = BreakerChooserInterface
         | (Program {}, "mexpr", pos) -> build ["lang", "mexpr"] (Mexpr {})
         | (Program {}, "type", pos) -> build topBreak (TopType {})
         | (Program {}, "con", pos) -> build topBreak (TopCon {})
-        | (Program {}, "recursive", pos) -> build recBreak (Rec {})
+        | (Program {}, "recursive", pos) -> build recBreak (TopRec {})
 
     sem continue =
         | (Program {}, "") -> false
@@ -153,6 +155,15 @@ lang TopBreakerChooser = BreakerChooserInterface
 end
 
     
+lang TopRecBreakerChooser = BreakerChooserInterface
+
+    sem choose =
+        | (TopRec {}, "let", pos) -> build letBreak (RecLet {})
+
+    sem absorbIt =
+        | (TopRec {}, _) -> true
+end
+
 lang RecBreakerChooser = BreakerChooserInterface
 
     sem choose =
@@ -160,7 +171,14 @@ lang RecBreakerChooser = BreakerChooserInterface
 
     sem absorbIt =
         | (Rec {}, _) -> true
+
+    sem reStructureTree =
+        | (Rec {}, "#end") -> true
+
+    sem switchVersion =
+        | (TopRec {}, "#end") -> TopRec {}
 end
+
             
 lang LetUtestBreakerChooser = BreakerChooserInterface
 
@@ -274,4 +292,4 @@ end
 
 
     
-lang BreakerChooser = ProgramBreakerChooser + RecBreakerChooser + TopBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end
+lang BreakerChooser = ProgramBreakerChooser + RecBreakerChooser + TopRecBreakerChooser + TopBreakerChooser + LetUtestBreakerChooser + LangBreakerChooser + TopTypeConBreakerChooser + TypeConBreakerChooser + SynBreakerChooser + SemBreakerChooser + UseBreakerChooser end

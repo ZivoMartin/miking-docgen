@@ -78,7 +78,6 @@ let lex : use TokenReader in LexingCtx -> String -> LexOutput = use TokenReader 
                      { inCount = inCount, stream = newStream } in
                          (cons inCount stack, token, { ctx with recursiveDataStream = newStream }, switchCount)
                  case Word { content = "lang" } then
-                     match nthWord stream 1 with "end" then default else
                      let semStream = getSemMap stream in
                      match nthWord stream 0 with langName in
                      let stream = recursiveDataStreamLang ctx.recursiveDataStream langName semStream in

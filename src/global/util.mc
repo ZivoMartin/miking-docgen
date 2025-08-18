@@ -114,7 +114,8 @@ let hmMem = lam x. hashmapMem hmTraits x
 let hmValues = lam x. hashmapValues hmTraits x
 let hmKeys = lam x. hashmapKeys hmTraits x
 let hmLookup = lam x. hashmapLookup hmTraits x
-    
+let hmLen = lam x. hashmapCount hmTraits x
+
 -- Normalizes a file path by resolving '.', '..', and redundant slashes.
 -- Supports both absolute and relative paths.
 let normalizePath = lam path.

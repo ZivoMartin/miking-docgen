@@ -99,7 +99,6 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                 -- Pushing title and global documentation
                 write (renderObjTitle 1 obj opt);
                 
-                -- Extract all the `ObjectNode`s in an array of ObjectTree
                 let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
                     foldl (lam sons. lam son.
                         switch son

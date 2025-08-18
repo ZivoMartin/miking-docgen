@@ -47,6 +47,8 @@ type RecursiveDataStream = use MExprAst in {
      langName: String
 }
 
+let removePrefix : String -> String = lam name. reverse (splitOnR (eqChar '_') (reverse name)).left 
+
 let createRecursiveDataStream : use MExprAst in Expr -> RecursiveDataStream = use MExprAst in lam expr.
     { stack = [expr], cache = [], currentSem = "", langName = "", langMap = hashmapEmpty () }
 
@@ -54,7 +56,6 @@ type DataStreamComputeNextRes = { stream: RecursiveDataStream, acc: [Int], map: 
 let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> DataStreamComputeNextRes = use MExprAst in use MExprPrettyPrint in lam stream. lam semMap.
     type WorkRes = { acc: [Int], inCount: Int, stack: [Expr], map: RecursiveDataStreamMap } in  
     recursive let work : Bool -> [Int] -> [Expr] -> Int -> WorkRes = lam first. lam acc. lam stack. lam inCount.
-        -- printLn (int2string inCount);
         match stack with [] then { inCount = inCount, acc = acc, stack = [], map = hashmapEmpty () } else
         match stack with [expr] ++ rest in
         
@@ -63,21 +64,16 @@ let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> Data
 
         switch expr
         case TmRecLets { bindings = bindings, inexpr = inexpr } then
-             -- printLn "rec";
             type Arg = { recLetCount: Int, acc: [Int], map: RecursiveDataStreamMap } in
             let foldRes = foldl (lam arg: Arg. lam node.
-                let name = (splitOnL (eqChar '_') node.ident.0).right in
+                let name = removePrefix node.ident.0 in
                 match work false [] [node.body] 0 with { inCount = inCount, acc = subAcc } in
-                -- printLn (join ["EXPR", expr2str node.body]);
-                -- printLn (join ["The incount is ", int2string inCount]);
                 let subAcc = match (first, semMap) with (true, Some semMap) then
                     match hmLookup name semMap with Some count then
                         if lti (length subAcc) count then
                            parsingWarn (join ["The number of recursive in the sem (", int2string (length subAcc), ") is lower than the counter in the semMap (", int2string count, ")."]);
                            subAcc
                         else
-                            -- printLn (expr2str node.body);
-                            -- printLn (join ["for ", node.ident.0, " we have thie cache: [", strJoin ", " (map int2string subAcc), "]" ]);
                             subsequence subAcc 0 count
                     else subAcc
                 else subAcc
@@ -122,16 +118,17 @@ let recursiveDataStreamNext: RecursiveDataStream -> RecursiveDataStreamNextRes =
         { inCount = inCount, stream = { stream with cache = cache } } 
     else 
         match recursiveDataStreamComputeNext stream (None {}) with { acc = acc, inCount = inCount, stream = stream } in
-        -- (match acc with [] then printLn (join ["Got ", int2string inCount]) else printLn (join ["New cache: [", strJoin ", " (map int2string acc), "]"]));
         { inCount = inCount, stream = { stream with cache = acc } }
 
 
-let recursiveDataStreamLang : RecursiveDataStream -> String -> SemMap -> RecursiveDataStream = lam stream. lam langName. lam semMap.
-    -- printLn langName;
-    match recursiveDataStreamComputeNext stream (Some semMap) with { map = map, stream = stream } in
-    (match stream.cache with [] then () else parsingWarn "The cache should be empty at this point");
-    { stream with langMap = map, langName = langName, currentSem = "" }
-    
+let recursiveDataStreamLang : RecursiveDataStream -> String -> SemMap -> RecursiveDataStream = lam oldStream. lam langName. lam semMap.
+    match recursiveDataStreamComputeNext oldStream (Some semMap) with { map = map, stream = stream } in
+    match hmKeys map with [h] ++ _ then
+        if strStartsWith (concat "v" langName) h then
+           (match stream.cache with [] then () else parsingWarn "The cache should be empty at this point");
+           { stream with langMap = map, langName = langName, currentSem = "" }
+        else oldStream
+    else oldStream
 
 let recursiveDataStreamSem : RecursiveDataStream -> String -> RecursiveDataStream = lam stream. lam semName.
     let semName = join ["v", stream.langName, "_", semName] in
@@ -141,8 +138,7 @@ let recursiveDataStreamSem : RecursiveDataStream -> String -> RecursiveDataStrea
     in
     
     match hmLookup semName stream.langMap with Some cache then
-        -- printLn (join ["Switching on ", semName, " with cache [", strJoin ", " (map int2string cache), "]"]);
         { stream with cache = cache, currentSem = semName }
     else
-        parsingWarn (join ["semName ", semName, " is not in the langMap."]);
+        parsingWarn (join ["semName ", semName, " is not in the langMap of the lang ", stream.langName, "."]);
         stream
