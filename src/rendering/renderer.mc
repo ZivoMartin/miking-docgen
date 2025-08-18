@@ -132,17 +132,18 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                 -- Recursive calls
                 let sons: [RenderingData] = map (render opener) sons in
 
-                let injectTests = lam sons.
+                let injectTests : [RenderingData] -> [RenderingData] = lam sons.
                     type Arg = { current: Option RenderingData, acc: [RenderingData], tests: [RenderingData] } in
 
                     let pushSonInAcc: [RenderingData] -> RenderingData -> [RenderingData] -> [RenderingData] = lam acc. lam current. lam tests.
-                        let testsStr =
+                        let testsStr: (String, String) =
                             match tests with [last] ++ tests then
-                                let tests = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
-                                join [tests, last.left, last.right]
-                            else ""
+                                let row: String = join (map (lam t. t.row) (reverse tests)) in                            
+                                let tests: String = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
+                                (join [tests, last.left, last.right], row)
+                            else ("", "")
                         in
-                        let current: RenderingData = { current with tests = testsStr } in
+                        let current: RenderingData = { current with tests = testsStr.0, rowTests = testsStr.1 } in
                         join [tests, [current], acc]
                     in
                     

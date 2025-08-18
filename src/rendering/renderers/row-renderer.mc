@@ -179,6 +179,7 @@ lang RowRenderer = RendererInterface
                 case TrimmedNotFormated b then renderSourceCode b
                 end,
             tests = "",
+            rowTests = "",
             row = row
         }
 

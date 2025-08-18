@@ -20,7 +20,8 @@ type RenderingData = {
     trimmed : String,
     row: String,
     obj: Object,
-    tests: String
+    tests: String,
+    rowTests: String
 }
 
 -- A formatted code node, created from a `RenderingData` record.
