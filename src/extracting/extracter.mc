@@ -153,7 +153,7 @@ let extract : ExecutionContext -> ExecutionContext =
                 let name = int2string utestCount in
                 process state sons name (getNamespace namespace name "utest") doc (ObjUtest {}) (addi utestCount 1)
             case Rec {} | TopRec {} then
-                process state sons "" namespace doc (ObjRecursiveBlock {}) utestCount
+                process state sons "" namespace doc (ObjRecursiveBlock {}) utestCount 
             case state then
                 -- Look for '=' in children
                 recursive let goToEqual = lam sons.

@@ -39,3 +39,6 @@ let buildCodeWord : use SourceCodeWordKinds in use TokenReader in Token -> Sourc
     
 -- Representation of the source code with word's buffer
 type SourceCode = [Option SourceCodeWord]
+
+let sourceCodeTrim : SourceCode -> { left: SourceCode, right: SourceCode } = lam code.
+    { left = (splitOnR optionIsNone code).left, right = reverse (splitOnR optionIsSome (reverse code)).left }
