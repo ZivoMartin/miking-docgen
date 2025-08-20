@@ -1,28 +1,42 @@
 include "../../extracting/objects.mc"
 include "../rendering-options.mc"
-    
+
 lang ObjectsRenderer = ObjectKinds + Formats
     
     sem objLangLink : String -> RenderingOptions -> String
     sem objLangLink =
-    | name -> lam opt. join ["/Lang/lang-", name, ".lang.", formatGetExtention opt.fmt]
+    | name -> lam opt. match hmLookup name opt.nameContext with Some link then link
+                       else name
     
+    sem objNameIfHas : Object -> Option String
+    sem objNameIfHas =
+    | { kind = ObjLet {} | ObjType {} | ObjSem {} | ObjSyn {} | ObjLang {} | ObjCon {} } & obj -> Some (objName obj)
+    | _ -> None {}
+
+
+    sem objPreserveNameCtx : Object -> Bool
+    sem objPreserveNameCtx =
+    | { kind = ObjLang {} | ObjProgram {} } -> true
+    | _ -> false
+
+    sem objGetPureLink : Object -> RenderingOptions -> String
+    sem objGetPureLink =
+    | obj -> lam opt.
+        let namespace = objNamespace obj in
+        let ext = concat "." (formatGetExtention opt.fmt) in
+        let prefix = if objIsStdlib obj then "Lib" else "Files" in
+        let link =  join [prefix, namespace, ext] in
+        if strStartsWith "/" link then link else cons '/' link     
+
     -- Get URL link for an object
     sem objLink : Object -> RenderingOptions -> String
     sem objLink =
     | obj -> lam opt.
-        let name = objName obj in
-        let kind = objKind obj in
-        let namespace = objNamespace obj in
-        let ext = concat "." (formatGetExtention opt.fmt) in
-        let link = switch kind
+        let link = switch (objKind obj)
             case ObjLang {} | ObjUse {} then
-                objLangLink name opt
-            case ObjSem { langName = langName } | ObjSyn { langName = langName } then
-                join ["/Lang/lang-", langName, "/", getFirstWord kind, "-", name, ext]        
+                objLangLink (objName obj) opt   
             case _ then
-                let prefix = if objIsStdlib obj then "Lib" else "Files" in
-                join [prefix, namespace, ext]
+                 objGetPureLink obj opt
             end
         in
         if strStartsWith "/" link then link else cons '/' link 

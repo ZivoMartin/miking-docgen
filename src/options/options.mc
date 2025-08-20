@@ -21,7 +21,6 @@
 --   --no-stdlib                            Do not include the standard library in output.
 --   --md-doc                               Generate Markdown documentation from inline comments.
 --   --keep-tests-doc                       Keep inline documentation of tests.
---   --keep-dead-code                       Do not remove unused code from output.
 --
 -- Language Formatting:
 --   --javascript                           Use Javascript for the React components
@@ -74,7 +73,6 @@ type Options = use Formats in use Themes in use FormatLanguages in {
     urlPrefix: String,
     letDepth: Option Int,
     keepTestsDoc: Bool,
-    keepDeadCode: Bool,
     mdDoc: Bool
 }
 
@@ -100,7 +98,6 @@ let optionsDefault : Options = use Formats in use Themes in use FormatLanguages 
     urlPrefix = "",
     letDepth = None {},
     keepTestsDoc = false,
-    keepDeadCode = false,
     mdDoc = false
 }
 
@@ -123,7 +120,6 @@ let usage = lam.
     "  --no-stdlib                            Do not include the standard library in output.\n",
     "  --md-doc                               Generate Markdown documentation from inline comments.\n",
     "  --keep-tests-doc                       Keep inline documentation of tests.\n",
-    "  --keep-dead-code                       Do not remove unused code from output.\n\n",
 
     "Language Formatting:\n",
     "  --javascript                           Use Javascript for the React components\n",
@@ -162,7 +158,6 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--rendering-debug"] ++ rest then parse rest { opts with renderingDebug = true }
 
         case ["--keep-tests-doc"] ++ rest then parse rest { opts with keepTestsDoc = true }
-        case ["--keep-dead-code"] ++ rest then parse rest { opts with keepDeadCode = true }
 
         case ["--md-doc"] ++ rest then parse rest { opts with mdDoc = true }
 

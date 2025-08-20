@@ -1,6 +1,7 @@
 include "./options.mc"
 include "../server/server-options.mc"
 include "../rendering/rendering-options.mc"
+include "hashmap.mc"
 
 let getServeOption : () -> ServerOptions  = lam.
     {
@@ -20,5 +21,6 @@ let getRenderingOption : () -> RenderingOptions = use FormatLanguages in lam.
         fmtLang = opt.fmtLang,
         letDepth = opt.letDepth,
         keepTestsDoc = opt.keepTestsDoc,
-        mdDoc = opt.mdDoc
+        mdDoc = opt.mdDoc,
+        nameContext = hashmapEmpty ()
     }

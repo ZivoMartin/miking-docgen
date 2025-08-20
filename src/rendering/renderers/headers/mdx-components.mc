@@ -42,7 +42,7 @@ const S = {
     borderRadius: 10,
     margin: '0.5rem 0',
     padding: compact ? '0.4rem 0.6rem' : '0.6rem 0.8rem',
-    background: 'var(--docgen-surface, #ffffff)',
+    marginBottom: 30,
     position: 'relative' as const,
     boxShadow: '0 1px 2px rgba(0,0,0,.04)',
     transition: 'box-shadow .15s ease, transform .15s ease, border-color .15s ease',
@@ -50,7 +50,6 @@ const S = {
   }),
 
   header: {
-
     gap: '0.6rem',
     flexWrap: 'wrap' as const,
     marginBottom: '0.5rem',

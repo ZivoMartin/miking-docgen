@@ -1,7 +1,8 @@
 include "./../global/format-language.mc"
 include "./../global/theme.mc"
 include "./../global/format.mc"
-    
+include "./rendering-types.mc"
+
 type RenderingOptions = use Formats in use Themes in use FormatLanguages in
     {
         theme: Theme,
@@ -12,5 +13,6 @@ type RenderingOptions = use Formats in use Themes in use FormatLanguages in
         fmtLang: FormatLanguage,
         letDepth: Option Int,
         keepTestsDoc: Bool,
-        mdDoc: Bool        
+        mdDoc: Bool,
+        nameContext: NameContext
     }

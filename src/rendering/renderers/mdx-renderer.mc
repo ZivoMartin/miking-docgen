@@ -63,7 +63,10 @@ lang MdxRenderer = RendererInterface
     | { fmt = Mdx {} } & opt -> renderNewLine { opt with fmt = Md {} }
 
     sem renderDocDescription obj =
-    | { fmt = Mdx {} } & opt -> renderDocDescription obj { opt with fmt = Md {} }
+    | { fmt = Mdx {} } & opt ->
+      let rawDesc = renderDocDescription obj { opt with fmt = Md {} } in
+      let desc = if eqString rawDesc "No documentation available here." then "" else rawDesc in
+      if eqString "" desc then "" else join ["  <Description>{`", desc, "`}</Description>\n"]
         
     sem renderGotoLink (link: String) =
     | { fmt = Mdx {} } & opt -> renderGotoLink link { opt with fmt = Md {} }
@@ -102,18 +105,17 @@ lang MdxRenderer = RendererInterface
         let rawDesc = renderDocDescription data.obj { opt with fmt = Md {} } in
         let descTrim = strTrim rawDesc in
         let desc = if eqString descTrim "No documentation available here." then "" else rawDesc in
-        join [desc, if eqString desc "" then "" else "\n\n"]
+        let toggleCode = join ["<Toogle>", mdxRenderCode opt (renderCodeWithoutPreview data opt), "</Toggle>"] in
+        join [desc, if eqString desc "" then "" else "\n\n", toggleCode]
 
 
     sem renderDocBloc (data: RenderingData) (displayGotoLink: Bool) =
     | { fmt = Mdx {} } & opt ->
         let sign = renderDocSignature data.obj opt in
-        let rawDesc = renderDocDescription data.obj { opt with fmt = Md {} } in
-        let descTrim = strTrim rawDesc in
-        let desc = if eqString descTrim "No documentation available here." then "" else rawDesc in
-    
         let code  = renderCodeWithoutPreview data opt in
         let tests = renderDocTests data opt in
+        let desc = renderDocDescription data.obj opt in
+ 
         let hasTests = not (eqString tests "") in
     
         let title = objTitle data.obj in
@@ -124,19 +126,11 @@ lang MdxRenderer = RendererInterface
         let codeId  = join ["code-", ns] in
         let testsId = join ["tests-", ns] in
     
-        let copyable = renderRemoveCodeForbidenChars data.row opt in
-        let descBlock =
-          if eqString desc "" then ""
-          else join ["  <Description>{`", desc, "`}</Description>\n"] in
-    
         join [
           "<DocBlock title=\"", title, "\" kind=\"", kind, "\" href=\"", href, "\">\n",
           mdxRenderCode opt sign, 
-          descBlock,
+          desc,
           "  <Actions>\n",
-          "    <ActionToggle target=\"", codeId, "\" labelShow=\"Display code\" labelHide=\"Hide code\" />\n",
-          (if hasTests then join ["    <ActionToggle target=\"", testsId, "\" labelShow=\"Display tests\" labelHide=\"Hide tests\" />\n"] else ""),
-          "    <ActionCopy code={`", copyable, "`} />\n",
           (if displayGotoLink then join ["    <ActionPermalink href=\"", href, "\" />\n"] else ""),
           "  </Actions>\n",
           "  <Panel id=\"", codeId, "\" title=\"Code\">", mdxRenderCode opt code, "</Panel>\n",

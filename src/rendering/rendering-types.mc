@@ -4,7 +4,9 @@
 --
 -- It abstracts the notion of source code into a tree structure and enables rendering with or
 -- without previews (e.g., collapsible code sections).
-    
+
+include "../extracting/objects.mc"
+
 -- An abstract tree representation of source code. It supports:
 type TreeSourceCode
 
@@ -31,3 +33,7 @@ con TreeSourceCodeNode : RenderingData -> TreeSourceCode -- Formated code
 -- A raw snippet of `SourceCodeWord`s that has not yet been rendered.
 -- Typically represents a sequence of tokens like `let x =`.
 con TreeSourceCodeSnippet : [SourceCodeWord] -> TreeSourceCode -- Array of not formated word
+
+
+-- Hashmap binding each object to its link depending on the context
+type NameContext = HashMap String String

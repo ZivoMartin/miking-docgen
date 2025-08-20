@@ -41,6 +41,7 @@ include "./renderers/main-renderer.mc"
 include "./source-code-reconstruction.mc"
 include "./rendering-options.mc"
 include "./files-opener.mc"
+include "./name-context.mc"
 
 include "../extracting/objects.mc"
 
@@ -75,29 +76,30 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
     renderSetup opt;
     renderingLog "Beggining of rendering stage.";
     recursive
-    let render : FileOpener -> ObjectTree -> RenderingData = lam opener. lam objTree. 
+    let render: FileOpener ->  RenderingOptions -> ObjectTree -> (RenderingData, RenderingOptions) = lam opener. lam oldOpt. lam objTree.  -- # Global Renderingipeline
         let emptyPreview = lam obj.
-            let trees = reconstructSourceCode (objSourceCode obj) [] in
-            renderTreeSourceCode trees obj opt
+            { left = "", right = "", trimmed = "",row= "", obj= obj, tests= "", rowTests= "" }
         in
 
-        objLog (objTreeObj objTree) opt;
+        objLog (objTreeObj objTree) oldOpt;
 
         switch objTree
-        case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then emptyPreview obj
+        case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then (emptyPreview obj, oldOpt)
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
-            if and (objIsStdlib obj) opt.noStdlib then emptyPreview obj else
-            let res = render (fileOpenerCreate opt.letDepth) p in emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj } then renderingWarn "Include with more than one son detected"; emptyPreview obj
+            if and (objIsStdlib obj) oldOpt.noStdlib then (emptyPreview obj, oldOpt) else
+            let res = render (fileOpenerCreate oldOpt.letDepth) oldOpt p in
+            (emptyPreview obj, res.1)
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then (emptyPreview obj, oldOpt)
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj } then
+             renderingWarn "Include with more than one son detected"; (emptyPreview obj, oldOpt)
         case ObjectNode { obj = obj, sons = sons } then
 
-            match fileOpenerOpen opener obj opt with Some { wc = wc, write = write, path = path, fileOpener = opener, displaySons = displaySons } then
+            match fileOpenerOpen opener obj oldOpt with Some { wc = wc, write = write, path = path, fileOpener = opener, displaySons = displaySons } then
                 (match path with "" then () else renderingLog (concat "Rendering file " path));
                 -- Push header of the output file
-                write (renderHeader obj opt);
+                write (renderHeader obj oldOpt);
                 -- Pushing title and global documentation
-                write (renderObjTitle 1 obj opt);
+                write (renderObjTitle 1 obj oldOpt);
                 
                 let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
                     foldl (lam sons. lam son.
@@ -130,7 +132,13 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                 let sons = unwrapRecursives sons in
 
                 -- Recursive calls
-                let sons: [RenderingData] = map (render opener) sons in
+                match foldl (lam arg. lam son.
+                      let obj = objTreeObj son in
+                      let opt = { arg.opt with nameContext = nameContextInsertIfHas arg.opt.nameContext obj (objGetPureLink obj arg.opt) } in
+                      match render opener opt son with (son, opt) in
+                      { opt = opt, sons = cons son arg.sons }
+                      ) { sons = [], opt = oldOpt } sons with { sons = sons, opt = opt } in
+                let sons = reverse sons in
 
                 let injectTests : [RenderingData] -> [RenderingData] = lam sons.
                     type Arg = { current: Option RenderingData, acc: [RenderingData], tests: [RenderingData] } in
@@ -168,7 +176,7 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                     in
                     reverse sons
                 in
-
+                
                 let sons = injectTests sons in
                  
                 let trees = reconstructSourceCode (objSourceCode obj) sons in
@@ -224,12 +232,13 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
     
                 -- Push the footer of the page
                 write (renderFooter obj opt);
+
                 (match wc with Some wc then fileWriteClose wc else ());
-                data
-            else emptyPreview obj
+                (data, if objPreserveNameCtx obj then opt else oldOpt)
+            else (emptyPreview obj, oldOpt)
         end
     in
-    let res = render (fileOpenerCreate opt.letDepth) obj in ()
+    let res = render (fileOpenerCreate opt.letDepth) opt obj in ()
 
 
 

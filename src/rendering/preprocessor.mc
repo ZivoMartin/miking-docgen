@@ -14,6 +14,7 @@ include "fileutils.mc"
 include "hashmap.mc"
 include "../options/options.mc"
 include "../global/format.mc"    
+include "./name-context.mc"
 
 let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in lam obj. lam opt.
     -- Map of all output paths (acts as a Set)
@@ -21,6 +22,8 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
     -- Recursively visit the ObjectTree and collect paths
     recursive let preprocessRec : Int -> PathMap -> ObjectTree -> PathMap = use ObjectKinds in
         lam depth. lam pathMap. lam obj.
+        let inner = objTreeObj obj in
+        let opt = { opt with nameContext = nameContextInsertIfHas opt.nameContext inner (objGetPureLink inner opt) } in
         switch obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
             if and (objIsStdlib obj) opt.noStdlib then pathMap else
