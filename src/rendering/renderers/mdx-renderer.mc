@@ -40,18 +40,16 @@ lang MdxRenderer = RendererInterface
             then subsequence importPath 0 (subi (length importPath) 3)
             else importPath in
         join [
-          "import { DocBlock, Signature, Description, Actions, ActionToggle, ActionCopy, ActionPermalink, Panel } from '@site/",
+          "import { DocBlock, Signature, Description, Panel, ToggleWrapper, S } from '@site/",
           importPath,
           "';\n\n"
         ]
 
-    sem renderRemoveDocForbidenChars (s: String) =
-    | { fmt = Mdx {} } & opt ->
-        strReplace "`" "\'" s
-
     sem renderRemoveCodeForbidenChars (s: String) =
-    | { fmt = Mdx {} } & opt ->
-        strReplace "`" "\'" s    
+    | { fmt = Mdx {} } & opt -> renderRemoveCodeForbidenChars s { opt with fmt = Md {} }
+
+    sem renderRemoveDocForbidenChars (s: String) =
+    | { fmt = Mdx {} } & opt -> renderRemoveCodeForbidenChars s { opt with fmt = Md {} }
 
     sem renderTitle size s =
     | { fmt = Mdx {} } & opt -> renderTitle size s { opt with fmt = Md {} }
@@ -66,16 +64,19 @@ lang MdxRenderer = RendererInterface
     | { fmt = Mdx {} } & opt ->
       let rawDesc = renderDocDescription obj { opt with fmt = Md {} } in
       let desc = if eqString rawDesc "No documentation available here." then "" else rawDesc in
-      if eqString "" desc then "" else join ["  <Description>{`", desc, "`}</Description>\n"]
+      if eqString "" desc then "" else join ["<Description>{`", desc, "`}</Description>\n"]
         
     sem renderGotoLink (link: String) =
     | { fmt = Mdx {} } & opt -> renderGotoLink link { opt with fmt = Md {} }
     
     sem renderLink (title : String) (link : String) =
-    | { fmt = Mdx {} } & opt -> renderLink title link { opt with fmt = Md {} }
+    | { fmt = Mdx {} } & opt ->
+          join ["<a href={\"", link, "\"} style={S.link}>", title, "</a>"]
     
     sem renderLinkList (objects: [Object]) =
-    | { fmt = Mdx {} } & opt -> renderLinkList objects { opt with fmt = Md {} }
+    | { fmt = Mdx {} } & opt ->
+        let nl = renderNewLine opt in
+        join [renderLinkList objects { opt with fmt = Row { fmt = Mdx {}} }, nl]
 
     sem mdxRenderCode : RenderingOptions -> String -> String
     sem mdxRenderCode =
@@ -98,15 +99,15 @@ lang MdxRenderer = RendererInterface
 
     sem renderDocTests (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
-        if eqString data.rowTests "" then "" else data.rowTests
+        if eqString data.rowTests "" then "" else strFullTrim data.rowTests
 
     sem renderTopPageDoc (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
         let rawDesc = renderDocDescription data.obj { opt with fmt = Md {} } in
-        let descTrim = strTrim rawDesc in
-        let desc = if eqString descTrim "No documentation available here." then "" else rawDesc in
-        let toggleCode = join ["<Toogle>", mdxRenderCode opt (renderCodeWithoutPreview data opt), "</Toggle>"] in
-        join [desc, if eqString desc "" then "" else "\n\n", toggleCode]
+        let desc = strTrim rawDesc in
+        let desc = if eqString rawDesc "No documentation available here." then "" else rawDesc in
+        let toggleCode = join ["<ToggleWrapper>", mdxRenderCode opt (renderCodeWithoutPreview data opt), "</ToggleWrapper>"] in
+        join ["\n", desc, if eqString desc "" then "" else "\n\n", toggleCode]
 
 
     sem renderDocBloc (data: RenderingData) (displayGotoLink: Bool) =
@@ -117,9 +118,14 @@ lang MdxRenderer = RendererInterface
         let desc = renderDocDescription data.obj opt in
  
         let hasTests = not (eqString tests "") in
-    
+
+        let link = objLink data.obj opt in
+        let link = concat opt.urlPrefix link in
+        let linkLength = length link in
+        let link = subsequence link 0 (subi linkLength 3) in -- removing extension for docusaurus
+        let link = if displayGotoLink then join [" link=\"", link, "\""] else "" in 
+        
         let title = objTitle data.obj in
-        let href  = objLink data.obj opt in
         let kind  = getFirstWord (objKind data.obj) in
     
         let ns = objNamespace data.obj in
@@ -127,14 +133,11 @@ lang MdxRenderer = RendererInterface
         let testsId = join ["tests-", ns] in
     
         join [
-          "<DocBlock title=\"", title, "\" kind=\"", kind, "\" href=\"", href, "\">\n",
-          mdxRenderCode opt sign, 
-          desc,
-          "  <Actions>\n",
-          (if displayGotoLink then join ["    <ActionPermalink href=\"", href, "\" />\n"] else ""),
-          "  </Actions>\n",
-          "  <Panel id=\"", codeId, "\" title=\"Code\">", mdxRenderCode opt code, "</Panel>\n",
-          (if hasTests then join ["  <Panel id=\"", testsId, "\" title=\"Tests\">", mdxRenderCode opt tests, "</Panel>\n"] else ""),
+          "<DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
+          mdxRenderCode opt sign, "\n",
+          desc, "\n",
+          "<Panel id=\"", codeId, "\" title=\"Code\">", mdxRenderCode opt code, "</Panel>\n",
+          (if hasTests then join ["<Panel id=\"", testsId, "\" title=\"Tests\">", mdxRenderCode opt tests, "</Panel>\n"] else ""),
           "</DocBlock>\n\n"
         ]
 end     

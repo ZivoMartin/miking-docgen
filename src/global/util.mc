@@ -183,3 +183,13 @@ let concatIfNot : all a. [a] -> ([a] -> Bool) -> [a] -> [a] =
 
 let count : all a. (a -> Bool) -> [a] -> Int = lam f. lam arr.
     foldl (lam counter. lam x. if f x then addi 1 counter else counter) 0 arr
+
+let strFullTrim = lam s.
+  recursive
+  let work = lam s.
+    if eqString s ""
+    then s
+    else match head s with '\n' | ' ' | '\t' then work (tail s)
+    else s
+  in
+  reverse (work (reverse (work s)))

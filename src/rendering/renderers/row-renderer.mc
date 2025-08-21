@@ -86,7 +86,7 @@ lang RowRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
         if eqString data.tests "" then ""
-        else join [nl, "Tests:", nl, renderHidenCode data.tests false opt]
+        else join [nl, "Tests:", nl, renderHidenCode (strFullTrim data.tests) false opt]
     
     sem renderGotoLink (link: String) =
     | opt -> let opt = fixOptFormat opt in

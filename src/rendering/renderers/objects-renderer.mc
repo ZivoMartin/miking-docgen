@@ -39,7 +39,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
                  objGetPureLink obj opt
             end
         in
-        if strStartsWith "/" link then link else cons '/' link 
+        if strStartsWith "/" link then link else cons '/' link
             
     -- Get display title for an object
     sem objTitle : Object -> String
