@@ -71,7 +71,7 @@ utest strTruncate "abcdef" 2 with "cdef"
 utest strTruncate "hi" 0 with "hi"
 
 -- Splits an array `arr` into { left, right } at the first element matching predicate `f`.
--- The matched element goes in `right`.
+-- The matched element goes in `left`.
 let splitOnL : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. lam arr.
     recursive let work = lam arr.
         switch arr
@@ -192,4 +192,4 @@ let strFullTrim = lam s.
     else match head s with '\n' | ' ' | '\t' then work (tail s)
     else s
   in
-  reverse (work (reverse (work s)))
+  reverse (work (reverse s))

@@ -146,9 +146,22 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                     let pushSonInAcc: [RenderingData] -> RenderingData -> [RenderingData] -> [RenderingData] = lam acc. lam current. lam tests.
                         let testsStr: (String, String) =
                             match tests with [last] ++ tests then
+                                let lastRow = last.row in
+                                recursive let trimRow = lam row.
+                                  match row with [h] ++ t then
+                                        let l = strTrim h in
+                                        if strStartsWith "--" l then
+                                           trimRow t
+                                        else if eqString l "" then
+                                           trimRow t
+                                        else strJoin "\n" (reverse row)
+                                  else []
+                                in
+                                let lastRow = trimRow (reverse (strSplit "\n" lastRow)) in
+                                
                                 let row: String = join (map (lam t. t.row) (reverse tests)) in                            
                                 let tests: String = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
-                                (join [tests, last.left, last.right], row)
+                                (join [tests, last.left, last.right], concat row lastRow)
                             else ("", "")
                         in
                         let current: RenderingData = { current with tests = testsStr.0, rowTests = testsStr.1 } in
@@ -206,7 +219,7 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                             end) sons
                         case [] then set
                         end
-                    in buildSet { Use = [], Let = [], Lang = [], Type = [], Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } (reverse sons) in
+                    in buildSet { Use = [], Let = [], Lang = [],  Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } (reverse sons) in
     
                  -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
@@ -217,7 +230,7 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                 in
     
                 -- Displays types and con
-                let displayDefault = lam title. lam arr.
+                let displayDefault = lam title. lam arr. lam displaySons.
                     let title = match arr with [] then "" else match title with "" then "" else
                             renderSectionTitle title opt in
                     write title;
@@ -225,10 +238,12 @@ let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
                 in
     
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if opt.noStdlib then [] else set.LibInclude)];
-                iter (lam a. displayDefault a.0 a.1)
-                    [("Types", set.Type), ("Constructors", set.Con), ("Languages", set.Lang), ("Syntaxes", set.Syn),
-                    ("Variables", set.Let), ("Sementics", set.Sem), ("Mexpr", set.Mexpr)];
-                (if opt.keepTestsDoc then displayDefault "Tests" set.Utest else ());
+                iter (lam a. displayDefault a.0 a.1 displaySons)
+                    [("Types", set.Type), ("Constructors", set.Con)];
+                displayDefault "Languages" set.Lang true;
+                iter (lam a. displayDefault a.0 a.1 displaySons)                 
+                 [("Syntaxes", set.Syn), ("Variables", set.Let), ("Semantics", set.Sem), ("Mexpr", set.Mexpr)];
+                (if opt.keepTestsDoc then displayDefault "Tests" set.Utest displaySons else ());
     
                 -- Push the footer of the page
                 write (renderFooter obj opt);

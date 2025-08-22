@@ -71,6 +71,9 @@ lang MdxRenderer = RendererInterface
     
     sem renderLink (title : String) (link : String) =
     | { fmt = Mdx {} } & opt ->
+          let link = concat opt.urlPrefix link in
+          let linkLength = length link in
+          let link = subsequence link 0 (subi linkLength 3) in -- removing extension for docusaurus
           join ["<a href={\"", link, "\"} style={S.link}>", title, "</a>"]
     
     sem renderLinkList (objects: [Object]) =

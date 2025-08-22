@@ -28,7 +28,6 @@ let labelingLog : String -> () = lam m.
 let parsingWarn : String -> () = lam m. if opt.noParsingWarn then () else warn "Parsing" m
 let extractingWarn : String -> () = lam m. if opt.noExtractingWarn then () else warn "Extracting" m
 let renderingWarn : String -> () = lam m. if opt.noRenderingWarn then () else warn "Rendering" m
-let labelingWarn : String -> () = lam m. if opt.noLabelingWarn then () else warn "Labeling" m
 let labelingWarn : String -> () = lam m. if opt.noLabelingWarn then () else warn "Labeling" m     
 
 
