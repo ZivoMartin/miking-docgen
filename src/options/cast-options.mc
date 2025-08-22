@@ -3,15 +3,16 @@ include "../server/server-options.mc"
 include "../rendering/rendering-options.mc"
 include "hashmap.mc"
 
-let getServeOption : () -> ServerOptions  = lam.
+let getServeOption : Options -> String -> ServerOptions  = lam opt. lam link.
     {
         fmt = opt.fmt,
         folder = opt.outputFolder,
         firstFile = opt.file,
-        noOpen = opt.noOpen
+        noOpen = opt.noOpen,
+        link = link
     }
 
-let getRenderingOption : () -> RenderingOptions = use FormatLanguages in lam.
+let getRenderingOption : Options -> RenderingOptions = use FormatLanguages in lam opt.
     {
         theme = opt.theme,
         fmt = opt.fmt,

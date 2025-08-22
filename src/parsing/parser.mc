@@ -35,7 +35,6 @@ include "./doc-tree.mc"
 
 include "../global/util.mc"
 include "../options/options.mc"
-include "../execution-context.mc"
 
 include "seq.mc"
 include "hashmap.mc"
@@ -49,9 +48,7 @@ include "sys.mc"
 -- - And the name of the output root
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
-let parse : (ExecutionContext ->  ExecutionContext) = use TokenReader in use BreakerChooser in lam execCtx.
-
-    let basePath: String = execCtx.mainFile in
+let parse : String -> Ast -> DocTree = use TokenReader in use BreakerChooser in lam basePath. lam ast.
     
     -- Keywords that start new blocks (head snippets)
     -- Using HashSet to improve performances
@@ -213,15 +210,13 @@ let parse : (ExecutionContext ->  ExecutionContext) = use TokenReader in use Bre
             ) { includeSet = includeSet, lexingCtx = lexingCtx, tree = [] } headerTokens
         in
         match headerDocTree with { includeSet = includeSet, tree = headerTree, lexingCtx = lexingCtx } in
-        parsingLog (concat "Beggining of parsing stage on " loc);
+        parsingLog (concat "Beginning of parsing stage on " loc);
         match lex lexingCtx fileText with { stream = stream, ctx = lexingCtx } in
 
         let snippet = parseStream stream { x = 1, y = 1 } baseBreaker headerTree in
         { includeSet = includeSet, lexingCtx = lexingCtx, tree = snippet.tree } 
     in
     
-    match execCtx with { ast = Some ast } in
-
     let lexingCtx = lexingCtxNew ast in
 
     match goHere (sysGetCwd()) basePath with { path = basePos } in
@@ -234,5 +229,5 @@ let parse : (ExecutionContext ->  ExecutionContext) = use TokenReader in use Bre
     parsingLog (join ["Parsing is over, computed prefix: ", includeSetPrefix includeSet, "."]);
     let tree = parseRes2tree parseRes basePath in
     -- displayTree tree;
-    execContextWithTree execCtx tree
+    tree
 

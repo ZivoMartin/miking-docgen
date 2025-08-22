@@ -16,7 +16,6 @@
 --   --format <html|md|mdx>                 Choose output format (default: html).
 --   --theme <dark|light|warm-dark|warm>    Choose output theme (default: dark).
 --   --url-prefix <prefix>                  Prefix for all generated URLs.
---   --no-gen                               Skip parsing and use existing output folder as-is.
 --   --depth <n|none>                       Limit nesting depth of `let` bindings.
 --   --no-stdlib                            Do not include the standard library in output.
 --   --md-doc                               Generate Markdown documentation from inline comments.
@@ -68,7 +67,6 @@ type Options = use Formats in use Themes in use FormatLanguages in {
     noRenderingWarn: Bool,
     noWarn: Bool,
     outputFolder: String,
-    noGen: Bool,
     noStdlib: Bool,
     urlPrefix: String,
     letDepth: Option Int,
@@ -88,7 +86,6 @@ let optionsDefault : Options = use Formats in use Themes in use FormatLanguages 
     labelingDebug = false,
     renderingDebug = false,
     outputFolder = "doc-gen-output",
-    noGen = false,
     noParsingWarn = false,
     noExtractingWarn = false,
     noLabelingWarn = false,
@@ -115,7 +112,6 @@ let usage = lam.
     "  --format <html|md|mdx>                 Choose output format (default: html).\n",
     "  --theme <dark|light|warm-dark|warm>    Choose output theme (default: dark).\n",
     "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
-    "  --no-gen                               Skip parsing and use existing output folder as-is.\n",
     "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
     "  --no-stdlib                            Do not include the standard library in output.\n",
     "  --md-doc                               Generate Markdown documentation from inline comments.\n",
@@ -149,7 +145,6 @@ let parseOptions : [String] -> Options = lam argv.
         case ["--help" | "--h"] then usage ()
 
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
-        case ["--no-gen"] ++ rest then parse rest { opts with noGen = true }
 
         case ["--debug"] ++ rest then parse rest { opts with debug = true }
         case ["--parsing-debug"] ++ rest then parse rest { opts with parsingDebug = true }
@@ -203,6 +198,3 @@ let parseOptions : [String] -> Options = lam argv.
         end
     in
     parse (tail argv) optionsDefault
-
-
-let opt: Options = parseOptions argv

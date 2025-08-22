@@ -151,12 +151,7 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
 
     -- Builds a TypeStream, creates an AST via the compiler's parser. Then types this AST via compiler's typer.
     -- Note that meta vars are not removed here    
-    sem buildTypeStream : ExecutionContext -> TypeStreamContext
-    sem buildTypeStream = | execCtx ->
-        match execCtx.ast with Some ast then
-            { stack = [ast.expr] }
-        else
-            labelingWarn "Ast is None while computing TypeStream";
-            { stack = [] }
+    sem buildTypeStream : Ast -> TypeStreamContext
+    sem buildTypeStream = | ast -> { stack = [ast.expr] }
 end 
     

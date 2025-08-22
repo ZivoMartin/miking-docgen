@@ -109,7 +109,7 @@ finally:
 "
 ]    
 
-let pythonServerStart : Bool -> ServerOptions -> String -> () = lam servesMd. lam opt. lam link.
+let pythonServerStart : Bool -> ServerOptions -> () = lam servesMd. lam opt.
     let file = sysTempFileMake () in
     match fileWriteOpen file with Some wc then
         let write = fileWriteString wc in
@@ -118,6 +118,6 @@ let pythonServerStart : Bool -> ServerOptions -> String -> () = lam servesMd. la
         fileWriteClose wc;
         let pwd = sysGetCwd () in
         let path = join [pwd, "/", opt.folder] in
-        let res = sysRunCommand ["python3", file, path, link] "" "/" in ()
+        let res = sysRunCommand ["python3", file, path, opt.link] "" "/" in ()
         
     else error "Failed to open temporary file. The browser failed to start but the files have been generated."

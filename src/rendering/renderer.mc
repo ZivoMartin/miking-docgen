@@ -49,8 +49,6 @@ include "../global/util.mc"
 include "../global/logger.mc"
 include "../global/format.mc"
 
-include "../execution-context.mc"
-
 -- ## render
 --
 -- Entrypoint to rendering. This function traverses the entire `ObjectTree` and writes
@@ -68,10 +66,9 @@ include "../execution-context.mc"
 --     - Organizes them by type
 --     - Writes formatted output to file
 --     - Returns `RenderingData` for each node
-let render : RenderingOptions -> ExecutionContext -> () = use Renderer in
-    lam opt. lam execCtx.
-    let obj = match execCtx.object with Some obj then obj else error "Object is None while rendering" in
-    
+let render : RenderingOptions -> ObjectTree -> () = use Renderer in
+    lam opt. lam obj.
+
     preprocess obj opt;
     renderSetup opt;
     renderingLog "Beggining of rendering stage.";

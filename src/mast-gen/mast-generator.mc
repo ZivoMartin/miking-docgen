@@ -13,9 +13,6 @@ include "./ast.mc"
 include "../global/util.mc"
 include "../global/logger.mc"
 
-include "../execution-context.mc"
-
-
 let buildAstFromFile: String -> Ast = use PMExprDemote in use BootParser in use TokenReader in lam file.
 
     let externalsExclude = mapKeys (externalGetSupportedExternalImpls ()) in
@@ -91,7 +88,3 @@ let buildAstFromFile: String -> Ast = use PMExprDemote in use BootParser in use 
 
         { expr = ast, includeSet = includeSet }
     else error "Failed to create temporary file."
-
-
-let gen : ExecutionContext -> ExecutionContext = lam execCtx.
-    { execCtx with ast = Some (buildAstFromFile execCtx.mainFile) }    

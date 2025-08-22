@@ -48,18 +48,15 @@ include "fileutils.mc"
 include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
-include "../execution-context.mc"
 include "../global/logger.mc"
         
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
-let extract : ExecutionContext -> ExecutionContext =
+let extract : DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
-    lam execCtx.
+    lam tree.
     extractingLog "Beggining of extraction...";
-
-    let tree = match execCtx.docTree with Some tree then tree else error "DocTree is None during extracting" in
 
      -- Entry point: tree must be Program node
     match tree with Node { token = ProgramToken { content = content, includeSet = includeSet }, state = Program {} } then
@@ -236,6 +233,6 @@ let extract : ExecutionContext -> ExecutionContext =
     else
         error "Extraction failed: extractRec returned None" in
     
-    { execCtx with object = Some obj }
+    obj
 
     else error "Extraction failed: the top node of the output tree should always be a program."
