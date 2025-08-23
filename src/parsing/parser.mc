@@ -48,7 +48,7 @@ include "sys.mc"
 -- - And the name of the output root
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
-let parse : String -> Ast -> DocTree = use TokenReader in use BreakerChooser in lam basePath. lam ast.
+let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in lam basePath. lam ast.
     
     -- Keywords that start new blocks (head snippets)
     -- Using HashSet to improve performances
@@ -82,7 +82,7 @@ let parse : String -> Ast -> DocTree = use TokenReader in use BreakerChooser in 
         Node {
             sons = parseRes.tree,
             pos = { x = 1, y = 1 },
-            token = ProgramToken {
+            token = TokenProgram {
                 content = progName,
                 includeSet = parseRes.includeSet
             },
@@ -120,7 +120,7 @@ let parse : String -> Ast -> DocTree = use TokenReader in use BreakerChooser in 
     
                 -- Handle continue case (normal exit)
                 if continueTest then
-                    match (match snippet.stream with [(last, lastPos)] ++ stream then (last, lastPos, stream) else (Eof {}, pos, [])) with (last, lastPos, lastStream) in
+                    match (match snippet.stream with [(last, lastPos)] ++ stream then (last, lastPos, stream) else (TokenEof {}, pos, [])) with (last, lastPos, lastStream) in
     
                     match (if and (not snippet.absorbed) (absorbIt (newState, content last)) then
                         let leaf = Leaf { token = last, state = newState, pos = lastPos } in
@@ -148,14 +148,14 @@ let parse : String -> Ast -> DocTree = use TokenReader in use BreakerChooser in 
             in
 
             switch oldStream 
-            case [(Eof {}, pos)] then
+            case [(TokenEof {}, pos)] then
                 { tree = reverse treeAcc, pos = pos, stream = oldStream, breaker = "", toAdd = [], absorbed = true }
             case [(token, pos)] ++ stream then
 
             let lword = content token in
             let state = topState breakers in
         
-            if contains (topBreakers breakers) lword then
+            if any (eqString lword) (topBreakers breakers) then
                 if (head breakers).1 then
                     let acc = (cons (Leaf { token = token, state = state, pos = pos }) treeAcc) in
                     parseStream stream pos (tail breakers) acc
@@ -187,14 +187,14 @@ let parse : String -> Ast -> DocTree = use TokenReader in use BreakerChooser in 
     
     let parse: IncludeSet () -> String -> LexingCtx -> ParseRes = lam includeSet. lam loc. lam lexingCtx.
         
-        match parsingOpenFile loc with { includes = includes, headerTokens = headerTokens, fileText = fileText } in
+        match parsingOpenFile loc with Some { includes = includes, headerTokens = headerTokens, fileText = fileText } then
         
         let headerDocTree = foldl (lam arg: ParseRes. lam token.
             match arg with { lexingCtx = lexingCtx, includeSet = includeSet, tree = tree } in
             match token with { token = token, pos = pos } in
 
             let go : ParseRes -> DocTree -> ParseRes = lam arg. lam doctree. { arg with tree = cons doctree arg.tree } in
-            match token with Include { content = content } then
+            match token with TokenInclude { content = content } then
                 match includeSetInsert includeSet loc content () with
                 { includeSet = includeSet, inserted = inserted, path = path, isStdlib = isStdlib } in
                 let insertResult = if inserted then
@@ -214,7 +214,9 @@ let parse : String -> Ast -> DocTree = use TokenReader in use BreakerChooser in 
         match lex lexingCtx fileText with { stream = stream, ctx = lexingCtx } in
 
         let snippet = parseStream stream { x = 1, y = 1 } baseBreaker headerTree in
-        { includeSet = includeSet, lexingCtx = lexingCtx, tree = snippet.tree } 
+        { includeSet = includeSet, lexingCtx = lexingCtx, tree = snippet.tree }
+
+        else error (join ["Found an invalid path during parsing: ", loc, "."])
     in
     
     let lexingCtx = lexingCtxNew ast in

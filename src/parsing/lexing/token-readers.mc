@@ -1,7 +1,7 @@
 -- # Token Readers Library
--- 
+--
 -- All token readers implement a common interface: `TokenReaderInterface`.
--- The module ends with the composition of all these token readers into one combined `TokenReader`.
+-- The module ends by composing all token readers into one combined `TokenReader`.
 
 include "../../global/util.mc"
 include "../../global/logger.mc"
@@ -54,15 +54,15 @@ lang TokenReaderInterface
 end
     
 -- Reader for multi lignes comments ( /* ... */ style )
-lang MultiLigneCommentTokenReader = TokenReaderInterface
+lang MultiLineCommentTokenReader = TokenReaderInterface
     syn Token =
-      | MultiLigneComment { content: String, lit: String }
+      | TokenMultiLineComment { content: String, lit: String }
 
     sem lit =
-        | MultiLigneComment { content = content, lit = lit } -> lit
+        | TokenMultiLineComment { content = content, lit = lit } -> lit
 
     sem tokenToString =
-        | MultiLigneComment {} -> "MultiLigneComment"
+        | TokenMultiLineComment {} -> "MultiLineComment"
     
     sem next =
         | "/-" ++ str -> lam pos.
@@ -84,7 +84,7 @@ lang MultiLigneCommentTokenReader = TokenReaderInterface
                 end
             in
             let extracted = extract str 0 in
-            buildResult (MultiLigneComment {
+            buildResult (TokenMultiLineComment {
                     content = extracted.0,
                     lit = concat (concat "/-" extracted.0) "-/"
             }) pos extracted.1
@@ -94,13 +94,13 @@ end
 -- Reader for single-line comments ( -- ... )
 lang CommentTokenReader = TokenReaderInterface
     syn Token =
-      | Comment { content: String, lit: String }
+      | TokenComment { content: String, lit: String }
 
     sem lit =
-        | Comment { lit = lit } -> lit        
+        | TokenComment { lit = lit } -> lit        
 
     sem tokenToString =
-        | Comment {} -> "Comment"
+        | TokenComment {} -> "Comment"
     
     sem next =
         | "--" ++ str -> lam pos.
@@ -116,19 +116,19 @@ lang CommentTokenReader = TokenReaderInterface
                     ("", "")
             in
             let extracted = extract str in
-            buildResult (Comment { content = extracted.0, lit = concat "--" extracted.0 }) pos extracted.1
+            buildResult (TokenComment { content = extracted.0, lit = concat "--" extracted.0 }) pos extracted.1
 end
 
 -- Reader for string literals ( "..." )
 lang StrTokenReader = TokenReaderInterface
     syn Token =
-      | Str { content: String, between: String }
+      | TokenStr { content: String, between: String }
 
     sem lit =
-        | Str { content = content } -> content
+        | TokenStr { content = content } -> content
 
     sem tokenToString =
-        | Str {} -> "Str"
+        | TokenStr {} -> "Str"
     
     sem next /- : String -> NextResult -/ =
         | "\"" ++ str -> lam pos.
@@ -148,7 +148,7 @@ lang StrTokenReader = TokenReaderInterface
                     end
                 in
             let extracted =  extract str in
-            buildResult (Str { content = join ["\"", extracted.0, "\""], between = extracted.0 }) pos extracted.1
+            buildResult (TokenStr { content = join ["\"", extracted.0, "\""], between = extracted.0 }) pos extracted.1
 end
 
 -- Define set of separator characters / operators as a hashmap for fast lookup
@@ -167,24 +167,24 @@ let isSep = lam s. hmMem s separatorMap
 -- Reader for words (non-separator sequences)
 lang WordTokenReader = TokenReaderInterface
     syn Token =
-      | Word { content: String }
+      | TokenWord { content: String }
 
     sem lit =
-        | Word { content = content } -> content
+        | TokenWord { content = content } -> content
 
     sem tokenToString =
-        | Word {} -> "Word"
+        | TokenWord {} -> "Word"
     
     sem next =
          | str -> lam pos.
             match str with [x] then
-                let token = Word { content = [x] } in
+                let token = TokenWord { content = [x] } in
                 { token = token, stream = "", pos = actualisePos pos token } else
             if isSep [head str] then
-                let token = Word { content = [head str] } in
+                let token = TokenWord { content = [head str] } in
                 { token = token, stream = tail str, pos = actualisePos pos token }
             else let arr = [head str, head (tail str)] in if isSep arr then
-                let token = Word { content = arr } in
+                let token = TokenWord { content = arr } in
                 { token = token, stream = tail (tail str), pos = actualisePos pos token }
             else
                 recursive
@@ -205,19 +205,19 @@ lang WordTokenReader = TokenReaderInterface
                     end
                 in
                 let extracted =  extract str '-' in
-                buildResult (Word { content = extracted.0 }) pos extracted.1
+                buildResult (TokenWord { content = extracted.0 }) pos extracted.1
 end
 
 -- Reader for separators (spaces, newlines, tabs, etc.)
 lang SeparatorTokenReader = TokenReaderInterface
     syn Token =
-      | Separator { content: String }
+      | TokenSeparator { content: String }
 
     sem lit =
-        | Separator { content = content } -> content
+        | TokenSeparator { content = content } -> content
 
     sem tokenToString =
-        | Separator {} -> "Separator"
+        | TokenSeparator {} -> "Separator"
     
     sem next =
         | [(' ' | '\t' | '\n' ) & c] ++ str -> lam pos.
@@ -230,31 +230,31 @@ lang SeparatorTokenReader = TokenReaderInterface
                 else ("", str)
             in
             let extracted =  extract str in
-            buildResult (Separator { content = cons c extracted.0 }) pos extracted.1
+            buildResult (TokenSeparator { content = cons c extracted.0 }) pos extracted.1
 end
     
 -- Reader for End-of-File
 lang EofTokenReader = TokenReaderInterface
     syn Token =
-      | Eof {}
+      | TokenEof {}
 
     sem tokenToString =
-        | Eof {} -> "Eof"
+        | TokenEof {} -> "Eof"
     
     sem lit =
-        | Eof {} -> ""
+        | TokenEof {} -> ""
     
     sem next =
         | ""  -> lam pos.
             {
-                token = Eof {},
+                token =TokenEof {},
                 stream = "",
                 pos = pos
             }
 end
     
 -- This lexer only support fundamental words.
-lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + MultiLigneCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader end
+lang SimpleWordTokenReader = StrTokenReader + CommentTokenReader + MultiLineCommentTokenReader + WordTokenReader + SeparatorTokenReader + EofTokenReader end
 
 -- Contains skip utility function allowing to jump all the comments and separator until the next important token
 lang CommAndSepSkiper = SimpleWordTokenReader
@@ -263,9 +263,9 @@ lang CommAndSepSkiper = SimpleWordTokenReader
     sem skip =
     | str -> lam first.
         let pos = { x = 1, y = 1 } in
-        let firstSkiped = match first with "" then [] else [Separator { content = first }] in
+        let firstSkiped = match first with "" then [] else [TokenSeparator { content = first }] in
         switch next str pos 
-            case { token = (Separator {} | Comment {} | MultiLigneComment {}) & token, stream = stream } then
+            case { token = (TokenSeparator {} | TokenComment {} | TokenMultiLineComment {}) & token, stream = stream } then
                 let res = skip stream "" in
                 let skiped = concat firstSkiped (cons token res.skiped) in
                 { res with skiped = skiped }
@@ -276,22 +276,22 @@ end
 -- Reader for include directives ( include "file" )
 lang IncludeTokenReader = CommAndSepSkiper
     syn Token =
-        | Include { content: String, lit: String, skiped: [Token] }
+        | TokenInclude { content: String, lit: String, skiped: [Token] }
 
     sem lit =
-        | Include { content = content, lit = lit } -> lit
+        | TokenInclude { content = content, lit = lit } -> lit
 
     sem tokenToString =
-        | Include {} -> "Include"
+        | TokenInclude {} -> "Include"
 
     sem includeNext =
         | str -> lam pos. lam firstSep.
-            match skip str firstSep with { newToken = Str { content = str }, stream = stream, skiped = skiped } then
-                let token = Include { content = subsequence str 1 (subi (length str) 2), lit = join ["include", join (map lit skiped), str], skiped = skiped } in
+            match skip str firstSep with { newToken = TokenStr { content = str }, stream = stream, skiped = skiped } then
+                let token = TokenInclude { content = subsequence str 1 (subi (length str) 2), lit = join ["include", join (map lit skiped), str], skiped = skiped } in
                 buildResult token pos stream
             else
                 parsingWarn "During lexing, was waiting for an Str after `include `.";
-                buildResult (Word { content = concat "include" firstSep }) pos str
+                buildResult (TokenWord { content = concat "include" firstSep }) pos str
 
     sem next =
         | "include " ++ str -> lam pos. includeNext str pos " "
@@ -302,54 +302,38 @@ lang IncludeTokenReader = CommAndSepSkiper
         | "include/-" ++ str -> lam pos. includeNext (cons '\"' str) pos ""            
 end
 
--- Specifically reads `recursive let` sequence of word
--- When `recursive` and `let` are spearated by any separator / comments
-lang RecursiveTokenReader = CommAndSepSkiper
-      syn Token =
-      | Recursive { lit: String, skiped: [Token] }
-
-    sem lit =
-        | Recursive { lit = lit } -> lit
-
-    sem content =
-        | Recursive {} -> "recursive"
-
-    sem tokenToString =
-        | Recursive {} -> "Recursive"
-
-end
-
-
 -- This token is not readable but is at the root of a DocTree, the content is the name of the file and the includeSet a set will all the files.
 lang ProgramTokenReader = TokenReaderInterface
     syn Token =
-        | ProgramToken { content: String, includeSet: IncludeSet () }
+        | TokenProgram { content: String, includeSet: IncludeSet () }
 
     sem lit =
-        | ProgramToken {} -> ""
+        | TokenProgram {} -> ""
 
     sem tokenToString =
-        | ProgramToken {} -> "Program"
+        | TokenProgram {} -> "Program"
 end
 
 let pos0 = { x = 0, y = 0 }
 
-lang ComposedWordTokenReader = RecursiveTokenReader + IncludeTokenReader + ProgramTokenReader end
-        
-lang RecursiveEnderTokenReader = TokenReaderInterface
+-- Reader combining recursive, include, and program tokens
+lang ComposedWordTokenReader = IncludeTokenReader + ProgramTokenReader end
+
+-- Reader for synthetic tokens marking the end of recursive blocks
+lang RecursiveEnderReader = TokenReaderInterface
      syn Token =
-        | RecursiveEnderToken { ender: String }
+        | TokenRecursiveEnder { ender: String }
 
      sem content =
-        | RecursiveEnderToken { ender = ender } -> cons '#' ender
+        | TokenRecursiveEnder { ender = ender } -> cons '#' ender
 
      sem lit =
-        | RecursiveEnderToken { ender = ender } -> ender
+        | TokenRecursiveEnder { ender = ender } -> ender
 
     sem tokenToString =
-        | RecursiveEnderToken {} -> "RecursiveEnderToken"
+        | TokenRecursiveEnder {} -> "RecursiveEnder"
 end
 
 -- Combine all token readers into a single TokenReader
-lang TokenReader = ComposedWordTokenReader + RecursiveEnderTokenReader end
+lang TokenReader = ComposedWordTokenReader + RecursiveEnderReader end
 

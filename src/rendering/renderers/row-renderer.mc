@@ -127,13 +127,13 @@ lang RowRenderer = RendererInterface
             join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } ) opt) skiped) in
 
         switch word
-        case { word = Include { content = content, skiped = skiped } } then
+        case { word = TokenInclude { content = content, skiped = skiped } } then
             join [renderKeyword "include" opt, renderSkiped skiped, renderString (join ["\"", (renderRemoveCodeForbidenChars content opt), "\""]) opt]    
         case { word = word, kind = kind } then
             let renderer = (switch word
-            case Str {} then renderString
-            case MultiLigneComment {} then renderMultiLigneComment
-            case Comment {} then renderComment
+            case TokenStr {} then renderString
+            case TokenMultiLineComment {} then renderMultiLigneComment
+            case TokenComment {} then renderComment
             case _ then
                 switch kind
                 case CodeKeyword {} then renderKeyword

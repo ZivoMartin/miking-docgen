@@ -23,7 +23,7 @@ include "./types-stream.mc"
 include "../extracting/objects.mc"
 include "../global/util.mc"
 
-let label : ObjectTree -> Ast -> ObjectTree =
+let label : ObjectTree -> MAst -> ObjectTree =
     use ObjectKinds in use TypeStream in use RemoveMetaVar in lam tree. lam ast.
 
     type SkippedContext = { ctx: TypeStreamContext, t: Type } in

@@ -12,7 +12,7 @@ type ExecutionContext =  use TokenReader in {
     mainFile: String,
     tokens: [Token],
     docTree : Option DocTree,
-    ast: Option Ast,
+    ast: Option MAst,
     object: Option ObjectTree
 }
 
@@ -36,7 +36,7 @@ let crash = lam miss. lam func. lam should.
 type Step = ExecutionContext -> ExecutionContext
 
 let gen : Step = lam ctx.
-    { ctx with ast = Some (buildAstFromFile ctx.mainFile) }
+    { ctx with ast = Some (buildMAstFromFile ctx.mainFile) }
 
 let parse : Step =  lam ctx.
     match ctx.ast with Some ast then

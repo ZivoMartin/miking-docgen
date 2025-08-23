@@ -46,7 +46,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
         switch rightRev
         case [TreeSourceCodeSnippet arr] ++ rightRev then
             let arr = reverse arr in
-            match splitOnR (lam w. match w with { word = MultiLigneComment {} | Comment {} | Separator {} } then false else true) arr with
+            match splitOnR (lam w. match w with { word = TokenMultiLineComment {} | TokenComment {} | TokenSeparator {} } then false else true) arr with
                 { left = trimmedRight, right = trimmedLeft } in
             let trimmedLeft = TreeSourceCodeSnippet (reverse trimmedLeft) in
             let trimmedRight = TrimmedNotFormated (reverse trimmedRight) in
@@ -61,7 +61,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
     let mergeAndFinish = lam left. lam right1. lam right2.
         finish [TreeSourceCodeSnippet left] (cons (TreeSourceCodeSnippet right1) right2) in
     match arr with [TreeSourceCodeSnippet buffer] ++ right then
-        match buffer with [{ word = Word {} } & x1] ++ rest then
+        match buffer with [{ word = TokenWord {} } & x1] ++ rest then
     
         let splitAndReturn = lam split: String.
             match splitOnL (lam w. match w with { word = word } in eqString (lit word) split) rest with
@@ -73,7 +73,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
         case "use" then finish arr right
         case "utest" | "mexpr" then mergeAndFinish [x1] rest right
         case "lang" then
-            match splitOnL (lam w. match w with { word = Word {} } then true else false) rest with
+            match splitOnL (lam w. match w with { word = TokenWord {} } then true else false) rest with
                 { left = left, right = rest } in
             mergeAndFinish (cons x1 left) rest right
         case _ then finish [] arr

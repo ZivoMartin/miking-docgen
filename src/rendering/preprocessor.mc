@@ -39,9 +39,6 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
                 if optionEq and (Some true) (optionMap (gti depth) opt.letDepth) then -- depth > letDepth ?
                     pathMap
                 else go depth sons
-            case ObjUtest {} then
-                if opt.keepTestsDoc then go depth sons
-                else pathMap
             case _ then go depth sons
             end
             

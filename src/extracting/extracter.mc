@@ -59,7 +59,7 @@ let extract : DocTree -> ObjectTree =
     extractingLog "Beggining of extraction...";
 
      -- Entry point: tree must be Program node
-    match tree with Node { token = ProgramToken { content = content, includeSet = includeSet }, state = Program {} } then
+    match tree with Node { token = TokenProgram { content = content, includeSet = includeSet }, state = Program {} } then
     let prefix = includeSetPrefix includeSet in
     
     -- Buffer of collected comments
@@ -115,16 +115,16 @@ let extract : DocTree -> ObjectTree =
                 { foldResult.ctx with obj = Some obj, sourceCodeBuilder = sourceCodeBuilder } in
 
             -- Dispatch by token type + state
-            switch token case Word { content = content } | Recursive { lit = content } | ProgramToken { content = content } then
+            switch token case TokenWord { content = content } | TokenProgram { content = content } then
             switch state
             case Program {} then
                 recursive
                 let extractProgramComments = lam sons.
                     switch sons
-                    case [Leaf { token = Comment { content = content } | MultiLigneComment { content = content } }] ++ rest then
+                    case [Leaf { token = TokenComment { content = content } | TokenMultiLineComment { content = content } }] ++ rest then
                         let output = extractProgramComments rest in
                         { output with comments = cons content output.comments }
-                    case [Leaf { token = Separator { content = content } }] ++ rest then
+                    case [Leaf { token = TokenSeparator { content = content } }] ++ rest then
                         if shouldClear content then { comments = [], sons = sons }
                         else extractProgramComments rest
                     case _ then { comments = [], sons = sons }
@@ -199,15 +199,15 @@ let extract : DocTree -> ObjectTree =
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = None {}, utestCount = utestCount } in
             -- Leaf dispatch
             switch token
-            case Comment { content = content } | MultiLigneComment { content = content }then
+            case TokenComment { content = content } | TokenMultiLineComment { content = content }then
                 { defaultRes with commentBuffer = cons content commentBuffer }
-            case Separator { content = content } then
+            case TokenSeparator { content = content } then
                 -- Clear comment buffer if more than  one \n found
                 if shouldClear content then defaultRes
                 else { defaultRes with commentBuffer = commentBuffer }
-            case Str {} | Word {} | RecursiveEnderToken {} then defaultRes
+            case TokenStr {} | TokenWord {} | TokenRecursiveEnder {} then defaultRes
             end
-        case IncludeNode  { token = Include { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
+        case IncludeNode  { token = TokenInclude { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file
             let defaultObject = defaultObject path isStdlib in
             let defaultObject = objWithKind defaultObject (ObjInclude { pathInFile = content }) in

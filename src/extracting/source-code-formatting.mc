@@ -16,7 +16,7 @@ lang FormatterInterface = SourceCodeWordKinds + TokenReader
     sem formatterEmptyContext : () -> FormatterContext 
     sem formatterEmptyContext = 
         | () -> { 
-            word = buildCodeWord (Word { content = "" }) (CodeDefault {}), 
+            word = buildCodeWord (TokenWord { content = "" }) (CodeDefault {}), 
             state = Default {},
             prev = ""
         }
@@ -28,7 +28,7 @@ lang FormatterInterface = SourceCodeWordKinds + TokenReader
             case (!"let", CodeName {}) then CodeDefault {}
             case _ then kind
             end in
-            let prev = match word with Word { content = content } then content else ctx.prev in
+            let prev = match word with TokenWord { content = content } then content else ctx.prev in
             {
                 word = buildCodeWord word kind,
                 state = state,
@@ -46,7 +46,7 @@ lang FormatterDefault = FormatterInterface
     sem formatterNext =
     | ({ state = Default {} } & ctx, token) ->
         let default = ctxChangeWord ctx token (CodeDefault {}) in
-        match token with Word { content = content } then
+        match token with TokenWord { content = content } then
             match content with "" then
                 extractingWarn "Detected an empty word in formatterNext";
                 default

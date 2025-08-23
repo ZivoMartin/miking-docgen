@@ -23,7 +23,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objGetPureLink =
     | obj -> lam opt.
         let namespace = objNamespace obj in
-        let ext = concat "." (formatGetExtention opt.fmt) in
+        let ext = concat "." (formatGetExtension opt.fmt) in
         let prefix = if objIsStdlib obj then "Lib" else "Files" in
         let link =  join [prefix, namespace, ext] in
         if strStartsWith "/" link then link else cons '/' link     

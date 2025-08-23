@@ -31,13 +31,13 @@ utest extractLastNamespaceElement "" with ""
 
 -- Removes all comment tokens from a list of syntax tree nodes.
 let removeComments = use TokenReader in
-    lam sons. filter (lam s. match s with Leaf { token = Comment {} } then false else true) sons
+    lam sons. filter (lam s. match s with Leaf { token = TokenComment {} } then false else true) sons
 
 -- Returns the nth word in the list of syntax tree nodes.
 -- Ignores non-word tokens.
 recursive let nthWord = use TokenReader in lam sons. lam n.
     switch sons
-    case [Leaf { token = (Word { content = word } | Str { content = word }) }] ++ rest then
+    case [Leaf { token = (TokenWord { content = word } | TokenStr { content = word }) }] ++ rest then
         if eqi n 0 then Some { word = word, rest = rest }
         else nthWord rest (subi n 1)
     case [_] ++ rest then nthWord rest n
@@ -47,9 +47,9 @@ end
 
 recursive let getName: [DocTree] -> { word: String, rest: [DocTree]} = use TokenReader in lam sons.
     switch sons
-    case [Leaf { token = Word { content = "#var" } }, Leaf { token = Str { between = name } } ] ++ rest then
+    case [Leaf { token = TokenWord { content = "#var" } }, Leaf { token = TokenStr { between = name } } ] ++ rest then
         { word = name, rest = rest }
-    case [Leaf { token = Word { content = name } }] ++ rest then
+    case [Leaf { token = TokenWord { content = name } }] ++ rest then
         { word = name, rest = rest }
     case [_] ++ sons then getName sons
     end
@@ -74,7 +74,7 @@ let strExtractType = use TokenReader in lam typedef.
 let extractType = use TokenReader in lam typedef.
     strExtractType (foldl
         (lam a. lam w.
-            match w with Leaf { token = Word { content = content } } then cons content a
+            match w with Leaf { token = TokenWord { content = content } } then cons content a
             else a
          ) [] typedef)
 

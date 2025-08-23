@@ -6,7 +6,7 @@ lang MarkdownRenderer = RendererInterface
     | { fmt = Md {} } & opt -> 
         let size = if gti size 6 then 6 else size in
         let nl = renderNewLine opt in    
-        join [repeat '#' size, " ", s, nl, nl]
+        join [make size '#', " ", s, nl, nl]
 
     sem renderBold (text : String) =
     | { fmt = Md {} } & opt -> join ["**", text, "**"]
@@ -39,7 +39,7 @@ lang MarkdownRenderer = RendererInterface
         let doc = objDoc obj in
         match splitOnR (lam c. match c with ' ' | '\n' then false else true) doc with { right = doc } in
         let doc = strReplace "\n " "\n" doc in
-        if opt.mdDoc then doc else renderRemoveDocForbidenChars doc opt
+        renderRemoveDocForbidenChars doc opt
     
 
     sem renderDocSignature (obj: Object) =

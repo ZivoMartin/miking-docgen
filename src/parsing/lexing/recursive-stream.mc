@@ -1,44 +1,64 @@
-/-
-We have here the implementation of the recursive-stream.
-The idea is simple: we take as input an expression from the compiler representing a Miking program, which we use as a stack.
-If we encounter a match, we push the 3 expressions onto the stack in the correct order so the traversal is performed properly.
-
-The main goal is to provide the number of ins present in each recursive block. To do this, we travel down the stack until we reach the next TmRecLets. Once found, we traverse all its bindings (the lets contained inside), count the number of expected ins, and build a cache.
-If other recursive blocks are nested inside the one we found, we also count their internal ins. We then obtain a cache array, which we store for the next call.
-
-Of course, we need to be careful not to count the same in twice. For instance, in the following code:
-
-recursive
-    let x =
-        recursive
-            let y = let z = 2 in 3
-        in
-        4
-end
-
-The parent recursive block will generate a cache for the child recursive block. The child recursive counts only one in (the one closing z), and the parent recursive also counts one in (the one closing the child recursive), but it does not consider the let z.
-
-The idea behind this method is that it lets us easily handle the case of languages with merged semantics. For example, consider the code:
-
-lang A
-sem x = | 1 -> ...
-sem y = | _ -> ...
-sem x = | 2 -> ...
-end
-
-Here, the compiler’s AST will only contain a single sem.
-However, during lexing, we will see the sem y in between them. The solution is simple: whenever we encounter a lang, we locate it in the AST and create a cache array per semantic. We then store this in a hashmap linking the semantic names to their respective cache. When the lexer encounters the keyword sem, it gives us the found name, and we can then update the hashmap and switch to the appropriate cache.
-
-The sem-stream is then used during the generation of the map, where we keep only the last n recursive blocks if n is the expected number of recursive blocks. The discarded recursive blocks are those that were added during assembly.
--/
-
+-- # Recursive Stream
+--
+-- This module implements the recursive-stream.
+-- The idea is simple: we take as input a compiler expression representing a
+-- Miking program, and use it as a stack. For example, if we encounter a
+-- `match`, we push its 3 expressions onto the stack in the correct order so
+-- that traversal is performed properly.
+--
+-- The main goal is to compute the number of `in` tokens present in each
+-- recursive block. To do this, we traverse down the stack until reaching the
+-- next `TmRecLets`. Once found, we traverse all its bindings and count the
+-- expected number of `in` tokens.
+--
+-- Nested recursive blocks require special care. When we encounter a recursive
+-- block inside another, we pause the current counting and compute the number
+-- of `in`s for the nested block separately. The result is cached and stored
+-- in an array that can be reused when fetching the next `in` count. This
+-- avoids double counting.
+--
+-- Example:
+--
+-- recursive
+--     let x =
+--         recursive
+--             let y = let z = 2 in 3
+--         in
+--         4
+-- end
+--
+-- The inner block counts only one `in` (for `z`). The parent block also counts
+-- one `in` (closing the child recursive), but does not include the inner `z`.
+--
+-- This approach also handles merged semantics correctly. When the parser
+-- replaces `lang` with a recursive block (each binding is a `sem`), we must
+-- adapt. For example:
+--
+-- lang A
+-- sem x = | 1 -> ...
+-- sem y = | _ -> ...
+-- sem x = | 2 -> ...
+-- end
+--
+-- The compiler’s AST may contain only a single `sem` for `x`. During lexing,
+-- however, we see `sem y` in between. The solution: whenever we encounter a
+-- `lang`, we locate it in the AST and build a cache array for each semantic.
+-- These are stored in a hashmap linking semantic names to their caches. When
+-- the lexer encounters a `sem`, it retrieves the corresponding cache and
+-- switches appropriately.
+--
+-- Finally, the sem-stream is used when generating the lang map. We keep only
+-- the last *n* recursive blocks (where *n* is the expected number). The older
+-- blocks are discarded, as they were introduced during assembly.
 
 include "mexpr/ast.mc"
 include "../../global/util.mc"
 include "./sem-map.mc"
 
+-- Maps semantic names to recursive block counts.
 type RecursiveDataStreamMap = HashMap String [Int]
 
+-- Represents the recursive data stream used to track expected `in` tokens.
 type RecursiveDataStream = use MExprAst in {
      stack: [Expr],
      cache: [Int],
@@ -47,12 +67,22 @@ type RecursiveDataStream = use MExprAst in {
      langName: String
 }
 
+-- Removes a prefix before the first '_' in a string.
 let removePrefix : String -> String = lam name. reverse (splitOnR (eqChar '_') (reverse name)).left 
 
+-- Creates a new recursive data stream from an expression.
 let createRecursiveDataStream : use MExprAst in Expr -> RecursiveDataStream = use MExprAst in lam expr.
     { stack = [expr], cache = [], currentSem = "", langName = "", langMap = hashmapEmpty () }
 
-type DataStreamComputeNextRes = { stream: RecursiveDataStream, acc: [Int], map: RecursiveDataStreamMap, inCount: Int }
+-- Result type for computing the next recursive block count, private usage, use recursiveDataStreamNext instead.
+type DataStreamComputeNextRes = {
+     stream: RecursiveDataStream, -- New stream
+     acc: [Int],                  -- The row cache
+     map: RecursiveDataStreamMap, -- A map binding each rec branchs to its cache
+     inCount: Int                 -- The actual number of ins.
+}
+
+-- Computes the next recursive block count from the data stream.
 let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> DataStreamComputeNextRes = use MExprAst in use MExprPrettyPrint in lam stream. lam semMap.
     type WorkRes = { acc: [Int], inCount: Int, stack: [Expr], map: RecursiveDataStreamMap } in  
     recursive let work : Bool -> [Int] -> [Expr] -> Int -> WorkRes = lam first. lam acc. lam stack. lam inCount.
@@ -111,8 +141,10 @@ let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> Data
 
 
 
+-- Result type for fetching the next recursive count. 
 type RecursiveDataStreamNextRes = { inCount: Int, stream: RecursiveDataStream }
 
+-- Returns the next recursive count from the stream, will take from the cache if not empty.
 let recursiveDataStreamNext: RecursiveDataStream -> RecursiveDataStreamNextRes = use MExprAst in use MExprPrettyPrint in lam stream.
     match stream.cache with [inCount] ++ cache then
         { inCount = inCount, stream = { stream with cache = cache } } 
@@ -121,15 +153,44 @@ let recursiveDataStreamNext: RecursiveDataStream -> RecursiveDataStreamNextRes =
         { inCount = inCount, stream = { stream with cache = acc } }
 
 
+-- Called when encountering a `lang` keyword. The argument `langName` must be
+-- the identifier following `lang`.
+--
+-- The function first calls `recursiveDataStreamComputeNext` to access the
+-- bindings map (other returned data can be ignored).
+--
+-- Because the Miking compiler prunes all `lang` definitions that contain no
+-- `sem`, we face three cases:
+-- 1. The `lang` contains no `sem` *and* it is the last recursive of the file.
+--    The stream will return an empty map.
+-- 2. The `lang` contains no `sem`, but another recursive follows. We detect
+--    this by checking whether one of the binding names starts with
+--    `v$langName_`, which is the prefix of all sem identifiers.
+-- 3. Default case: the stream is updated with a map binding each `sem` to its
+--    recursive blocks. The `langName` field is set so we know we are inside a
+--    `lang`, and `currentSem` is reset to `""`. This also allows us to tell if
+--    the next `sem` is the first one.
+--
+-- In the first two cases, the function simply returns the unchanged stream.
 let recursiveDataStreamLang : RecursiveDataStream -> String -> SemMap -> RecursiveDataStream = lam oldStream. lam langName. lam semMap.
     match recursiveDataStreamComputeNext oldStream (Some semMap) with { map = map, stream = stream } in
     match hmKeys map with [h] ++ _ then
-        if strStartsWith (concat "v" langName) h then
+        if strStartsWith (join ["v", langName, "_"]) h then
            (match stream.cache with [] then () else parsingWarn "The cache should be empty at this point");
            { stream with langMap = map, langName = langName, currentSem = "" }
         else oldStream
     else oldStream
 
+
+-- Called when encountering a `sem` keyword. The argument `semName` must be
+-- the identifier following `sem`.
+--
+-- We want to switch the cache and update the `langMap` if needed. Two cases:
+-- 1. If `currentSem` is `""`, this is the first `sem`. We simply fetch its
+--    cache from the map.
+-- 2. Otherwise, we update the `langMap` by storing the cache of the previous
+--    `sem` under its name, then switch to the cache of the new `sem`. If we
+--    later encounter the same `sem` again, it will reuse the updated cache.
 let recursiveDataStreamSem : RecursiveDataStream -> String -> RecursiveDataStream = lam stream. lam semName.
     let semName = join ["v", stream.langName, "_", semName] in
 

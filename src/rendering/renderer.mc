@@ -240,8 +240,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 displayDefault "Languages" set.Lang true;
                 iter (lam a. displayDefault a.0 a.1 displaySons)                 
                  [("Syntaxes", set.Syn), ("Variables", set.Let), ("Semantics", set.Sem), ("Mexpr", set.Mexpr)];
-                (if opt.keepTestsDoc then displayDefault "Tests" set.Utest displaySons else ());
-    
+
                 -- Push the footer of the page
                 write (renderFooter obj opt);
 
