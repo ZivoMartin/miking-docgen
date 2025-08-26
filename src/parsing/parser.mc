@@ -1,32 +1,72 @@
--- # Parser: building a DocTree from a source file 
+-- # Parser: Building a DocTree from a Source File 
 --
--- This module defines a parser that reads a file and produces a `DocTree`, a hierarchical
--- structure of tokens annotated with formatting state.
+-- This module defines a parser that reads a file and produces a `DocTree`,
+-- a hierarchical structure of tokens annotated with formatting state.  
+-- See doc-tree.mc for more information.
 --
--- We are trying to segment the code using a markup system. Certain specific words open nodes in the tree, and some words close nodes.
--- Take the example ```let x = 3 * 8 in```. Here, let opens a node—more precisely, a node of type let. At the moment the node is opened,
--- we need to decide which word will close this block.
--- In Miking's syntax, several words can potentially close a let: in, lang, mexpr, and many others.
--- In our example, when the parser encounters in, it recognizes ```in``` as one of the breaker and therefore closes the block.
+-- ## General Idea
+-- The parser segments the code using a markup system: some keywords open new
+-- nodes in the tree, and other keywords close them.  
+-- 
+-- Example:
+-- ```miking
+-- let x = addi 3 8 in
+-- ```
+-- Here, `let` opens a new node (a "let block"). Later, when the parser
+-- encounters `in`, it recognizes it as a breaker for this block and closes it.
 --
--- The detection of opening words is handled in the parser, while the selection of breakers based on the current context is done in breaker-choosers.mc.
+-- The detection of opening words is handled here in the parser, while the
+-- decision of which breakers apply in the current context is delegated to
+-- breaker-choosers.mc. This separation allows us to handle nested structures,
+-- language extensions, and special keywords without duplicating logic.
 --
--- When a break occurs, there are three possible behaviors:
--- 1. Local break: we simply finish the current block.
---    Example: lang ... end -> 'end' only terminates the 'lang' block.
+-- ## Breaker Types
+-- When a breaker is encountered, three cases are possible:
 --
--- 2. Global break: we terminate not just the current block, but also one or more parent blocks.
---    Example: lang ... sem ... end -> 'end' here is the breaker of lang, but also breaks sem.
+-- 1. **Local break**  
+--    Only the current block is closed.  
+--    Example:  
+--    ```miking
+--    lang A
+--    end
+--    ```  
+--    The keyword `end` closes only the `lang` block.
 --
--- 3. Hard break: a new keyword forces us to reinterpret a previous assumption.
---    Example: let ... let ... lang
---      -> The second 'let' was initially assumed to be nested (a 'let in'),
---      but encountering 'lang' reveals that it's actually a top-level 'let' block,
---      requiring us to restructure the tree accordingly.    
+-- 2. **Global break**  
+--    The breaker closes the current block **and one or more parent blocks**.  
+--    Example:  
+--    ```miking
+--    lang A
+--        sem x = ...
+--    end
+--    ```  
+--    Here, `end` breaks both the `sem` and the `lang` block.
+--    In this context, we also have to decides to which block `lang` belongs.
 --
--- The includes are handled via a hashset allowing us to know if we already visited a given include before jumping in it's code.
+-- 3. **Hard break**  
+--    A new keyword forces a reinterpretation of the tree.  
+--    Example:  
+--    ```miking
+--    let x = 1
+--    let y = 2
+--    lang A
+--    end
+--    ```  
+--    Initially, the second `let` is assumed to be nested (`let ... in`).
+--    But encountering `lang` later reveals that `let y = 2` was actually
+--    a **top-level let**, so the parser restructures the tree to reflect this.
+--    To handle this case a little bit tricky, we use back tracking with an accumlator.
 --
--- Result is a `DocTree` for the entire file. 
+-- ## Includes
+-- Includes are handled through the IncludeSet API from the mast-gen module.
+-- The parser first processes the include header of the file and recursively
+-- parses all included files. Each include is represented in the DocTree by
+-- an `IncludeNode`, which may either contain the included file’s tree or be
+-- marked as already visited to prevent infinite loops.
+--
+-- ## Result
+-- The final output is a `DocTree` for the entire project. This tree preserves
+-- block structure and include relationships
 
 
 include "./lexing/lexer.mc"
@@ -44,8 +84,8 @@ include "sys.mc"
 
 
 -- # The parse function
--- - Takes in input a miking program
--- - And the name of the output root
+-- - Takes in input a path to a miking program
+-- - And the MAST of this program
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
 let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in lam basePath. lam ast.
@@ -86,16 +126,17 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
                 content = progName,
                 includeSet = parseRes.includeSet
             },
-            state = Program {}
+            state = StateProgram {}
         }
     in
     
     -- Access top of breaker stack
     let topState = lam breakers. let h = (head breakers).0 in h.state in
     let topBreakers = lam breakers. let h = (head breakers).0 in h.breakers in
-    let baseBreaker = [({ breakers = [""], state = Program {} }, false)] in
+    let baseBreaker = [({ breakers = [""], state = StateProgram {} }, false)] in
     
     recursive
+    -- This function is parsing the text of the file without any includes
     let parseStream: TokenStream -> Pos -> [(Breaker, Bool)] -> [DocTree] -> Snippet =
         lam oldStream. lam oldPos. lam breakers. lam treeAcc.
 
@@ -184,7 +225,7 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
                 -- Default case: accumulate leaf
                 parseStream stream pos breakers (cons (Leaf { token = token, state = state, pos = pos }) treeAcc)
             end
-    
+    -- Here we parse the include header of the file, jump in all the includes before processing the actual code.
     let parse: IncludeSet () -> String -> LexingCtx -> ParseRes = lam includeSet. lam loc. lam lexingCtx.
         
         match parsingOpenFile loc with Some { includes = includes, headerTokens = headerTokens, fileText = fileText } then
@@ -204,9 +245,9 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
                 else
                     (arg, None {}) in
                 match insertResult with (arg, tree) in
-                go arg (IncludeNode { token = token, tree = tree, state = Program {}, path = path, isStdlib = isStdlib, pos = pos })
+                go arg (IncludeNode { token = token, tree = tree, state = StateProgram {}, path = path, isStdlib = isStdlib, pos = pos })
             else
-                go arg (Leaf { token = token, state = Program {}, pos = pos })
+                go arg (Leaf { token = token, state = StateProgram {}, pos = pos })
             ) { includeSet = includeSet, lexingCtx = lexingCtx, tree = [] } headerTokens
         in
         match headerDocTree with { includeSet = includeSet, tree = headerTree, lexingCtx = lexingCtx } in
@@ -230,6 +271,4 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
     match parse includeSet basePath lexingCtx with { includeSet = includeSet, tree = tree } & parseRes in
     parsingLog (join ["Parsing is over, computed prefix: ", includeSetPrefix includeSet, "."]);
     let tree = parseRes2tree parseRes basePath in
-    -- displayTree tree;
     tree
-

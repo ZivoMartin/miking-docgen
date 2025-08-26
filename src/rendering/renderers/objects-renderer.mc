@@ -1,24 +1,33 @@
+-- # ObjectsRenderer utilities
+--
+-- Helpers to compute rendering-related data derived from extracted objects.
+-- Provides link building, display titles, and optional name handling.
+
 include "../../extracting/objects.mc"
 include "../rendering-options.mc"
 
 lang ObjectsRenderer = ObjectKinds + Formats
-    
+
+    -- Resolve a language name to a link using the nameContext map; fallback to the name.
     sem objLangLink : String -> RenderingOptions -> String
     sem objLangLink =
     | name -> lam opt. match hmLookup name opt.nameContext with Some link then link
                        else name
     
+    -- Return the object name only for named kinds (let/type/sem/syn/lang/con).
     sem objNameIfHas : Object -> Option String
     sem objNameIfHas =
     | { kind = ObjLet {} | ObjType {} | ObjSem {} | ObjSyn {} | ObjLang {} | ObjCon {} } & obj -> Some (objName obj)
     | _ -> None {}
 
-
+    -- Preserve the current name context only for Lang and Program roots.
     sem objPreserveNameCtx : Object -> Bool
     sem objPreserveNameCtx =
     | { kind = ObjLang {} | ObjProgram {} } -> true
     | _ -> false
 
+    -- Build the canonical link for an object (prefix + namespace + extension).
+    -- Uses "Lib" for stdlib objects, "Files" for user sources.
     sem objGetPureLink : Object -> RenderingOptions -> String
     sem objGetPureLink =
     | obj -> lam opt.
@@ -28,7 +37,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
         let link =  join [prefix, namespace, ext] in
         if strStartsWith "/" link then link else cons '/' link     
 
-    -- Get URL link for an object
+    -- Compute the URL for an object; Lang/Use use name-based mapping, others use file path.
     sem objLink : Object -> RenderingOptions -> String
     sem objLink =
     | obj -> lam opt.
@@ -41,7 +50,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
         in
         if strStartsWith "/" link then link else cons '/' link
             
-    -- Get display title for an object
+    -- Human-friendly display title; special-cases include/utest.
     sem objTitle : Object -> String
     sem objTitle =    
     | obj ->
@@ -53,7 +62,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
         case _ then name
         end
 
-
+    -- Debug logger for object rendering info.
     sem objLog : Object -> RenderingOptions -> ()
     sem objLog =
     | obj -> lam opt. renderingLog (join [

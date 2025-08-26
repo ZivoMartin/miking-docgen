@@ -1,5 +1,13 @@
+-- # HTML Theme Header
+--
+-- Provides a theme record (`HtmlTheme`) and a helper (`getHeader`) that returns
+-- the full HTML `<head>`, embedded `<style>`, and opening `<body>` markup using
+-- the theme’s colors. This is consumed by the HTML renderer.
+
+
 include "string.mc"
 
+-- Theme palette used by the HTML renderer (colors as CSS strings).
 type HtmlTheme = {
     bodyBGColor: String,                
     bodyTextColor: String,              
@@ -31,6 +39,7 @@ type HtmlTheme = {
     multiColor: String
 }
 
+-- Build the HTML header + styles + opening body using a theme and a page title.
 let getHeader : HtmlTheme -> String -> String = lam theme. lam title.
     join [
 "<!DOCTYPE html>

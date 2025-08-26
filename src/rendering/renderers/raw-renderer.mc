@@ -1,11 +1,24 @@
+-- # Raw renderer
+--
+-- This file implements the raw renderer based on the raw format.
+-- The raw format wraps another format. The wrapped format should be the
+-- actual rendering target (though nothing prevents you from wrapping a
+-- different format on purpose, resulting in hybrid outputs).
+--
+-- The core idea: implement general behavior here that always delegates by
+-- passing the **wrapped** format as the argument—never the raw format itself.
+-- This way, dispatch automatically reaches the correct implementation.
+
 include "../source-code-spliter.mc"
 include "./renderer-interface.mc"
 
-lang RowRenderer = RendererInterface
+lang RawRenderer = RendererInterface
 
+    -- Runs before rendering all files (e.g., to generate global headers).
     sem renderSetup =
     | opt -> ()
     
+    -- Default block renderer: composes signature, description, code, and tests.
     sem renderBlocDefault : RenderingData -> RenderingOptions -> String -> String -> String -> String -> String
     sem renderBlocDefault =
     | { obj = obj } & data -> lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
@@ -16,11 +29,14 @@ lang RowRenderer = RendererInterface
 
         join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc, tests]
 
+    -- Ensure RenderingOptions uses the wrapped (non-raw) format.
     sem fixOptFormat : RenderingOptions -> RenderingOptions
-    sem fixOptFormat = | opt -> { opt with fmt = unwrapRow opt.fmt }
+    sem fixOptFormat = | opt -> { opt with fmt = unwrapRaw opt.fmt }
             
+    -- Top page section: title + details (e.g., parent langs) + default block.
     sem renderTopPageDoc (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
+        let title = renderObjTitle 1 data.obj opt in
         let nl = renderNewLine opt in
         let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } } then
@@ -35,8 +51,10 @@ lang RowRenderer = RendererInterface
         case { obj = obj } then
             ""
         end in
-        renderBlocDefault data opt "" "" details ""
+        let bloc = renderBlocDefault data opt "" "" details "" in
+        join [title, nl, bloc]
     
+    -- Documentation block (optionally includes a “goto” link).
     sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
     | opt -> let opt = fixOptFormat opt in
         match data with { obj = obj } in
@@ -49,11 +67,13 @@ lang RowRenderer = RendererInterface
         in
         renderBlocDefault data opt "" "" link ""
     
+    -- Renders the description text of an object (from obj.doc).
     sem renderDocDescription (obj: Object) =
     | opt -> let opt = fixOptFormat opt in
         let doc = objDoc obj in
         concat (renderRemoveDocForbidenChars doc opt) (renderNewLine opt)
 
+    -- Renders the object signature as source code.
     sem renderDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         let type2str = lam t. strReplace "[Char]" "String" (type2str t) in
@@ -81,17 +101,19 @@ lang RowRenderer = RendererInterface
         end in
         renderSourceCodeStr code opt
 
-
+    -- Renders the unit tests section (hidden if empty).
     sem renderDocTests (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
         if eqString data.tests "" then ""
-        else join [nl, "Tests:", nl, renderHidenCode (strFullTrim data.tests) false opt]
+        else join [nl, "Tests:", nl, renderHidenCode (strFullTrim data.tests) true opt]
     
+    -- Goto link wrapper (uses renderLink).
     sem renderGotoLink (link: String) =
     | opt -> let opt = fixOptFormat opt in
         renderLink "[→]" link opt
         
+    -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
     | opt -> let opt = fixOptFormat opt in
         let doc = map (lam u. renderLink (objTitle u) (objLink u opt) opt) objects in
@@ -99,28 +121,34 @@ lang RowRenderer = RendererInterface
         match doc with "" then "" else
             concat (renderText doc opt) (renderNewLine opt)
     
+    -- Renders code as a hidden, toggleable block (raw + preview-less).
     sem renderCodeWithoutPreview (data: RenderingData) = 
     | opt -> let opt = fixOptFormat opt in
-        renderHidenCode (concat data.left data.right) false opt
+        renderHidenCode (concat data.left data.right) true opt
 
+    -- Renders code with an optional preview section (uses renderHidenCode).
     sem renderCodeWithPreview (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         match data.right with [] then
             join [data.left, data.trimmed]
         else 
-            join [data.left, renderHidenCode data.right true opt, data.trimmed]
+            join [data.left, renderHidenCode data.right false opt, data.trimmed]
 
-    sem renderHidenCode (code : String) (withPreview: Bool) =
+    -- Default hidden-code renderer (no-op for raw).
+    sem renderHidenCode (code : String) (jumpLine: Bool) =
     | _ -> ""
 
+    -- String → tokenized/colored source code (delegates to renderSourceCode).
     sem renderSourceCodeStr (code: String) =
     | opt -> let opt = fixOptFormat opt in
          renderSourceCode (strToSourceCode code) opt
 
+    -- SourceCode → rendered string (maps each word with renderWord).
     sem renderSourceCode (code: SourceCode) =
     | opt -> let opt = fixOptFormat opt in
         join (map (lam code. match code with Some code then renderWord code opt else "") code)
     
+    -- Renders a single token/word according to its kind (with escaping).
     sem renderWord (word: SourceCodeWord) = 
     | opt -> let opt = fixOptFormat opt in
         let renderSkiped: [Token] -> String = lam skiped.
@@ -132,7 +160,7 @@ lang RowRenderer = RendererInterface
         case { word = word, kind = kind } then
             let renderer = (switch word
             case TokenStr {} then renderString
-            case TokenMultiLineComment {} then renderMultiLigneComment
+            case TokenMultiLineComment {} then renderMultiLineComment
             case TokenComment {} then renderComment
             case _ then
                 switch kind
@@ -147,6 +175,7 @@ lang RowRenderer = RendererInterface
             renderer word opt
         end
 
+    -- Top-level source code rendering: splits, renders, and aggregates.
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
@@ -161,14 +190,14 @@ lang RowRenderer = RendererInterface
                 end) s
                 ) "" (reverse code) in
 
-        let buildSourceCodeRow = lam code. join (map (lam w. lit w.word) code) in
+        let buildSourceCodeRaw = lam code. join (map (lam w. lit w.word) code) in
         let row = foldl (lam row. lam tree.
              concat (switch tree 
                 case TreeSourceCodeNode son then son.row
-                case TreeSourceCodeSnippet code then buildSourceCodeRow code
+                case TreeSourceCodeSnippet code then buildSourceCodeRaw code
                 end) row)
                 "" (reverse (concat left right)) in
-        let row = concat row (match trimmed with TrimmedNotFormated code then buildSourceCodeRow code else "") in
+        let row = concat row (match trimmed with TrimmedNotFormated code then buildSourceCodeRaw code else "") in
     
         {
             obj = obj,
@@ -183,12 +212,14 @@ lang RowRenderer = RendererInterface
             row = row
         }
 
+    -- File-level wrappers (raw renderer leaves them empty).
     sem renderHeader (obj : Object) =
     | _ -> ""
 
     sem renderFooter (obj : Object) =
     | _ -> ""
 
+    -- Section titles and basic text formatting.
     sem renderSectionTitle (title: String) =
     | opt -> let opt = fixOptFormat opt in
         renderTitle 2 title opt
@@ -196,13 +227,14 @@ lang RowRenderer = RendererInterface
     sem renderBold (text : String) =
     | _ -> text
 
+    -- Escaping/sanitizing hooks for docs and code (no-op in raw).
     sem renderRemoveDocForbidenChars (s: String) =
     | _ -> s
 
      sem renderRemoveCodeForbidenChars (s: String) =
     | _ -> s
 
-
+    -- Title helpers.
     sem renderTitle (size : Int) (s : String) =
     | _ -> s
 
@@ -210,6 +242,7 @@ lang RowRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         renderTitle size (objTitle obj) opt
     
+    -- Text, link, and color helpers (raw → passthrough).
     sem renderText (text : String) =
     | _ -> text
 
@@ -237,9 +270,10 @@ lang RowRenderer = RendererInterface
     sem renderDefault (content : String) =
     | _ -> content
     
-    sem renderMultiLigneComment (content : String) =
+    sem renderMultiLineComment (content : String) =
     | _ -> content
 
+    -- Newline helper.
     sem renderNewLine =
     | _ -> "\n"
     

@@ -4,7 +4,7 @@
 -- utility functions for converting to/from strings. It is used primarily by the
 -- CLI or renderer to determine the output mode.
 --
--- We have 3 formats: mdx, md, and html. The Row format is a generic wrapper
+-- We have 3 formats: mdx, md, and html. The Raw format is a generic wrapper
 -- around another format. Its purpose is to preserve the real format while
 -- enabling temporary generic code, useful for factorization and composition.
 
@@ -18,12 +18,12 @@ lang Formats
     | Html {}
     | Md {}
     | Mdx {}
-    | Row { fmt : Format }
+    | Raw { fmt : Format }
 
-    -- Recursively unwraps a Row format to get the underlying format.
-    sem unwrapRow : Format -> Format
-    sem unwrapRow =
-    | Row { fmt = fmt } -> unwrapRow fmt
+    -- Recursively unwraps a Raw format to get the underlying format.
+    sem unwrapRaw : Format -> Format
+    sem unwrapRaw =
+    | Raw { fmt = fmt } -> unwrapRaw fmt
     | fmt -> fmt
         
     -- Converts a string into a `Format` if possible.
@@ -41,14 +41,14 @@ lang Formats
     | Html {} -> "Html"
     | Md {} -> "Md"
     | Mdx {} -> "Mdx"
-    | Row { fmt = fmt } -> join ["Row { fmt = ", formatToStr fmt, " }"]
+    | Raw { fmt = fmt } -> join ["Raw { fmt = ", formatToStr fmt, " }"]
 
     -- Returns the file extension associated with a given `Format`.
     sem formatGetExtension : Format -> String
     sem formatGetExtension =
     | Html {} -> "html"
     | Md {} | Mdx {} -> "md"
-    | Row { fmt = fmt } -> formatGetExtension fmt
+    | Raw { fmt = fmt } -> formatGetExtension fmt
 
 
     -- Returns the default rendering format to use when none is specified.    

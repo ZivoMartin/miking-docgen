@@ -1,45 +1,47 @@
 -- # Extracter: generates ObjectTree from DocTree
 --
--- This module implements the extracter:
+-- This module implements the extractor:
 -- - input: a parsed `DocTree`
 -- - output: an `ObjectTree` representing documentation content
 --
--- The parsing phase produces a `DocTree`, which is a relatively minimal structure that only defines the layout of the code.
--- In the extracting phase, we transform this `DocTree` into an `Object`.  
--- Objects also follow a tree logic, with sub-objects, but they carry more semantic information than the `DocTree`.
+-- The parsing phase produces a `DocTree`, which is a relatively minimal structure
+-- that captures the layout of the code. In the extracting phase, we transform this
+-- `DocTree` into an `ObjectTree`. Objects also form a tree, with sub-objects, but
+-- they carry more semantic information than the `DocTree`.
 --
--- In this phase, look-ahead is allowed, meaning we can inspect as many upcoming nodes or children/subchildren of the current node as we wish.
+-- In this phase, look-ahead is allowed: we may inspect as many upcoming nodes
+-- (children or descendants) of the current node as needed.
 --
--- Here is the list of information contained in an `Object`:
+-- To compute the documentation of each object—the part we care about most—we must
+-- capture the comments immediately above the block. We maintain a **comment buffer**
+-- during extraction. Each time we encounter a comment, we add it to the buffer.
+-- When we encounter something other than a comment, three cases apply:
+--   * It is a `DocTree` node -> the buffer becomes the node’s documentation, then we clear it.
+--   * It is a separator with **fewer than 2 newlines** -> we keep the buffer unchanged.  
+--     This matters for indented constructs: documentation comments are often indented
+--     and separated by whitespace. However, if the separator contains **more than one**
+--     newline, we clear the buffer because it represents a break.
+--   * Anything else -> we clear the buffer.
 --
---  - `name`: The name of the object. If the object is a `let`, it corresponds to the variable name.  
---    To extract it, we perform a look-ahead on the children of the current node until we find the object’s name.
---
---  - `doc`: The documentation is one of the most important components.  
---    It consists of the comments written above the definition of an object.  
---    To retrieve it, we maintain a comment buffer throughout the extraction process.  
---    Each time we encounter a comment, it is added to the buffer. If we encounter something other than a comment, there are three cases:
---      * It is a `DocTree` node -> the current state of the buffer becomes the documentation for that node, and the buffer is cleared.
---      * It is a separator with less than 2 newlines -> we simply keep the buffer unchanged.  
---        This is crucial, for example in cases where the documented object is indented.  
---        In that case, the documentation (i.e., the comments) is likely also indented and separated by separators.  
---        However, if the separator **contains** more than one newline, we must still clear the buffer, because it represents a break.  
---      * It is anything else -> we clear the buffer.
---
---  - `namespace`: The namespace reflects the current position of the node in the tree.  
---    Each namespace is naturally unique and is used, combined with the object name, to produce unique identifiers for every object.  
---    Duplicate names within the same namespace are handled elsewhere.
---
---  - `kind`: The `kind` field is specific to the object’s type.  
---    It is first used to distinguish between object types (`Let`, `Sem`, etc.),  
---    but also to enrich objects with category-specific metadata:  
---    e.g., the composition of a language, parameter names of a let, or the variants of a syntax.
---
---  - `sourceCode`: The `sourceCode` of an object is an **absolute** representation of the object’s source code.  
---    It is not just a plain string, but a structured value defined in `source-code-word.mc` and `source-code-builder.mc`.  
---    The idea is to pass each node and leaf of the `DocTree` to the source code builder,  
---    and call its `finish` function after all children have been processed to obtain the final representation.
-    
+-- For each `Node`, we inspect its `state` and compute the object (and its metadata)
+-- from the children. For each object, we also compute a **name** and a **namespace**:
+-- 1. **Name** — obtained from children if the node is a `let` (the next word), or from
+--    the extraction context (e.g., utest names are numbered via a counter incremented
+--    for each new utest).
+-- 2. **Path** — the hierarchical location of an object. Example:
+--    ```
+--    let x = let y = 2 in 3
+--    ```
+--    If the code above is in `foo.mc`, the path of `x` is `foo.mc/`, and the path
+--    of `y` is `foo.mc/x/`.
+-- 3. **Extension** — a personalized extension based on the object kind, computed with
+--    the Object API. This extension is necessary to distinguish
+--    the folder that contains an object’s subelements from the object’s documentation
+--    file itself.
+--    Returning to the example, the full namespace of `x` is `foo.mc/x.let`, and `y`
+--    is `foo.mc/x/y.let`. The final documentation file then ends with `.html` or `.md`
+--    depending on the requested output format.
+
 include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
 
@@ -59,7 +61,7 @@ let extract : DocTree -> ObjectTree =
     extractingLog "Beggining of extraction...";
 
      -- Entry point: tree must be Program node
-    match tree with Node { token = TokenProgram { content = content, includeSet = includeSet }, state = Program {} } then
+    match tree with Node { token = TokenProgram { content = content, includeSet = includeSet }, state = StateProgram {} } then
     let prefix = includeSetPrefix includeSet in
     
     -- Buffer of collected comments
@@ -117,7 +119,7 @@ let extract : DocTree -> ObjectTree =
             -- Dispatch by token type + state
             switch token case TokenWord { content = content } | TokenProgram { content = content } then
             switch state
-            case Program {} then
+            case StateProgram {} then
                 recursive
                 let extractProgramComments = lam sons.
                     switch sons
@@ -136,20 +138,20 @@ let extract : DocTree -> ObjectTree =
                     (ObjProgram {})
                     utestCount
 
-            case Mexpr {} then
+            case StateMexpr {} then
                 process state sons "mexpr" (getNamespace namespace "mexpr" "") doc (ObjMexpr {}) utestCount
 
-            case (Use {} | TopUse {}) then
+            case (StateUse {} | StateTopUse {}) then
                 let name = getName sons in
                 let obj = { obj with name = name.word, kind = ObjUse {} } in
                 let sourceCodeBuilder = foldl absorbWord sourceCodeBuilder sons in
                 match finish obj sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 { obj = Some (ObjectNode { obj = obj, sons = [] }), commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount }
 
-            case TopUtest {} | Utest {} then
+            case StateTopUtest {} | StateUtest {} then
                 let name = int2string utestCount in
                 process state sons name (getNamespace namespace name "utest") doc (ObjUtest {}) (addi utestCount 1)
-            case Rec {} | TopRec {} then
+            case StateRec {} | StateTopRec {} then
                 process state sons "" namespace doc (ObjRecursiveBlock {}) utestCount 
             case state then
                 -- Look for '=' in children
@@ -162,18 +164,18 @@ let extract : DocTree -> ObjectTree =
                 
                 let name = getName sons in
                 let kind = switch state
-                    case (Let {} | TopLet {} | RecLet {}) then
-                        let rec = match state with Let {} | TopLet {} then false else true in
+                    case (StateLet {} | StateTopLet {} | StateRecLet {}) then
+                        let rec = match state with StateLet {} | StateTopLet {} then false else true in
                         let sons = goToEqual sons in
                         let sons = skipUseIn sons in
                         -- Extract params if any
                         let args = extractParams sons in
                         ObjLet { rec = rec, args = args, ty = None {} }
-                    case Sem {} then
+                    case StateSem {} then
                         ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons), ty = None {} }
-                    case Syn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
-                    case Lang {} then ObjLang { parents = extractParents name.rest }
-                    case (Con {} | TopCon {}) then
+                    case StateSyn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual sons) }
+                    case StateLang {} then ObjLang { parents = extractParents name.rest }
+                    case (StateCon {} | StateTopCon {}) then
                         let t =
                             match nthWord name.rest 0 with Some { word = ":", rest = typedef } then
                                 extractType (skipUseIn typedef)
@@ -183,7 +185,7 @@ let extract : DocTree -> ObjectTree =
                         in
                         ObjCon { t = t }
 
-                    case (Type {} | TopType {}) then
+                    case (StateType {} | StateTopType {}) then
                         let t = match nthWord name.rest 0 with Some { word = "=", rest = typedef } then
                                 Some (extractType typedef) else None {} in
                         ObjType { t = t }

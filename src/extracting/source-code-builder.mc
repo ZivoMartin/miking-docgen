@@ -3,13 +3,11 @@
 -- This module implements a minimalist system to reconstruct the source code
 -- associated with each `Object` in the documentation tree.
 -- 
--- The core idea is that the parser structure preserves the order of sub-blocks,
--- so we can mark recursive children using `None {}` and inject them later during rendering.
--- No explicit indexing or backtracking is required.
+-- To see the logic of source-code representation, see source-code.mc
+
 
 include "../parsing/doc-tree.mc"
-include "./source-code-word.mc"
-include "./source-code-formatting.mc"
+include "./source-code.mc"
 include "../global/logger.mc"
 
 -- An empty source code
@@ -21,7 +19,7 @@ let sourceCodeEmpty : () -> SourceCode = lam . []
 -- When entering a `Node`, a new builder context is pushed.
 -- When finishing a node, the buffer is returned and the parent context is restored.
 type SourceCodeBuilder
-con SourceCodeNode : use Formatter in { parent: Option SourceCodeBuilder, ctx: FormatterContext, buffer: SourceCode } -> SourceCodeBuilder
+con SourceCodeNode : { parent: Option SourceCodeBuilder, buffer: SourceCode } -> SourceCodeBuilder
     
 -- ## absorbWord
 --
@@ -30,19 +28,18 @@ con SourceCodeNode : use Formatter in { parent: Option SourceCodeBuilder, ctx: F
 -- - If the word is a `Node`, we inject a `None {}` into the parent
 --   and start a fresh buffer for the child node.
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
-    use TokenReader in use Formatter in lam builder. lam word.
-    match builder with SourceCodeNode { buffer = buffer, parent = parent, ctx = ctx } in
+    use TokenReader in lam builder. lam word.
+    match builder with SourceCodeNode { buffer = buffer, parent = parent } in
     let token = (match word with Node { token = token } | Leaf { token = token } | IncludeNode { token = token } in token) in
-    let ctx = formatterNext (ctx, token) in
-    let token = ctx.word in
+    let token = sourceCodeWordFormat token in
     switch word
     case Node {} then
         let buffer = cons (None {}) buffer in
-        let parent = SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx } in
-        SourceCodeNode { parent = Some parent, buffer = [Some token], ctx = ctx }
+        let parent = SourceCodeNode { parent = parent, buffer = buffer } in
+        SourceCodeNode { parent = Some parent, buffer = [Some token] }
     case Leaf {} | IncludeNode {} then
         let buffer = cons (Some token) buffer in
-        SourceCodeNode { parent = parent, buffer = buffer, ctx = ctx }
+        SourceCodeNode { parent = parent, buffer = buffer }
     end
 
 -- ## finish
@@ -51,16 +48,13 @@ let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
 -- - the restored parent builder
 -- - the reversed buffer containing the current block's source
 let finish : SourceCodeBuilder -> { builder: SourceCodeBuilder, sourceCode: SourceCode } = lam builder.
-    match builder with SourceCodeNode { parent = Some parent, buffer = buffer, ctx = ctx } then
+    match builder with SourceCodeNode { parent = Some parent, buffer = buffer } then
         match parent with SourceCodeNode { parent = parent, buffer = parentBuffer  } in
-        { builder = SourceCodeNode { parent = parent, buffer = parentBuffer, ctx = ctx }, sourceCode = reverse buffer }
+        { builder = SourceCodeNode { parent = parent, buffer = parentBuffer }, sourceCode = reverse buffer }
     else match builder with SourceCodeNode { buffer = buffer } in
         extractingWarn "finish: Builder parent should never be empty at this point";
         { builder = builder, sourceCode = reverse buffer }
 
 -- Returns a new SourceCodeBuilder
-let newSourceCodeBuilder : () -> SourceCodeBuilder = use Formatter in lam . SourceCodeNode { buffer = [], parent = None {}, ctx = formatterEmptyContext () }
+let newSourceCodeBuilder : () -> SourceCodeBuilder = lam . SourceCodeNode { buffer = [], parent = None {} }
 
-
-let wordBufferToSourceCode : [SourceCodeWord] -> SourceCode = lam code.
-    map (lam c. Some c) code

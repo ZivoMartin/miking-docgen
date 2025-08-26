@@ -1,9 +1,9 @@
 -- # ObjectKinds and Object helpers
 --
 -- This module defines:
--- - ObjectKind: describes different kinds of program elements (let, type, lang, sem, etc.)
--- - Object: carries name, namespace, doc and kind
--- - A simple ObjectTree type for grouping objects
+-- - `ObjectKind`: kinds of program elements (let, type, lang, sem, …)
+-- - `Object`: carries name, namespace, doc, kind, source code, prefix, stdlib flag
+-- - `ObjectTree`: a simple tree wrapper for grouping objects
 --
 -- Used in doc generation and object representation.
 
@@ -12,7 +12,9 @@ include "./source-code-builder.mc"
 include "util.mc"
 
 include "mexpr/ast.mc"
-    
+
+-- The ObjectKinds language augments kinds with extra info per block type.
+-- For blocks involving types, we reuse stdlib types from `mexpr/ast.mc` and their utilities.
 lang ObjectKinds = MExprAst
 
     -- All possible object kinds
@@ -22,7 +24,7 @@ lang ObjectKinds = MExprAst
     | ObjLang { parents : [String] }
     | ObjType { t: Option String }
     | ObjUse {}
-    | ObjSem { langName: String, variants: [String], ty: Option Type }
+    | ObjSem { langName: String, variants: [String], ty: Option Type } -- Variants are the names of each alternative.
     | ObjSyn { langName: String, variants: [String] }
     | ObjCon { t: String }
     | ObjMexpr {}
@@ -30,6 +32,7 @@ lang ObjectKinds = MExprAst
     | ObjRecursiveBlock {}
     | ObjInclude { pathInFile: String }
 
+    -- Converts an ObjectKind to a readable string (for logs/debugging).
     sem objKindToString : ObjectKind -> String
     sem objKindToString =
     | ObjLet { rec = rec, args = args, ty = ty} -> join ["ObjLet, recursive: ", bool2string rec, ", args: [", strJoin ", " args, "]"]
@@ -46,7 +49,7 @@ lang ObjectKinds = MExprAst
     | ObjProgram {} -> "ObjProgram"
     | _ -> warn "All object kinds are not supported in objKindToString sementic"; ""
          
-    -- First keyword associated to this object kind (for printing / links)
+    -- First keyword for this kind (used for printing/links/extension).
     sem getFirstWord =
     | ObjLet {} -> "let"
     | ObjLang {} -> "lang"
@@ -64,12 +67,26 @@ lang ObjectKinds = MExprAst
   
 end
 
--- Object structure
+-- The object type is designed to represent the documentation-side structure of the code.
+-- Its fields are:
+-- - `name`: The name of the object. For a `let`, it corresponds to the variable name.  
+-- - `doc`: All comments above the beginning of the block.  
+-- - `namespace`: The namespace reflects the current position of the node in the tree and is used
+--   to build its documentation path.  
+-- - `kind`: Specific to the object’s type (see ObjectKind).  
+-- - `sourceCode`: An **absolute** representation of the object’s source code.
+--   It is not just a plain string, but a structured value defined in `source-code-word.mc` and `source-code-builder.mc`.  
+-- - `prefix`: The part of the namespace removed because it is redundant.  
+--   Example: if we have `src/foo.mc` and `src/bar.mc`, we can drop `src/`.  
+--   `objWithPrefix` both removes the given prefix (warning if the namespace does not start with it)
+--   and stores it so we can recover the original namespace later.  
+-- - `isStdlib`: Marks whether the object belongs to the stdlib.
 type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, prefix: String, isStdlib: Bool }
 
--- The position of where the program started
+-- Absolute filesystem position of the current program start.
 let basePosition : String = concat (sysGetCwd ()) "/"
 
+-- Simple field accessors.
 let objName : Object -> String = lam obj. obj.name
 let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind
 let objDoc : Object -> String = lam obj. obj.doc
@@ -78,12 +95,15 @@ let objNamespace : Object -> String = use ObjectKinds in lam obj. obj.namespace
 let objPrefix : Object -> String = lam obj. obj.prefix
 let objIsStdlib : Object -> Bool = lam obj. obj.isStdlib
 
+-- Object updaters (immutable setters).
 let objWithName : Object -> String -> Object = lam obj. lam name. { obj with name = name }
 let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. lam kind. { obj with kind = kind }
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
 let objWithIsStdlib : Object -> Bool -> Object = lam obj. lam isStdlib. { obj with isStdlib = isStdlib }    
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
 
+-- Sets a shorter namespace by removing `prefix`; stores the prefix for recovery.
+-- Warns if the namespace does not start with the given prefix.
 let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
     let process = lam.
         let basePrefix: String = normalizePath (concat basePosition obj.namespace) in
@@ -98,6 +118,7 @@ let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
     let namespace = if strStartsWith "/" namespace then namespace else cons '/' namespace in
     { obj with namespace = namespace, prefix = prefix }
     
+-- Replaces namespace; strips stdlib prefix if present; re-applies stored `prefix`.
 let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     let namespace =
     if strStartsWith stdlibLoc namespace then
@@ -108,17 +129,19 @@ let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     let obj = { obj with namespace = namespace } in
     objWithPrefix obj obj.prefix
 
+-- Returns absolute path = prefix + namespace.
 let objAbsolutePath : Object -> String = lam obj.
     concat obj.prefix obj.namespace
 
--- Empty default object
+-- Empty default object (neutral values).
 let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", isStdlib = false, kind = ObjProgram {}, sourceCode = sourceCodeEmpty (), prefix = "" }
 
+-- Extracts the language name from a Sem/Syn object; else empty string.
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.
     match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
 
 
--- Returns a string representation of the object
+-- Renders a short textual representation of an object (for printing).
 let objToString = use ObjectKinds in lam kind. lam name.
     switch kind
     case ObjLet { rec = rec, args = args } then join [if rec then "recursive " else "", "let ", name, " ", strJoin " " args]
@@ -129,6 +152,7 @@ let objToString = use ObjectKinds in lam kind. lam name.
     case kind then join [getFirstWord kind, " ", name]
     end
 
+-- Sets the (optional) type of a Let/Sem object, keeping other fields the same.
 let objSetType = use ObjectKinds in lam obj. lam ty.
     { obj with kind = switch obj.kind
     case ObjLet d then ObjLet { d with ty = ty }
@@ -136,10 +160,11 @@ let objSetType = use ObjectKinds in lam obj. lam ty.
     case _ then obj.kind end }
     
     
--- Object tree (hierarchy)
+-- Object tree (hierarchy). Wraps Object to allow recursive nesting.
 type ObjectTree
 con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 
+-- Convenience helpers for ObjectTree.
 let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.kind obj.name
 let objTreeObj : ObjectTree -> Object = lam tree. match tree with ObjectNode { obj = obj } in obj
 let objTreeDoc : ObjectTree -> String = lam tree. objDoc (objTreeObj tree)

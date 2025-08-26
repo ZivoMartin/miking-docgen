@@ -10,11 +10,10 @@ include "stdlib.mc"
 include "sys.mc"
 include "../global/logger.mc"
 
-
-
-let getNamespace = lam namespace. lam name. lam ext.
+-- Compute the namespace of an object based on path name and ext.
+let getNamespace = lam path. lam name. lam ext.
     let ext = match ext with "" then "" else concat ext "-" in
-    join [namespace, "/", ext, name]
+    join [path, "/", ext, name]
 
 
 -- Extracts the last segment of a namespace (split by '/').
@@ -28,9 +27,8 @@ utest extractLastNamespaceElement "onlyone" with "onlyone"
 utest extractLastNamespaceElement "" with ""
 
 
-
 -- Removes all comment tokens from a list of syntax tree nodes.
-let removeComments = use TokenReader in
+let removeComments : [DocTree] -> [DocTree] = use TokenReader in
     lam sons. filter (lam s. match s with Leaf { token = TokenComment {} } then false else true) sons
 
 -- Returns the nth word in the list of syntax tree nodes.

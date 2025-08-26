@@ -4,7 +4,7 @@
 -- It traverses the parsed object structure, organizes its children,
 -- reconstructs the source code, and writes the formatted documentation files to disk.
 --
--- After the extraction phase (and optionally the labeling phase), we obtain an `Object`.
+-- After the extraction phase (and the labeling phase), we obtain an `Object`.
 -- From this object, generating documentation pages becomes straightforward.
 --
 -- Here’s how the renderer works:
@@ -23,10 +23,6 @@
 --   Importantly, this reconstruction must **re-use data from the children**:
 --   otherwise, we would have to recompute syntax highlighting and toggle button placement from scratch,
 --   which is clearly not an acceptable solution.
---
---   The idea is that each renderer defines a `WordRender`:
---   a function that takes a word (token) and returns, for example, a colored `<span>` for HTML.
---   During reconstruction, each word is passed through this function.
 --
 --   The toggling system is handled in `source-code-spliter.mc`.
 --   The idea is to split the source code into three parts:
@@ -53,10 +49,6 @@ include "../global/format.mc"
 --
 -- Entrypoint to rendering. This function traverses the entire `ObjectTree` and writes
 -- structured documentation for each object node.
---
--- ### Parameters:
--- - `fmt`: The rendering format (`Html`, `Markdown`, etc.)
--- - `obj`: The root `ObjectTree` to render
 --
 -- ### Behavior:
 -- - Preprocesses the object tree
@@ -95,9 +87,9 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 (match path with "" then () else renderingLog (concat "Rendering file " path));
                 -- Push header of the output file
                 write (renderHeader obj oldOpt);
-                -- Pushing title and global documentation
-                write (renderObjTitle 1 obj oldOpt);
-                
+
+                -- This function goes through all the nodes and extract the recursive children.
+                -- It avoids having a useless recursive documentation bloc.
                 let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
                     foldl (lam sons. lam son.
                         switch son
@@ -137,9 +129,27 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                       ) { sons = [], opt = oldOpt } sons with { sons = sons, opt = opt } in
                 let sons = reverse sons in
 
+                -- ## injectTests
+                --
+                -- Post-processes a list of `RenderingData` nodes to attach unit tests to their parent
+                -- documentation blocks.
+                -- - Iterates through children (`sons`).
+                -- - Buffers any `RenderingData` elements that correspond to test code.
+                -- - When a new non-test block (`current`) is encountered, merges the buffered tests
+                --   into that block by:
+                --   * Concatenating the test code (`tests`) into the `tests` field
+                --   * Concatenating their raw rows (`row`) into the `rowTests` field
+                -- - Clears the buffer after attaching tests.
+                --
+                -- Returns: the transformed list of `RenderingData`, where test blocks are folded into
+                -- the corresponding parent documentation block.
                 let injectTests : [RenderingData] -> [RenderingData] = lam sons.
                     type Arg = { current: Option RenderingData, acc: [RenderingData], tests: [RenderingData] } in
 
+                    -- - Takes the accumulated list, the current block, and buffered tests.
+                    -- - Extracts the "lastRow" of the last test, trimming trailing comments and empty lines.
+                    -- - Builds the final `tests` and `rowTests` strings by concatenating buffered test code.
+                    -- - Produces a new `RenderingData` with its tests attached, then pushes it into the accumulator.
                     let pushSonInAcc: [RenderingData] -> RenderingData -> [RenderingData] -> [RenderingData] = lam acc. lam current. lam tests.
                         let testsStr: (String, String) =
                             match tests with [last] ++ tests then
@@ -250,7 +260,3 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         end
     in
     let res = render (fileOpenerCreate opt.letDepth) opt obj in ()
-
-
-
-
