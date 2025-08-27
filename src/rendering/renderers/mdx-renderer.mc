@@ -57,7 +57,7 @@ lang MdxRenderer = RendererInterface
             then subsequence importPath 0 (subi (length importPath) 3)
             else importPath in
         join [
-          "import { DocBlock, Signature, Description, Panel, ToggleWrapper, S } from '@site/",
+          "import { DocBlock, Signature, Description, ToggleWrapper, S } from '@site/",
           importPath,
           "';\n\n"
         ]
@@ -170,7 +170,7 @@ lang MdxRenderer = RendererInterface
           "<DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
           mdxRenderCode opt sign, "\n",
           desc, "\n",
-          "<Panel id=\"", codeId, "\" title=\"Code\">", mdxRenderCode opt code, "</Panel>\n",
+          "<ToggleWrapper>", mdxRenderCode opt code, "</ToggleWrapper>\n",
           (if hasTests then join ["<Panel id=\"", testsId, "\" title=\"Tests\">", mdxRenderCode opt tests, "</Panel>\n"] else ""),
           "</DocBlock>\n\n"
         ]
