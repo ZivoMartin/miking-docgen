@@ -2,45 +2,44 @@
 --
 -- This module defines a set of `BreakerChoosers`, one per parsing state.
 --
--- This file defines the automaton of our parser. The idea is that, depending on the current state,
--- when reading an opener, we don’t want to choose the same breakers or transition into the same states.
+-- It defines the automaton of our parser. The idea is that, depending on the current state,
+-- when reading an opener, we don’t want to select the same breakers or transition into the same states.
 --
--- For example, if we are in the `Lang {}` state, we want `end` to be considered as a `type` breaker.
--- Whereas if we are in the `Program` state, it’s unnecessary to consider `end` as a type breaker—even
--- though doing so wouldn’t affect the parser’s validity.
+-- For example, if we are in the `Lang {}` state, we want `end` to be considered a `type` breaker.
+-- Whereas if we are in the `Program` state, it is unnecessary to treat `end` as a type breaker—even
+-- though doing so would not affect the parser’s validity.
 --
--- The core idea is that parsing is guided by a state machine:
+-- The core concept is that parsing is guided by a state machine:
 -- - The current **state** determines what the parent node is.
 -- - A **breaker** is a token that closes one or more blocks.
--- - When a token is seen, the BreakerChooser can decide:
+-- - When a token is encountered, the BreakerChooser can decide:
 --     * What are the breakers of this new block? (`choose`)
 --     * Should parsing continue under the same parent node? (`continue`)
---       For instance, if we have `lang sem A = sem B = end`, the second `sem` will break the first `sem`,
+--       For example, if we have `lang sem A = sem B = end`, the second `sem` will break the first `sem`,
 --       but we want to continue parsing under the `lang` parent. On the other hand, when we see `end`,
---       it will break the second `sem`, and we don’t want to continue parsing under the `lang` parent.
+--       it breaks the second `sem`, and we do not want to continue parsing under the `lang` parent.
 --     * Should this breaker be absorbed? (`absorbIt`)
---       In the previous example, the second `sem` will not absorb its breaker (it belongs to the parent block),
---       whereas the `Lang {}` block will absorb the `end`. The automaton decides whether a block in a given state
+--       In the previous example, the second `sem` does not absorb its breaker (it belongs to the parent block),
+--       whereas the `Lang {}` block does absorb the `end`. The automaton decides whether a block in a given state
 --       is allowed to absorb its breaker.
 --     * Is this a hard break? (`reStructureTree`)
---       We decide whether a given break is hard using the automaton. For example, if a `let` is broken by `lang`,
+--       The automaton determines whether a given break is hard. For example, if a `let` is broken by `lang`,
 --       we must restructure the tree and reinterpret that `let` as a `TopLet`.
 --     * What is the alternate version of this state? (`switchVersion`)
---       When switching states (e.g., from `Let` to `TopLet`), this decides what the new state should be.
+--       When switching states (e.g., from `Let` to `TopLet`), this determines what the new state should be.
 --
--- The whole system is composed at the bottom into a single `BreakerChooser`.
+-- The entire system is composed at the bottom into a single `BreakerChooser`.
 
 
 include "./lexing/token-readers.mc"
 
 
 -- Interface for a BreakerChooser; all choosers implement this contract.
--- Each function has a default implementation allowing us to not define
--- all sems if not necessary.
+-- Each function has a default implementation so that not all sems need to be defined explicitly.
 lang BreakerChooserInterface = TokenReader
 
-    -- A breaker is a set of String representing all the possible breaker
-    -- for a block along with the state of this block
+    -- A breaker is a set of Strings representing all possible breakers
+    -- for a block, along with the state of this block.
     type Breaker = { breakers: [String], state: State }
 
     -- Parser automaton states.
@@ -86,33 +85,32 @@ lang BreakerChooserInterface = TokenReader
         | StateTopUtest {} -> "TopUtest"
 
 
-    -- Determine the new state and the breakers after having find a block opener.
-    -- The default behavior is to crash since it would mean the automaton is wrong.
-    -- Indeed, for a valid automaton all cases should be handled.
+    -- Determine the new state and the breakers after encountering a block opener.
+    -- The default behavior is to crash since this would mean the automaton is wrong.
+    -- For a valid automaton, all cases must be handled.
     sem choose : (State, String, Pos) -> Breaker
     sem choose =
       | (state, word, pos) -> error (join ["Parsing Failed, x: ", int2string pos.x, ", y: ", int2string pos.y, ": ", "You cannot have the word ", word, " inside a ", (toString state), " block."])
 
-    -- Determine if for a given breaker, the tokenisation should continue for the parent state.
-    -- The default behavior is to continue the tokenisation.
+    -- Determine if, for a given breaker, tokenization should continue for the parent state.
+    -- The default behavior is to continue.
     sem continue : (State, String) -> Bool
     sem continue =
         | (state, word) -> true
 
-    -- Determine for a given context if the block become hard or no.
+    -- Determine if the block becomes hard in a given context.
     -- The default behavior is to not restructure the tree.
     sem reStructureTree: (State, String) -> Bool
     sem reStructureTree =
         | (_, _) -> false
 
-    -- Determine if the breaker should be part of the current block, or should be part of the bloc.
+    -- Determine whether the breaker should be part of the current block or part of the parent block.
     -- The default behavior is to reject the breaker.
     sem absorbIt : (State, String) -> Bool
     sem absorbIt  =
         | (state, word) -> false
 
-    -- SwitchVersion will take a state and its breaker and will
-    -- return the actual version of the state if it has to change.
+    -- Takes a state and its breaker and returns the correct version of the state if it must change.
     -- The default behavior is to keep the same state.
     sem switchVersion : (State, String) -> State
     sem switchVersion =
@@ -126,58 +124,58 @@ lang BreakerChooserInterface = TokenReader
      
 end
 
--- Defining some constants for the breakers states
+-- Defining some constants for breaker states
 
--- This bloc can only close on in.
+-- This block can only close on "in".
 let innerBloc = ["in"]
 
--- Breakers for a rec objects, those are the lit representation of recursive enders.
+-- Breakers for recursive objects: these are the literal representations of recursive enders.
 let recBreak = ["#in", "#end"]
 
--- Breaker for a recursive that can only end will "in"
+-- Breakers for a recursive block that can only end with "in".
 let recInner = ["#in"]
 
--- Breaker for a top level recursive.
+-- Breakers for a top-level recursive block.
 let recOuter = ["#end"]
 
--- This breakers are for the top level objects,
--- indeed we cannot consider let, type, .. as explicit breaker
+-- Breakers for top-level objects.
+-- We cannot consider let, type, etc. as explicit breakers
 -- since they could be nested.
 let topLvlBreak = ["lang", "mexpr"]
 
--- This breakers are for top level that do not have any nested blocs,
--- so we can instantly break on any opener as we know they are not nested.
+-- Breakers for top-level blocks that do not contain any nested blocks,
+-- so they can be instantly broken by any opener since nesting is impossible.
 let topLvlAnyBreak = concat topLvlBreak ["let", "recursive", "con", "type", "mexpr", "utest"]
 
--- Same as topLvlBreak, but when the bloc is possibly a nested bloc and so can end with "in"
+-- Same as topLvlBreak, but when the block could be nested and thus may also end with "in".
 let innerCandidateBreak = cons "in" topLvlBreak
 
--- Same as topLvlAnyBreak, but when the bloc is possibly a nested bloc and so can end with "in"
+-- Same as topLvlAnyBreak, but when the block could be nested and thus may also end with "in".
 let innerCandidateAnyBreak = cons "in" topLvlAnyBreak
 
--- All top level lang keywords that can only break, syntaxically
--- its impossible that this blocs are nested.
--- For exemple we cannot have a sem inside a sem.
+-- All top-level lang keywords that can only break. Syntactically,
+-- it is impossible for these blocks to be nested.
+-- For example, we cannot have a sem inside a sem.
 let langBreak = ["end", "sem", "syn"]
 
--- Here we also consider type and con that are also top level keyword
--- for langs, but are a bit special as they could be nested.
+-- Here we also consider type and con, which are top-level lang keywords,
+-- but they are special since they can be nested.
 let langFullBreak = concat ["type", "con"] langBreak
 
--- And finally, here we also consider the "in"
--- We will use this one if the bloc could be nested.
+-- Finally, here we also consider "in".
+-- We use this when the block could be nested.
 let langFullBreakIn = cons "in" langFullBreak 
 
--- We are here at the root of the program, this implies we can find any top level bloc,
--- And moreover, we can assume with 100% chances that each bloc is a top level.
+-- At the root of the program, we can find any top-level block,
+-- and we can assume with certainty that each block is top-level.
 lang ProgramBreakerChooser = BreakerChooserInterface
 
      -- The choose implementation has 4 main cases:
-     -- 1. type and con are very simple bloc without any nested blocs, so anything will break them without any ambiguity
-     -- 2. lang and recursive are also quite simple since they are closed with only one word. Note that #end is the litteral form of RecursiveEnder.
-     -- 3. let and utest are a bit more restricted, indeed we cant consider let as a breaker since it could also be a nested break, so
-     --  the only breakers are words that can only exist on the top level.
-     -- 4. mexpr is the easiest case as it cant break, as it is the last top level bloc.
+     -- 1. type and con are very simple blocks without nested blocks, so anything breaks them without ambiguity.
+     -- 2. lang and recursive are also simple since they are closed with only one keyword. Note that #end is the literal form of RecursiveEnder.
+     -- 3. let and utest are more restricted: we cannot treat let as a breaker since it may be nested. Therefore,
+     --    the only breakers are words that can only exist at the top level.
+     -- 4. mexpr is the easiest case, as it cannot break—it is always the last top-level block.
     sem choose =        
         | (StateProgram {}, "type", pos) -> build topLvlAnyBreak (StateTopType {})
         | (StateProgram {}, "con", pos) -> build topLvlAnyBreak (StateTopCon {})
@@ -190,18 +188,18 @@ lang ProgramBreakerChooser = BreakerChooserInterface
 
         | (StateProgram {}, "mexpr", pos) -> build [] (StateMexpr {})
 
-    -- We can't not absorb any word here as it is the top level.
+    -- At the top level, every breaker is absorbed.
     sem absorbIt =
         | (StateProgram {}, word) -> true
 
 end
 
--- We handle here the mexpr case, this is quite simple as we know
--- that all its component will never be top level and nothing can break it.
+-- Handles the mexpr case. This is simple since all its components
+-- are guaranteed to be inner blocks and nothing can break it.
 lang MexprBreakerChooser = BreakerChooserInterface
 
-    -- As every blocs are inner blocs, we can just assume a in will come close them.
-    -- Only recursive is closed with #in, the RecursiveEnder lit for in.
+    -- All blocks are inner blocks, so we assume they close with "in".
+    -- Only recursive is closed with #in, the literal form of RecursiveEnder.
     sem choose =
     | (StateMexpr {}, "let", pos) -> build innerBloc (StateLet {})
     | (StateMexpr {}, "utest", pos) -> build innerBloc (StateUtest {})
@@ -213,20 +211,21 @@ lang MexprBreakerChooser = BreakerChooserInterface
     
 end
 
--- In this lang we handle both top and inner let and utests.
--- The main idea here is that when a TopLet find a let it can't know beforehand
--- if it is an inner let or not. So it assume it is and give it the possibility to break
--- on "in", if later the let breaks on a top level keyword such as lang or mexpr, it
--- will triggers a reconstruction.
--- So basically, all Let can possibly be TopLet, and so we need to apply the same rules when
--- we meet "let" as a Let. Utests work exactly the same.
+
+-- In this language we handle both top-level and inner let/utest blocks.
+-- The main idea is that when a TopLet encounters a `let`, it cannot know beforehand
+-- whether it is an inner let or not. So it assumes it is, and gives it the possibility
+-- to break on "in". If later the `let` breaks on a top-level keyword such as `lang` or `mexpr`,
+-- this triggers a reconstruction.
+-- In other words, any `Let` can potentially be a `TopLet`, so we must apply the same rules
+-- when encountering "let" inside a Let. Utests behave in exactly the same way.
 lang LetUtestBreakerChooser = BreakerChooserInterface
 
-    -- As for the Program bloc we have 4 cases:
-    -- 1. let and utest are still very ambiguous but can this time break on a in.
-    -- 2. For type and con it is the same logic, but we can this time also break on in.
-    -- 3. Recursive can this time break on both "#end" and "#in" as we cant know beforehand if it is a toplvl or no.
-    -- 4. And use will alway and with in.
+    -- Similar to Program blocks, we have 4 cases:
+    -- 1. let and utest are ambiguous, but they can now also break on "in".
+    -- 2. For type and con, the same logic applies, but they can also break on "in".
+    -- 3. Recursive can now break on both "#end" and "#in", since we cannot know beforehand if it is top-level.
+    -- 4. use always ends with "in".
     sem choose =
         | (StateLet {} | StateUtest {} | StateTopLet {} | StateTopUtest {}, "let", pos) -> build innerCandidateBreak (StateLet {})
         | (StateLet {} | StateUtest {} | StateTopLet {} | StateTopUtest {}, "utest", pos) -> build innerCandidateBreak (StateUtest {})
@@ -238,43 +237,44 @@ lang LetUtestBreakerChooser = BreakerChooserInterface
         
         | (StateLet {} | StateUtest {} | StateTopLet {} | StateTopUtest {}, "use", pos) -> build innerBloc (StateUse {})
 
-    -- For an inner bloc, we only want to continue the parent
-    -- if the bloc is indeed an inner bloc, meaning the breaker is in.
-    -- For TopLvl blocs, we always have to continue as their parent is always Program.
+    -- For an inner block, we only continue parsing the parent
+    -- if the breaker is "in".
+    -- For top-level blocks, we always continue, since their parent is always Program.
     sem continue =
         | (StateLet {} | StateUtest {}, !"in") -> false
 
-    -- If we close an inner with anything else than an in, it means it
-    -- is not an inner, and so we want to trigger a restructuration.
+    -- If we close an inner block with anything other than "in",
+    -- it means it was not inner, so we trigger a restructuring.
     sem reStructureTree =
         | (StateLet {} | StateUtest {}, !"in") -> true
 
-    -- The let will only aborb in, all others breakers are generally
-    -- first words of new bloc such as lang.
+    -- Let/utest will only absorb "in"; other breakers usually
+    -- start new blocks such as lang.
     sem absorbIt =
         | (StateLet {} | StateUtest {}, "in") -> true
 
-    -- As alway if we do not end with in we want to cast inner
-    -- let and utest in top lvl, the little changment here is if
-    -- we break on a recursive ender as an in, it would mean that the
-    -- the let was actually a RecLet.
+    -- If the block does not end with "in", we cast inner let/utest
+    -- to their top-level versions. 
+    -- The special case is if we break on a recursive ender like "#in":
+    -- this means the let was actually a RecLet.
     sem switchVersion =
         | (StateUtest {}, !"in") -> StateTopUtest {}
         | (StateLet {}, "#in" | "#end") -> StateRecLet {}        
         | (StateLet {}, !"in") -> StateTopLet {}
 
-
-
 end
 
--- Here we handle the LetRec case that is quite similare as TopBreakerChooser
--- But it is easier since only let blocs are ambiguous.
+-- Here we handle the LetRec case, which is quite similar to the TopBreakerChooser,
+-- but simpler since only let blocks are ambiguous.
 lang LetRecBreakerChooser = BreakerChooserInterface
 
-    -- So here we have 3 cases
-    -- 1. let is still hard as we cant know if it is a RecLet or nested Let, so we put both in and RecursiveEnder and assume its a nested, will fix later if its not.
-    -- 2. utest, type, con, use are all very simple, as we are inside a recursive they can't be anything else than inner blocs.
-    -- 3. And finally, recursive can also only be an inner block, so we only need one breaker.
+    -- We have 3 cases:
+    -- 1. let is still ambiguous—we cannot know if it is a RecLet or a nested Let.
+    --    So we include both "in" and RecursiveEnder (#in/#end) and assume nested,
+    --    then fix later if it is not.
+    -- 2. utest, type, con, and use are straightforward: inside a recursive,
+    --    they can only be inner blocks.
+    -- 3. recursive can also only be an inner block, so it has a single breaker.
     sem choose =
         | (StateRecLet {}, "let", pos) -> build ["in", "#end", "#in"] (StateLet {})
         
@@ -285,82 +285,84 @@ lang LetRecBreakerChooser = BreakerChooserInterface
         
         | (StateRecLet {}, "recursive", pos) -> build recInner (StateRec {})
 
-    -- We never want to continue a RecLet that broke as its only breaker is #end and #in that
-    -- is also breaking the recursive parent bloc.
+    -- We never continue a RecLet that has broken,
+    -- since its breakers (#end and #in) also break the recursive parent block.
     sem continue =
         | (StateRecLet {}, _) -> false
 end
 
--- Here is the langage for Rec bloc, including the TopRec case and ambiguous inner case.
+-- This is the language for Rec blocks, including both TopRec and ambiguous inner Rec.
 lang RecBreakerChooser = BreakerChooserInterface
 
-    -- recursive blocs can only open on let, so when we see one we know its a RecLet.
-    -- The TopRec do not need to include "#in" in the breaker since we know it will
-    -- end with "#end"
+    -- Recursive blocks can only open on let, so we know it is a RecLet.
+    -- A TopRec does not need to include "#in" in its breakers,
+    -- since we know it ends with "#end".
     sem choose =
         | (StateTopRec {}, "let", pos) -> build recOuter (StateRecLet {})
         | (StateRec {}, "let", pos) -> build recBreak (StateRecLet {})
         
-    -- Rec blocs will end with #end or #in, and we want to absorb it as it is part of the bloc.
+    -- Rec blocks end with #end or #in, which are part of the block, so they are absorbed.
     sem absorbIt =
         | (StateRec {} | StateTopRec {}, _) -> true
 
-    -- If the Rec bloc ends with and #end, it means it was a TopRec, so we want to trigger
-    -- a reconstruction.
+    -- If a Rec block ends with #end, it was actually a TopRec,
+    -- so we must trigger a reconstruction.
     sem reStructureTree =
         | (StateRec {}, "#end") -> true
 
-    -- At this point, if we find an #end, it means our curent parent is not our real parent.
-    -- So we want to stop its execution and re-structure the tree correctly.
+    -- If we encounter #end, it means our current parent is not the real parent.
+    -- We must stop execution and restructure the tree correctly.
     sem continue =
         | (StateRec {}, "#end") -> false
 
-    -- Here again, if the Rec ends with end, we want to cast it into TopRec.
+    -- If the Rec ends with #end, cast it into TopRec.
     sem switchVersion =
         | (StateRec {}, "#end") -> StateTopRec {}
 end
     
--- This language handles both con and type that are exactly the same.
--- A top lvl con or type will be easy to handle as it can only contain use
--- blocs, that only break on in.
--- The inner version is not really harder, since it still not contain any sub-bloc,
--- but we still have to handle potential restructuration.
+-- This language handles both con and type, which behave identically.
+-- A top-level con/type is easy to handle, as it can only contain use blocks,
+-- which only break on "in".
+-- The inner version is slightly harder—not because it can contain sub-blocks (it cannot),
+-- but because we must handle possible restructuring.
 lang TypeConBreakerChooser = BreakerChooserInterface
 
     sem choose =
         | (StateType {} | StateCon {} | StateTopType {} | StateTopCon {}, "use", pos) -> build innerBloc (StateUse {})
 
-    -- If it does not break on in, it means it was actually a top lvl type and
-    -- has to break the parent node.
+    -- If it does not break on "in", then it was actually a top-level type/con,
+    -- and it must break the parent node.
     sem continue =
         | (StateType {} | StateCon {}, !"in") -> false
 
-    -- If we find a in, we have to trigger the restructuration as
-    -- the inner assumption was false.
+    -- If we find a breaker other than "in",
+    -- we must trigger restructuring, as the inner assumption was false.
     sem reStructureTree =
         | (StateType {} | StateCon {}, !"in") -> true
 
-    -- We only want to absorb "in", other breakers are not part of the bloc.
+    -- We only absorb "in"; other breakers are not part of the block.
     sem absorbIt =
         | (StateType {} | StateCon {}, "in") -> true
 
-    -- And again, if we break on something else than in, we cast in top level.
+    -- If we break on anything other than "in",
+    -- we cast the block as top-level.
     sem switchVersion =
         | (StateType {}, !"in") -> StateTopType {}
         | (StateCon {}, !"in") -> StateTopCon {}
 
 end   
 
--- In this langauge we handle the "lang" blocs.
--- As a reminder, top level keyword in lang blocs can only
--- be sem, syn, con, type and end that is closing the langage.
+-- In this language we handle "lang" blocks.
+-- Reminder: top-level keywords in lang blocks can only be:
+-- sem, syn, con, type, and end (which closes the lang).
 lang LangBreakerChooser = BreakerChooserInterface
 
-    -- type con and syn does not have any nested bloc, so
-    -- we can simply break on any top level lang bloc.
-    -- Sem can have some nested bloc, and most importantly can contain
-    -- "type" and "con" definition, so we cannot break on type and con
-    -- and will need to do assumtions.
+    -- type, con, and syn have no nested blocks,
+    -- so we can simply break on any top-level lang keyword.
+    -- Sem is more complex, as it can contain nested blocks,
+    -- and importantly, can contain type and con definitions.
+    -- Therefore, we cannot immediately break on type/con,
+    -- and must make assumptions.
     sem choose =
         | (StateLang {}, "type", pos) -> build langFullBreak (StateTopType {})
         | (StateLang {}, "con", pos) -> build langFullBreak (StateTopCon {})
@@ -368,28 +370,25 @@ lang LangBreakerChooser = BreakerChooserInterface
         
         | (StateLang {}, "sem", pos) -> build langBreak (StateSem {})
 
-    -- lang can only break on end, and we want to absorb this breaker.
+    -- lang only breaks on "end", which must be absorbed.
     sem absorbIt =
         | (StateLang {}, _) -> true
 
 end
 
 
--- This langage handles both syn and sem.
+-- This language handles both syn and sem.
 lang SemSynBreakerChooser = BreakerChooserInterface
 
-
-    -- This implementation of choose
-    -- can be a bit confusing as syn do not have any choose cases except use, but it is
-    -- due to the fact that all opener that syn might find
-    -- are breaker of syn, so it will never have to choose
-    -- anything.
-    -- On the other hand, sem have to handle 3 cases:
-    -- 1. let and utest are this time quite easy as they are 100% inner blocs, so we
-    --    cas just consider them as inner. Use as always is closed with only "in".
-    -- 2. type and con are a bit more difficult snice we cant know if they are
-    --    top level or no, so we just assume they are no and give them the possibility to break on "in"
-    -- 3. And finally, recursive is 100% an inner bloc and so we cann break it on #in.
+    -- This implementation of choose may look confusing:
+    -- - syn does not have any choose cases except use,
+    --   because every opener syn could encounter is also a breaker of syn.
+    -- - sem has 3 cases:
+    --   1. let and utest are always inner blocks, so we treat them as inner.
+    --      use also always closes with "in".
+    --   2. type and con are ambiguous: we cannot know if they are top-level,
+    --      so we assume they are not and allow them to break on "in".
+    --   3. recursive is always an inner block, so it breaks on #in.
     sem choose =
         | (StateSem {}, "let", pos) -> build innerBloc (StateLet {})
         | (StateSem {}, "utest", pos) -> build innerBloc (StateUtest {})
@@ -401,20 +400,20 @@ lang SemSynBreakerChooser = BreakerChooserInterface
 
         | (StateSem {}, "recursive", pos) -> build recInner (StateRec {})
 
-    -- We always want to continue the parent bloc that is the lang except
-    -- if we break on "end", the breaker of the lang.
+    -- We always continue the parent block (the lang),
+    -- except if we break on "end", which is the breaker of lang.
     sem continue =
         | (StateSem {} | StateSyn {}, "end") -> false
 
 end
 
 
--- Use is from far the easiest langage, as it do not contain
--- nested bloc and always break on in.
--- We do not even need any chose implementation.
+-- Use is by far the simplest language, as it contains no nested blocks
+-- and always breaks on "in".
+-- No choose implementation is even needed.
 lang UseBreakerChooser = BreakerChooserInterface
 
-    -- We just want to absorb the "in" breaker
+    -- We just want to absorb the "in" breaker.
     sem absorbIt =
         | (StateUse {}, "in") -> true
 end
