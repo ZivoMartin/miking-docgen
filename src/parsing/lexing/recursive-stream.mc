@@ -136,7 +136,6 @@ let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> Data
         end
     in
     match work true [] stream.stack 0 with { map = map, acc = acc, inCount = inCount, stack = stack } in
-    (match stack with [] then parsingWarn "Stack should not be empty" else ());
     { inCount = inCount, stream = { stream with stack = stack }, map = map, acc = acc }
 
 

@@ -13,6 +13,8 @@ include "sys.mc"
 -- Represents a parsed file header, including its `include`s, header tokens, and full text.
 type ParsingFile = use TokenReader in { includes: [String], headerTokens: [{ token: Token, pos: Pos }], fileText: String }
 
+let parsingFileEmpty = { includes = [], fileText = "", headerTokens = [] }
+
 -- Processes a file and returns its header as a `ParsingFile`, or None if the path is invalid.
 -- Tokens are read until a non-header token is found.
 let parsingOpenFile : String -> Option ParsingFile = use TokenReader in lam file.

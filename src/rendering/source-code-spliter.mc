@@ -54,7 +54,7 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
         case [TreeSourceCodeNode data] ++ rightRev then
             let right = reverse (cons (TreeSourceCodeNode { data with trimmed = [] }) rightRev) in
             { left = left, right = right, trimmed = TrimmedFormated data.trimmed }
-        case [] then { left = [], right = [], trimmed = TrimmedNotFormated []}
+        case [] then { left = arr, right = [], trimmed = TrimmedNotFormated []}
         end 
     in
 

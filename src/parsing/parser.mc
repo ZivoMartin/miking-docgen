@@ -89,7 +89,6 @@ include "sys.mc"
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
 let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in lam basePath. lam ast.
-    
     -- Keywords that start new blocks (head snippets)
     -- Using HashSet to improve performances
     let headSnippets =
@@ -227,8 +226,7 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
             end
     -- Here we parse the include header of the file, jump in all the includes before processing the actual code.
     let parse: IncludeSet () -> String -> LexingCtx -> ParseRes = lam includeSet. lam loc. lam lexingCtx.
-        
-        match parsingOpenFile loc with Some { includes = includes, headerTokens = headerTokens, fileText = fileText } then
+        match includeSetGetValue ast.includeSet loc with Some { includes = includes, headerTokens = headerTokens, fileText = fileText } then
         
         let headerDocTree = foldl (lam arg: ParseRes. lam token.
             match arg with { lexingCtx = lexingCtx, includeSet = includeSet, tree = tree } in
@@ -257,12 +255,14 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
         let snippet = parseStream stream { x = 1, y = 1 } baseBreaker headerTree in
         { includeSet = includeSet, lexingCtx = lexingCtx, tree = snippet.tree }
 
-        else error (join ["Found an invalid path during parsing: ", loc, "."])
+        else
+            iter printLn (hmKeys ast.includeSet.set);
+            error (join ["Found an invalid path during parsing: ", loc, "."])
     in
     
     let lexingCtx = lexingCtxNew ast in
 
-    match goHere (sysGetCwd()) basePath with { path = basePos } in
+    match goHere pwd basePath with { path = basePos } in
 
     let includeSet = includeSetNew (dirname basePos) in
 

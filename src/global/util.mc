@@ -150,3 +150,5 @@ let strFullTrim = lam s.
     else s
   in
   reverse (work (reverse s))
+
+let pwd = sysGetCwd ()

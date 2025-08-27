@@ -10,5 +10,5 @@ include "./include-set.mc"
 -- Represents the Miking AST paired with its IncludeSet.
 type MAst = use MExprAst in {
      expr: Expr,
-     includeSet: IncludeSet String
+     includeSet: IncludeSet ParsingFile
 }

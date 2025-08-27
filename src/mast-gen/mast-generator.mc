@@ -53,7 +53,7 @@ let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in us
     
     let pos0 = { x = 0, y = 0 } in
 
-    type Arg = { acc: [String], includeSet: IncludeSet String } in
+    type Arg = { acc: [String], includeSet: IncludeSet ParsingFile } in
 
     recursive let work : Arg -> String -> Arg = lam arg. lam file.
         parsingLog (join ["Assembling ast for the file ", file, "."]);
@@ -72,13 +72,15 @@ let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in us
             removeMexpr s ""
         in        
 
-        match parsingOpenFile file with Some { includes = topIncludes, fileText = rest } then
-        
+        match parsingOpenFile file with Some ({ includes = topIncludes, fileText = rest } & f) then
+            let includeSet = includeSetReplace includeSet file f in
+            let arg = { arg with includeSet = includeSet } in
+
             let rest = removeMexpr rest in
     
             let arg = foldl (lam arg. lam topInclude.
                 
-                match includeSetInsert arg.includeSet file topInclude "" with
+                match includeSetInsert arg.includeSet file topInclude parsingFileEmpty with -- We insert a dummy value because the actual insertion takes place after.
                 { includeSet = includeSet, inserted = inserted, path = path } in
                 if inserted then work { arg with includeSet = includeSet} path
                 else arg
@@ -98,6 +100,7 @@ let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in us
     } in
 
     match work { acc = [], includeSet = includeSet } file with { acc = code, includeSet = includeSet } in
+
     let code = reverse (join code) in
     let tmpFile = sysTempFileMake () in
     match fileWriteOpen tmpFile with Some wc then

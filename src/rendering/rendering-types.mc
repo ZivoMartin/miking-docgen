@@ -7,9 +7,6 @@
 
 include "../extracting/objects.mc"
 
--- An abstract tree representation of source code. It supports:
-type TreeSourceCode
-
 -- This structure holds all the formatted code data related to a single source object.
 --
 -- - `left`: the code segment before the split point (e.g., `let x`)
@@ -25,6 +22,9 @@ type RenderingData = {
     tests: String,
     rowTests: String
 }
+
+-- An abstract tree representation of source code. It supports:
+type TreeSourceCode
 
 -- A formatted code node, created from a `RenderingData` record.
 -- Typically used for child objects that were already rendered.    

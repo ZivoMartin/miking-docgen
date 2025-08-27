@@ -179,7 +179,6 @@ lang RawRenderer = RendererInterface
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
-
         let renderSourceCode = lam b. renderSourceCode (wordBufferToSourceCode b) opt in
     
         let getFormatedString : [TreeSourceCode] -> String = lam code.

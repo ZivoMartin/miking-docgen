@@ -154,11 +154,3 @@ let lex : use TokenReader in LexingCtx -> String -> LexOutput = use TokenReader 
         end
     in
     lex ctx [] stream { x = 0, y = 0 } [] 0
- 
--- Lexes a file by fetching its content from the IncludeSet.
-let lexFromFile : LexingCtx -> String -> Option LexOutput = lam ctx. lam path.
-    match includeSetGetValue ctx.ast.includeSet path with Some s then
-        Some (lex ctx s)
-     else
-        None {}
-        
