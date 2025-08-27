@@ -70,12 +70,13 @@ let sourceCodeSplit : [TreeSourceCode] -> SourceCodeSplit = use TokenReader in l
         switch content x1.word
         case "let" | "type" | "sem" | "syn" then splitAndReturn "="
         case "con" then splitAndReturn ":"
-        case "use" then finish arr right
+        case "use" | "recursive" then finish arr []
         case "utest" | "mexpr" then mergeAndFinish [x1] rest right
         case "lang" then
             match splitOnL (lam w. match w with { word = TokenWord {} } then true else false) rest with
                 { left = left, right = rest } in
             mergeAndFinish (cons x1 left) rest right
+
         case _ then finish [] arr
         end
         else

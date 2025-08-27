@@ -26,6 +26,6 @@ let reconstructSourceCode : SourceCode -> [RenderingData] -> [TreeSourceCode] =
                 renderingWarn "Son array should not be empty at this point";
                 a
         end) { tree = [], sons = sons, buffer = [] } code in
-    
+    (match tree.sons with [] then () else renderingWarn "Not all sons have been processed.");
     reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet (reverse tree.buffer)) tree.tree)
    

@@ -29,7 +29,7 @@ lang ObjectKinds = MExprAst
     | ObjCon { t: String }
     | ObjMexpr {}
     | ObjUtest {}
-    | ObjRecursiveBlock {}
+    | ObjRecursiveBloc {}
     | ObjInclude { pathInFile: String }
 
     -- Converts an ObjectKind to a readable string (for logs/debugging).
@@ -45,7 +45,7 @@ lang ObjectKinds = MExprAst
     | ObjMexpr {} -> "ObjMexpr"
     | ObjInclude { pathInFile = p } -> join ["ObjInclude, path = ", p]
     | ObjUtest {} -> "ObjUtest"
-    | ObjRecursiveBlock {} -> "ObjRecursiveBlock"
+    | ObjRecursiveBloc {} -> "ObjRecursiveBloc"
     | ObjProgram {} -> "ObjProgram"
     | _ -> warn "All object kinds are not supported in objKindToString sementic"; ""
          
@@ -61,7 +61,7 @@ lang ObjectKinds = MExprAst
     | ObjMexpr {} -> "mexpr"
     | ObjInclude {} -> "include"
     | ObjUtest {} -> "utest"
-    | ObjRecursiveBlock {} -> "recursive"
+    | ObjRecursiveBloc {} -> "recursive"
     | ObjProgram {} -> ""
     | _ -> warn "All object kinds are not supported in getFirstWord sementic"; ""
   
@@ -167,6 +167,7 @@ con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
 -- Convenience helpers for ObjectTree.
 let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.kind obj.name
 let objTreeObj : ObjectTree -> Object = lam tree. match tree with ObjectNode { obj = obj } in obj
+let objTreeSons : ObjectTree -> [ObjectTree] = lam tree. match tree with ObjectNode { sons = sons } in sons
 let objTreeDoc : ObjectTree -> String = lam tree. objDoc (objTreeObj tree)
 let objTreeSourceCode : ObjectTree -> SourceCode = lam tree. objSourceCode (objTreeObj tree)
 let objTreeWithDoc : ObjectTree -> String -> ObjectTree = lam tree. lam doc.

@@ -270,5 +270,4 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
 
     match parse includeSet basePath lexingCtx with { includeSet = includeSet, tree = tree } & parseRes in
     parsingLog (join ["Parsing is over, computed prefix: ", includeSetPrefix includeSet, "."]);
-    let tree = parseRes2tree parseRes basePath in
-    tree
+    parseRes2tree parseRes basePath

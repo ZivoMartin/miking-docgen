@@ -90,8 +90,13 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 -- Push header of the output file
                 write (renderHeader obj oldOpt);
 
-                -- Removing words
-                let sons = unwrapRecursives sons in
+                let recDatas: [[RenderingData]] = foldl (lam buffer. lam tree.
+                    let obj = objTreeObj tree in
+                    match obj.kind with ObjRecursiveBloc {} then
+                        let datas = map (lam son. (render opener opt son).0) (objTreeSons tree) in
+                        cons datas buffer
+                    else buffer) [] sons
+                in
 
                 -- Recursive calls
                 match foldl (lam arg. lam son.
@@ -99,7 +104,8 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                       let opt = { arg.opt with nameContext = nameContextInsertIfHas arg.opt.nameContext obj (objGetPureLink obj arg.opt) } in
                       match render opener opt son with (son, opt) in
                       { opt = opt, sons = cons son arg.sons }
-                      ) { sons = [], opt = oldOpt } sons with { sons = sons, opt = opt } in
+                      ) { sons = [], opt = oldOpt } sons with { sons = sons, opt = opt }
+                in
                 let sons = reverse sons in
                 
                 let sons = injectTests sons in
@@ -110,7 +116,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 write (renderTopPageDoc data opt);
 
                 -- Ordering objects in a set
-                let set = buildSet sons in
+                let set = buildSet sons recDatas in
     
                  -- Displays uses and includes
                 let displayUseInclude = lam title. lam arr.
@@ -128,12 +134,12 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                     iter (lam u. write (renderDocBloc u displaySons opt)) arr
                 in
     
-                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.Use), ("Includes", set.Include), ("Stdlib Includes", if opt.noStdlib then [] else set.LibInclude)];
+                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.sUse), ("Includes", set.sInclude), ("Stdlib Includes", if opt.noStdlib then [] else set.sLibInclude)];
                 iter (lam a. displayDefault a.0 a.1 displaySons)
-                    [("Types", set.Type), ("Constructors", set.Con)];
-                displayDefault "Languages" set.Lang true;
+                    [("Types", set.sType), ("Constructors", set.sCon)];
+                displayDefault "Languages" set.sLang true;
                 iter (lam a. displayDefault a.0 a.1 displaySons)                 
-                 [("Syntaxes", set.Syn), ("Variables", set.Let), ("Semantics", set.Sem), ("Mexpr", set.Mexpr)];
+                 [("Syntaxes", set.sSyn), ("Variables", set.sLet), ("Semantics", set.sSem), ("Mexpr", set.sMexpr)];
 
                 -- Push the footer of the page
                 write (renderFooter obj opt);

@@ -49,7 +49,7 @@ let fileOpenerOpen : FileOpener -> Object -> RenderingOptions -> Option FileOpen
         in
     
         switch (opener.depth, obj.kind)
-        case (_, ObjUtest {}) then Some emptyNever
+        case (_, ObjUtest {} | ObjRecursiveBloc {}) then Some emptyNever
         case (None {}, _) then open opener.currentDepth true
         case (Some d, ObjProgram {} | ObjInclude {} | ObjLang {}) then open opener.currentDepth (neqi d 0)
         case (Some d, _) then checkAndOpen d

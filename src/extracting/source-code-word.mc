@@ -46,7 +46,8 @@ let buildCodeWord : use SourceCodeWordKinds in use TokenReader in Token -> Sourc
 let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
     use TokenReader in use SourceCodeWordKinds in lam token.
     let build = buildCodeWord token in
-    match token with TokenWord { content = content } then
+    switch token
+    case TokenWord { content = content } then
         let kind = match content with "" then
             extractingWarn "Detected an empty word in formatterNext";
             CodeDefault {}
@@ -59,4 +60,6 @@ let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
         else CodeDefault {}
         in
         build kind
-    else build (CodeDefault {})
+    case TokenRecursiveEnder {} then build (CodeKeyword {})
+    case _ then build (CodeDefault {})
+    end

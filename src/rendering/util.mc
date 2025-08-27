@@ -2,35 +2,6 @@
 
 include "./rendering-types.mc"
 
--- This function goes through all the nodes and extract the recursive children.
--- It avoids having a useless recursive documentation bloc.
-let unwrapRecursives : [ObjectTree] -> [ObjectTree] = use ObjectKinds in lam sons.
-    foldl (lam sons. lam son.
-        switch son
-        case ObjectNode { obj = { kind = ObjRecursiveBlock {}, doc = doc, sourceCode = sourceCode }, sons = blockSons } then
-            let blockSons = foldl (lam acc. lam son.
-                let res = cons son acc in
-                switch son
-                case ObjectNode { obj = { kind = ObjLet {}, name = name } } then res
-                case ObjectNode { obj = { kind = kind, name = name } } then
-                     
-                     renderingWarn (join ["We should only have let node at this stage. Found ", objKindToString kind, " ", name]);
-                     res
-                end) [] blockSons in
-            match sourceCodeTrim sourceCode with { left = left, right = right } in
-            let blockSons = reverse blockSons in
-            let blockSons =
-                match blockSons with [h] ++ t then
-                    let newDoc = concat (objTreeDoc son) (objTreeDoc h) in
-                    let newSourceCode = concat left (objTreeSourceCode h) in
-                    cons (objTreeWithSourceCode (objTreeWithDoc h newDoc) newSourceCode) t
-                else blockSons
-            in
-            concat blockSons sons
-        case ObjectNode {} then cons son sons
-        case _ then sons
-        end) [] (reverse sons) 
-
 -- ## injectTests
 --
 -- Post-processes a list of `RenderingData` nodes to attach unit tests to their parent
@@ -99,27 +70,34 @@ let injectTests : [RenderingData] -> [RenderingData] = use ObjectKinds in lam so
     
     reverse sons
 
-type RenderingDataSet = { Use: [Object], Let: [RenderingData], Lang: [RenderingData],  Sem: [RenderingData], Syn: [RenderingData], Con: [RenderingData], Mexpr: [RenderingData], Include: [Object], LibInclude: [Object], Type: [RenderingData], Utest: [RenderingData] }
+type RenderingDataSet = { sUse: [Object], sLet: [RenderingData], sLang: [RenderingData],  sSem: [RenderingData], sSyn: [RenderingData], sCon: [RenderingData], sMexpr: [RenderingData], sInclude: [Object], sLibInclude: [Object], sType: [RenderingData], sUtest: [RenderingData] }
 
-let buildSet: [RenderingData] -> RenderingDataSet = use ObjectKinds in lam sons. 
+let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet = use ObjectKinds in lam sons. lam recDatas.
     recursive
-    let buildSet = lam set. lam sons.
+    let buildSet = lam set. lam sons. lam recDatas.
         switch sons
-        case [son] ++ sons then buildSet (
-        switch son.obj.kind
-            case ObjUse {} then { set with Use = cons son.obj set.Use }
-            case ObjLet {} then { set with Let = cons son set.Let }
-            case ObjLang {} then { set with Lang = cons son set.Lang }
-            case ObjSem {} then { set with Sem = cons son set.Sem }
-            case ObjSyn {} then { set with Syn = cons son set.Syn }
-            case ObjCon {} then { set with Con = cons son set.Con }    
-            case ObjMexpr {} then { set with Mexpr = cons son set.Mexpr }
-            case ObjType {} then { set with Type = cons son set.Type }
-            case ObjUtest {} then { set with Utest = cons son set.Utest }
+        case [son] ++ sons then
+            let switchRes = switch son.obj.kind
+            case ObjUse {} then ({ set with sUse = cons son.obj set.sUse }, recDatas)
+            case ObjLet {} then ({ set with sLet = cons son set.sLet }, recDatas)
+            case ObjLang {} then ({ set with sLang = cons son set.sLang }, recDatas)
+            case ObjSem {} then ({ set with sSem = cons son set.sSem }, recDatas)
+            case ObjSyn {} then ({ set with sSyn = cons son set.sSyn }, recDatas)
+            case ObjCon {} then ({ set with sCon = cons son set.sCon }, recDatas)
+            case ObjMexpr {} then ({ set with sMexpr = cons son set.sMexpr }, recDatas)
+            case ObjType {} then ({ set with sType = cons son set.sType }, recDatas)
+            case ObjUtest {} then ({ set with sUtest = cons son set.sUtest }, recDatas)
             case ObjInclude {} then
-                if objIsStdlib son.obj then { set with LibInclude = cons son.obj set.LibInclude } else { set with Include = cons son.obj set.Include }
-            case ObjRecursiveBlock {} then renderingWarn "We should not get to RecursiveBlock at this stage."; set
-            end) sons
+                (if objIsStdlib son.obj then { set with sLibInclude = cons son.obj set.sLibInclude } else { set with sInclude = cons son.obj set.sInclude }, recDatas)
+            case ObjRecursiveBloc {} then
+                match recDatas with [sons] ++ recDatas then
+                    ({ set with sLet = concat sons set.sLet }, recDatas)
+                else
+                   renderingWarn "Running out of recursive datas.";
+                   (set, recDatas)
+            end in
+            match switchRes with (set, recDatas) in
+            buildSet set sons recDatas
         case [] then set
         end
-    in buildSet { Use = [], Let = [], Lang = [],  Sem = [], Syn = [], Con = [], Mexpr = [], Include = [], LibInclude = [], Type = [], Utest = [] } (reverse sons)
+    in buildSet { sUse = [], sLet = [], sLang = [],  sSem = [], sSyn = [], sCon = [], sMexpr = [], sInclude = [], sLibInclude = [], sType = [], sUtest = [] } (reverse sons) (reverse recDatas)
