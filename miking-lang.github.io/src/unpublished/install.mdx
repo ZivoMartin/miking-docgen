@@ -1,0 +1,429 @@
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+
+# Install Miking
+
+We currently support two methods of installing Miking:
+
+ 1. Natively installed binary using the Opam package manager. (Mac, Linux)
+ 2. Pre-built Docker images with optional dependencies included. (Windows, Mac, Linux)
+
+For basic usage of Miking with a limited set of dependencies, we recommend the
+first option. If any of the extended Miking features are required, or if Opam
+is not suitable for your system, then we recommend installing one of the Docker
+images.
+
+We also provide syntax highlighting for some of the popular editors. See the
+[Install Syntax Highlighter](#install-syntax-highlighter) section for more
+information.
+
+## Native Install with Opam (Mac, Linux)
+
+For native install, `opam` is required and `make` is highly
+recommended.
+
+:::info Install Opam
+
+See the [Opam installation guide](https://opam.ocaml.org/doc/Install.html) for
+how to install Opam on Mac or on your Linux distribution:
+[Link](https://opam.ocaml.org/doc/Install.html)
+
+:::
+
+Create the Opam 5.0 switch:
+
+```
+opam update
+opam switch create miking-ocaml 5.0.0~rc1
+eval $(opam env)
+```
+
+Install required dependencies:
+
+```
+opam install dune linenoise
+```
+
+:::tip Optional Dependencies
+
+Many features in the standard library will not work without these additional
+dependencies. See the tab for your platform for more instructions.
+
+<Tabs>
+<TabItem value="optdep-linux" label="Linux" default>
+
+Install the dependencies with Opam:
+
+```
+opam install pyml toml lwt owl ocamlformat.0.24.1
+```
+
+Opam should invoke your distribution's package manager if there are any
+additional dependencies needed.
+
+</TabItem>
+<TabItem value="optdep-macos-x86" label="Mac (Intel x86)">
+
+It might be necessary to add openblas to the pkg-config path if installed with
+Homebrew. Replace `/usr/local` in the `PKG_CONFIG_PATH` variable below with
+your Homebrew prefix if they differ.
+
+```bash
+# Install openblas
+brew install openblas
+
+# Double check if /usr/local is what your Homebrew installation uses as its
+# prefix. Change if it is different.
+export PKG_CONFIG_PATH="/usr/local/opt/openblas/lib/pkgconfig:${PKG_CONFIG_PATH}"
+
+# Now install the dependencies with Opam:
+opam install pyml toml lwt owl ocamlformat.0.24.1
+```
+
+</TabItem>
+<TabItem value="optdep-macos-arm64" label="Mac (Apple Silicon)">
+
+Before installing the Opam packages, it is most likely necessary to perform
+the following steps before proceeding with the installation:
+
+```bash
+# Install gcc and openblas
+brew install gcc openblas
+
+# Make sure that you have gcc as your cc compiler (change version from 12 to
+# your GCC version if it is different)
+cd $HOMEBREW_PREFIX/bin && ln -s gcc-12 cc
+```
+
+Now verify that your `cc` compiler points to the correct location by running
+`which cc`. **You might need to open a new terminal window for this.**
+
+Once `cc` points to the correct location, run the following commands to install
+the remaining dependencies:
+
+```bash
+export PKG_CONFIG_PATH="$HOMEBREW_PREFIX/opt/openblas/lib/pkgconfig:${PKG_CONFIG_PATH}"
+export OWL_CFLAGS="-g -O3 -Ofast -funroll-loops -ffast-math -DSFMT_MEXP=19937 -fno-strict-aliasing -Wno-tautological-constant-out-of-range-compare"
+export OWL_AEOS_CFLAGS="-g -O3 -Ofast -funroll-loops -ffast-math -DSFMT_MEXP=19937 -fno-strict-aliasing"
+export EIGENCPP_OPTFLAGS="-Ofast -funroll-loops -ffast-math"
+export EIGEN_FLAGS="-O3 -Ofast -funroll-loops -ffast-math"
+
+# If opened a new terminal window, make sure to run `eval $(opam env)` first
+
+opam install pyml toml lwt owl ocamlformat.0.24.1
+```
+
+You can now remove the `cc` symlink created earlier.
+
+</TabItem>
+</Tabs>
+
+:::
+
+Clone the Miking git repository to a suitable location on your system and enter
+the directory:
+
+```
+git clone https://github.com/miking-lang/miking.git
+cd miking
+```
+
+If you do not have `git` installed on your system then you can manually
+download a zip file with the source code from our GitHub page:
+[https://github.com/miking-lang/miking/archive/refs/heads/develop.zip](https://github.com/miking-lang/miking/archive/refs/heads/develop.zip)
+
+Assuming that you have downloaded the repository and are currently located in
+that directory, then you can either install Miking on your system with `make`
+or directly using your shell:
+
+:::info Install Miking
+
+<Tabs>
+<TabItem value="mi-install-makefile" label="Makefile" default>
+
+With `make` available, you can install Miking as:
+
+```
+make install
+```
+</TabItem>
+
+<TabItem value="mi-install-shell" label="Shell">
+
+If `make` is not available on your system, then you can directly install Miking
+by running the provided `./make` shell script as:
+
+```
+./make boot && ./make install-boot && ./make && ./make install
+```
+</TabItem>
+</Tabs>
+
+:::
+
+This will install the `mi` binary under `$HOME/.local/bin`, as well as the
+standard library under `$HOME/.local/lib`. If not already, make sure that
+`$HOME/.local/bin` is on your shell's PATH by running the following command
+directly or adding it to the appropriate .rc-file (e.g. `.bashrc` or `.zshrc`):
+
+```bash
+export PATH="$HOME/.local/bin:$PATH"
+```
+
+## Install with Docker (Windows, Mac, Linux)
+
+Before running the Docker image you must ensure that Docker is installed.
+
+:::info Install Docker on Your Platform
+
+<Tabs>
+<TabItem value="docker-windows" label="Windows" default>
+For Windows you will need to install the Docker Desktop application. See <a href="https://docs.docker.com/desktop/install/windows-install">this page</a> for more info. After installing it will most likely ask you to install Windows Subsystem for Linux (WSL) if you haven't already. This will require a restart of your computer.
+
+With Docker Desktop installed and running, you should have access to the `docker` command from PowerShell.
+</TabItem>
+
+<TabItem value="docker-mac" label="Mac">
+For Mac you will need to install the Docker Desktop application. See <a href="https://docs.docker.com/desktop/install/mac-install">this page</a> for more info. Make sure that you know if you are running an older Mac with Intel chip or a newer one with Apple Silicon (e.g. M1). Download the appropriate Docker Desktop release.
+<br /><br />
+<div class="admonition admonition-warning alert alert--warning">
+<span class="admonition-icon"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M8.893 1.5c-.183-.31-.52-.5-.887-.5s-.703.19-.886.5L.138 13.499a.98.98 0 0 0 0 1.001c.193.31.53.501.886.501h13.964c.367 0 .704-.19.877-.5a1.03 1.03 0 0 0 .01-1.002L8.893 1.5zm.133 11.497H6.987v-2.003h2.039v2.003zm0-3.004H6.987V5.987h2.039v4.006z"></path></svg></span>
+<b>Due to the current performance of Docker on Mac, we recommend using Opam if possible.</b>
+</div>
+Now install the CLI interface for Docker using <a href="https://docs.brew.sh/Installation">Homebrew</a>:
+
+    brew install docker
+
+Now you should be able to run Docker containers from the terminal through the `docker` command, given that the Docker Desktop application is running.
+
+</TabItem>
+
+<TabItem value="docker-linux" label="Linux">
+For Linux we recommend using Docker Engine. See <a href="https://docs.docker.com/engine/install">this page</a> for more information about how to install Docker Engine for your Linux distribution.
+<br /><br />
+If using Arch Linux or one of its derivatives, follow the instructions on the Arch Wiki page (<a href="https://wiki.archlinux.org/title/Docker">link</a>) instead.
+<br /><br />
+
+It is possible that your Docker Engine process is running with root privileges. **In this case you will need to run all commands below with `sudo` or add yourself to the docker group.** If unsure, try running a Docker command without `sudo` first.
+
+</TabItem>
+</Tabs>
+
+:::
+
+Fetch the image by downloading it from Docker Hub:
+
+```
+docker pull mikinglang/miking
+```
+
+If you are in need of CUDA functionality, you can pull the CUDA image instead:
+
+```
+docker pull mikinglang/miking:latest-cuda
+```
+
+Both contain all dependencies necessary to use all features in the standard
+library. If you however desire to use the GPU acceleration feature in Miking,
+you should use the CUDA-based image.
+
+:::caution
+
+An executable built inside the Docker container should only be executed inside the Docker container.
+
+:::
+
+Now you can run the Docker image as:
+
+```
+docker run --rm -it mikinglang/miking bash
+```
+
+This will launch the miking Docker image with a bash shell where you have
+access to the `mi` command. The standard Docker image is based on Alpine and
+if additional features are desired within the Docker container such as an
+editor then they can be installed with the `apk` package manager.
+
+All dependencies necessary for rebuilding the Miking compiler is also included
+in the Docker image should you wish to do any modifications. You will also find
+the Miking source code under `/src/miking` included in the image.
+
+### Example Launch Scripts
+
+The entire Docker run command can be a bit cumbersome to type every time you
+want to compile something with Miking. We recommend wrapping the Docker run
+command in a script, for example:
+
+:::note Docker Helper scripts
+
+<Tabs>
+<TabItem value="dockerlaunch-makefile" label="Makefile" default>
+
+Using GNU Make to launch the image with `make run-docker`:
+
+```makefile title="Makefile"
+run-docker:
+	$(eval IMAGE := mikinglang/miking:latest-alpine)
+	$(eval CONTAINERNAME := hello-miking)
+	$(eval PWD := $(shell pwd))
+	docker run --name $(CONTAINERNAME)     \
+	           --hostname $(CONTAINERNAME) \
+	           --rm -it                    \
+	           -v "$(PWD):/mnt:ro"         \
+	           $(IMAGE) bash
+```
+
+This will mount the directory where the Makefile is located under `/mnt`. If
+you also wish to write data to the same directory then this can be done by
+removing the `:ro` part.
+
+If you need to run Docker with `sudo`, then either prepend the `docker run`
+in the Makefile rule with `sudo` or instead run `sudo make docker-run`.
+</TabItem>
+<TabItem value="dockerlaunch-bash" label="Bash" default>
+
+Using a Bash script launch the image with `./midock.sh`:
+
+```bash title="midock.sh"
+#!/usr/bin/env bash
+
+IMAGE='mikinglang/miking:latest-alpine'
+CONTAINERNAME='hello-miking'
+
+# This can be used to help you specify relative directory to the Bash
+# script itself.
+RELDIR="$(cd "$(dirname "$BASH_SOURCE")" >/dev/null 2>&1; pwd)"
+
+exec docker run --name ${CONTAINERNAME}     \
+                --hostname ${CONTAINERNAME} \
+                --rm -it                    \
+                -v "$(pwd):/mnt:ro"         \
+                ${IMAGE} bash
+```
+
+Make it executable by running `chmod +x midock.sh`.
+
+This will mount the current directory when running the script under `/mnt` as
+read-only. If you also wish to write data to the same directory then this can
+be done by removing the `:ro` part. If you wish to mount the directory where
+the Bash script is located then replace the `-v $(pwd):/mnt:ro` with
+`-v "${RELDIR}:/mnt:ro"`.
+
+If you need to run Docker with `sudo`, then either prepend the `docker run`
+in the script with `sudo` or instead run `sudo ./midock.sh`.
+</TabItem>
+<TabItem value="dockerlaunch-powershell" label="PowerShell" default>
+
+In PowerShell on Windows, launch the image using the following script as
+`.\midock.ps1`:
+
+```powershell title="midock.ps1"
+$Image = "mikinglang/miking:latest-alpine"
+$ContainerName = "hello-miking"
+
+# Mount Directory that you are running the script from
+$MountDir = Get-Location
+
+# Uncomment this to use the relative location to script instead
+#$MountDir = $PSScriptRoot
+
+docker run --rm -it `
+           --name $ContainerName `
+           --hostname $ContainerName `
+           -v "${MountDir}:/mnt:ro" `
+           $Image bash
+```
+
+This will mount the current directory when running the script under `/mnt` as
+read-only. If you also wish to write data to the same directory then this can
+be done by removing the `:ro` part. If you wish to mount the directory where
+the PowerShell script is located then you can uncomment the line `$MountDir =
+$PSScriptRoot`.
+</TabItem>
+</Tabs>
+
+:::
+
+Here is an example MExpr program that you can use to verify your installation.
+Save this as `fib.mc` and compile it with `mi compile fib.mc`. Try running it
+as `./fib 50`.
+
+```mc title="fib.mc"
+/- These are from the Miking standard library -/
+include "common.mc"
+include "string.mc"
+
+/- A string is a sequence of chars! -/
+let s1: String = "foo"
+let s2: [Char] = ['f', 'o', 'o']
+utest s1 with s2
+
+/- Fibonacci function -/
+let fib = lam n.
+  recursive let work = lam i. lam curr. lam next.
+    if eqi i n then
+      curr
+    else
+      work (addi i 1) next (addi curr next)
+  in
+  work 0 0 1
+
+mexpr
+
+if neqi (length argv) 2 then
+  printLn (join ["usage: ", get argv 0, " N"]);
+  exit 1
+else -- continue
+
+let printFib = lam n.
+  printLn (join ["fib ", int2string n, " = ", int2string (fib n)])
+in
+
+loop (string2int (get argv 1)) printFib
+```
+
+## Install Syntax Highlighter
+
+Syntax highlighting is available for Miking in the editors Vim, Emacs, VSCode,
+and Sublime Text. See the corresponding tab below for information about how to
+install Miking syntax highlighting for your editor.
+
+:::note Choose your editor
+
+<Tabs>
+<TabItem value="syntax-vim" label="Vim" default>
+
+See the miking-vim GitHub repository:
+[Link](https://github.com/miking-lang/miking-vim)
+</TabItem>
+<TabItem value="syntax-emacs" label="Emacs" default>
+
+See the miking-emacs GitHub repository:
+[Link](https://github.com/miking-lang/miking-emacs)
+</TabItem>
+<TabItem value="syntax-vscode" label="VSCode" default>
+
+Download the vsix file from the GitHub releases page and install it using the
+terminal:
+
+```
+curl -OL https://github.com/miking-lang/miking-vscode/releases/download/1.0.0/miking-core-vscode-1.0.0.vsix
+code --install-extension miking-core-vscode-1.0.0.vsix
+```
+
+If you prefer to build it from source, see the GitHub page for more
+information: [Link](https://github.com/miking-lang/miking-vscode)
+</TabItem>
+<TabItem value="syntax-sublime" label="Sublime Text" default>
+
+Miking syntax highlighting is available on Package Control as
+[Miking Syntax Highlighting](https://packagecontrol.io/packages/Miking%20Syntax%20Highlighting).
+
+Assuming that you have Package Control installed, open the command palette by
+Ctrl+Shift+P and select the _Package Control: Install Package_. Then choose
+search for _Miking Syntax Highlighting_ and install the package. You might have
+to reload any MCore files that you have open.
+</TabItem>
+</Tabs>
+
+:::
