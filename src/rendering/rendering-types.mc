@@ -33,7 +33,3 @@ con TreeSourceCodeNode : RenderingData -> TreeSourceCode -- Formated code
 -- A raw snippet of `SourceCodeWord`s that has not yet been rendered.
 -- Typically represents a sequence of tokens like `let x =`.
 con TreeSourceCodeSnippet : [SourceCodeWord] -> TreeSourceCode -- Array of not formated word
-
-
--- Hashmap binding each object to its link depending on the context
-type NameContext = HashMap String String

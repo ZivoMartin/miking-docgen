@@ -1,3 +1,28 @@
+-- # Execution Context
+--
+-- This module defines the `ExecutionContext`, the central state threaded through all
+-- stages of the documentation generation pipeline.
+--
+-- ## ExecutionContext fields
+-- - `opt`      : Parsed CLI options.
+-- - `mainFile` : Path of the main input file.
+-- - `tokens`   : Tokens from the lexer (not always used directly).
+-- - `docTree`  : Parsed documentation tree, if available.
+-- - `ast`      : The Miking AST, if generated.
+-- - `object`   : The extracted object tree, if built.
+--
+-- ## Step functions
+-- Each stage of the pipeline is a `Step = ExecutionContext -> ExecutionContext`.
+-- - `gen`     : Build MAst from the main file.
+-- - `parse`   : Build DocTree from MAst.
+-- - `extract` : Extract ObjectTree from DocTree.
+-- - `label`   : Label ObjectTree with semantic metadata.
+-- - `render`  : Generate documentation files.
+-- - `serve`   : Start preview server.
+--
+-- If a step is called out of order, the `crash` function raises an error with details.
+
+
 include "./options/options.mc"
 include "./options/cast-options.mc"
 include "./mast-gen/mast-generator.mc"

@@ -1,12 +1,16 @@
--- # Miking Doc Generator
+-- # Miking Doc Gen
 --
--- **This is the main entry point for the Miking Doc Generator.**
+-- This file defines the **main execution pipeline** for mi-doc-gen.
+-- It chains together all major stages, starting from option parsing and file loading,
+-- down to rendering and serving the generated documentation.
 --
--- The project is composed of the following modules:
--- - parsing: Builds a DocTree representing the structure of the file.
--- - extracting: Converts DocTree into an ObjectTree suitable for generating documentation.
--- - labeling: Annotates each objects with an enventual type using compiler's AST 
--- - rendering: Renders the `ObjectTree` into Markdown pages (HTML support planned).
+-- Execution pipeline:
+--   execContextNew → gen → parse → extract → label → render → serve
+--
+-- Each stage transforms the `ExecutionContext` in sequence,
+-- progressively enriching it until the final output is produced.
+--
+-- Each step is very well documented, so I encourage you to check out their modules for more information.
 
 include "./execution-context.mc"
 

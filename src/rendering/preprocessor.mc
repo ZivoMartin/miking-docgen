@@ -6,6 +6,7 @@
 -- - Creates them using `mkdir -p`
 --
 -- It builds a PathMap and runs a system command at the end.
+-- The preprocessor have to use the NameContext too generate all the folders correctly.
 
 include "../extracting/objects.mc"
 include "./renderers/objects-renderer.mc"
@@ -14,7 +15,6 @@ include "fileutils.mc"
 include "hashmap.mc"
 include "../options/options.mc"
 include "../global/format.mc"    
-include "./name-context.mc"
 
 let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in lam obj. lam opt.
     -- Map of all output paths (acts as a Set)
@@ -23,7 +23,12 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
     recursive let preprocessRec : Int -> PathMap -> ObjectTree -> PathMap = use ObjectKinds in
         lam depth. lam pathMap. lam obj.
         let inner = objTreeObj obj in
-        let opt = { opt with nameContext = nameContextInsertIfHas opt.nameContext inner (objGetPureLink inner opt) } in
+        let nameContext =
+            match objNameIfHas inner with Some name then
+             hmInsert name (objGetPureLink inner opt) opt.nameContext
+            else opt.nameContext
+        in
+        let opt = { opt with nameContext = nameContext } in
         switch obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
             if and (objIsStdlib obj) opt.noStdlib then pathMap else

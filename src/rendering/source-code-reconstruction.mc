@@ -1,9 +1,15 @@
+-- # Source Code Reconstruction
+--
+-- Rebuilds a structured `TreeSourceCode` from a flat `SourceCode` stream and a list of
+-- pre-rendered children (`RenderingData`). Children are interleaved at `None` markers.
+
 include "../extracting/source-code-builder.mc"
 include "../extracting/source-code-word.mc"
 include "../extracting/objects.mc"
 include "./rendering-types.mc"
 
-
+-- Reconstructs code by streaming tokens and inserting child blocks at separators.
+-- Returns a list of `TreeSourceCode` nodes preserving original order and structure.
 let reconstructSourceCode : SourceCode -> [RenderingData] -> [TreeSourceCode] = 
     lam code. lam sons. use ObjectKinds in
     

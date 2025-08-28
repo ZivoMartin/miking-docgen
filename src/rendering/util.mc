@@ -1,4 +1,7 @@
--- This file defines primitive used by the renderer to handle the objects.
+-- # util.mc
+--
+-- This module defines primitives used by the renderer to handle objects
+-- during the documentation generation process.
 
 include "./rendering-types.mc"
 
@@ -70,8 +73,27 @@ let injectTests : [RenderingData] -> [RenderingData] = use ObjectKinds in lam so
     
     reverse sons
 
-type RenderingDataSet = { sUse: [Object], sLet: [RenderingData], sLang: [RenderingData],  sSem: [RenderingData], sSyn: [RenderingData], sCon: [RenderingData], sMexpr: [RenderingData], sInclude: [Object], sLibInclude: [Object], sType: [RenderingData], sUtest: [RenderingData] }
+-- ## RenderingDataSet
+--
+-- Groups `RenderingData` nodes into categories by their kind.
+-- This structure is useful for organizing sections in the documentation.
+type RenderingDataSet = {
+    sUse: [Object],
+    sLet: [RenderingData],
+    sLang: [RenderingData],
+    sSem: [RenderingData],
+    sSyn: [RenderingData],
+    sCon: [RenderingData],
+    sMexpr: [RenderingData],
+    sInclude: [Object],
+    sLibInclude: [Object],
+    sType: [RenderingData],
+    sUtest: [RenderingData]
+}
 
+-- Constructs a `RenderingDataSet` from:
+-- - A list of rendered children (`sons`).
+-- - Recursive block data (`recDatas`), extracted earlier.
 let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet = use ObjectKinds in lam sons. lam recDatas.
     recursive
     let buildSet = lam set. lam sons. lam recDatas.
