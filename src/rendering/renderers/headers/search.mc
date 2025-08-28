@@ -1,0 +1,349 @@
+let searchHtml: String = 
+"
+<div class=\"search-wrapper\">
+  <div class=\"search-header\">
+    <div class=\"search-logo\" aria-hidden=\"true\"></div>
+    <div>
+      <h1 class=\"search-title\">Ultra-Clean Search</h1>
+      <p class=\"search-subtitle\">Type to filter. Results update instantly. Matches are highlighted.</p>
+    </div>
+  </div>
+
+  <div class=\"search-card\">
+    <!-- Search zone -->
+    <div class=\"search-searchbar\" role=\"search\">
+      <span class=\"search-icon\" aria-hidden=\"true\">
+        <!-- magnifier -->
+        <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\">
+          <path d=\"M21 21l-4.2-4.2M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/>
+        </svg>
+      </span>
+      <input id=\"searchBox\" type=\"text\" placeholder=\"Search…\" autocomplete=\"off\" aria-label=\"Search documents\" />
+      <button id=\"clearBtn\" class=\"search-clear\" title=\"Clear\" aria-label=\"Clear search\">
+        <!-- x icon -->
+        <svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\">
+          <path d=\"M6 6l12 12M18 6L6 18\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/>
+        </svg>
+      </button>
+      <button id=\"searchBtn\" class=\"search-btn\">Search</button>
+    </div>
+
+    <div class=\"search-meta\">
+      <span id=\"counter\">Showing all documents</span>
+      <span id=\"hint\">Press ⏎ or click Search</span>
+    </div>
+
+    <!-- Results -->
+    <ul id=\"results\" class=\"search-results\" aria-live=\"polite\" aria-busy=\"false\"></ul>
+    <div id=\"empty\" class=\"search-empty\" style=\"display:none;\">No results. Try another keyword.</div>
+  </div>
+  <div class=\"search-footer\">Demo • No external libraries • Accessible & responsive</div>
+</div>"
+
+let searchCss: String =
+"
+    .search-wrapper{
+      max-width: 900px;
+      margin: clamp(24px, 5vh, 64px) auto;
+      padding: 0 20px 40px;
+    }
+
+    /* Header */
+    .search-header{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      margin-bottom:18px;
+    }
+    .search-logo{
+      width:40px;height:40px;border-radius:12px;
+      background: linear-gradient(135deg,var(--accent),#9b7bff);
+      box-shadow: var(--shadow);
+    }
+    .search-title{
+      font-weight:700;
+      letter-spacing:.2px;
+      font-size: clamp(22px, 3.3vw, 32px);
+      margin:0;
+    }
+    .search-subtitle{
+      margin: 6px 0 0 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    /* Search Card */
+    .search-card{
+      background: linear-gradient(180deg, color-mix(in oklab, var(--panel) 92%, black 8%), var(--panel));
+      border:1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+    .search-searchbar{
+      position: relative;
+      display:flex;
+      align-items:center;
+      gap:10px;
+      background: color-mix(in oklab, var(--panel) 85%, black 15%);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 10px 12px 10px 40px;
+      transition: box-shadow .2s, border-color .2s, background .2s;
+    }
+    .search-searchbar:focus-within{
+      border-color: color-mix(in oklab, var(--ring) 65%, white 35%);
+      box-shadow: 0 0 0 6px color-mix(in oklab, var(--ring) 20%, transparent);
+      background: color-mix(in oklab, var(--panel) 92%, black 8%);
+    }
+    .search-searchbar input{
+      flex:1;
+      border:0;
+      outline:0;
+      background: transparent;
+      color: var(--text);
+      font-size: 16px;
+    }
+    .search-searchbar .search-icon{
+      position:absolute; left:12px;
+      display:grid; place-items:center;
+      width:20px;height:20px; opacity:.7;
+    }
+    .search-btn{
+      border:1px solid var(--border);
+      background: linear-gradient(180deg, color-mix(in oklab, var(--accent) 18%, var(--panel)), color-mix(in oklab, var(--accent) 8%, var(--panel)));
+      color: var(--text);
+      padding: 10px 14px;
+      border-radius: 12px;
+      cursor: pointer;
+      transition: transform .08s ease, box-shadow .2s ease, border-color .2s;
+      box-shadow: 0 6px 16px rgba(0,0,0,.12);
+      user-select: none;
+      font-weight: 600;
+    }
+    .search-btn:hover{ transform: translateY(-1px); }
+    .search-btn:active{ transform: translateY(0); box-shadow: 0 2px 10px rgba(0,0,0,.12); }
+    .search-btn.ghost{
+      background: transparent;
+    }
+    .search-clear{
+      position:absolute; right:8px;
+      border:0; background:transparent;
+      color:var(--muted); cursor:pointer;
+      padding:6px 8px; border-radius:8px;
+    }
+    .search-clear:hover{ background: color-mix(in oklab, var(--accent) 10%, transparent); color: var(--text); }
+
+    /* Meta row */
+    .search-meta{
+      display:flex; align-items:center; justify-content:space-between;
+      font-size: 13px; color: var(--muted);
+      padding: 10px 2px 6px;
+    }
+
+    /* Results */
+    .search-results{
+      list-style:none; padding:0; margin: 10px 0 0 0;
+      display:grid; gap:10px;
+    }
+    .search-result{
+      border:1px solid var(--border);
+      background: color-mix(in oklab, var(--panel) 92%, black 8%);
+      border-radius: 14px;
+      padding: 14px 16px;
+      line-height: 1.-55;
+      transition: border-color .2s, background .2s, transform .08s ease;
+    }
+    .search-result:hover{ transform: translateY(-1px); }
+    .search-result small{
+      display:block; color: var(--muted); margin-top:6px;
+    }
+    mark{
+      background: color-mix(in oklab, var(--accent) 30%, white 70%);
+      color: inherit;
+      padding: 0 2px;
+      border-radius: 4px;
+    }
+
+    /* Empty state */
+    .search-empty{
+      text-align:center; color: var(--muted);
+      padding: 28px 8px;
+      border:1px dashed var(--border);
+      border-radius: 14px; margin-top: 10px;
+    }
+
+"
+
+let searchJs: String =
+"
+const documents = [
+  { id: 1, content: \"JavaScript is a versatile programming language.\" },
+  { id: 2, content: \"Search engines are crucial for finding information online.\" },
+  { id: 3, content: \"Building a search engine involves indexing and ranking.\" },
+  { id: 4, content: \"JavaScript can be used for both front-end and back-end development.\" },
+];
+
+// =========================
+// Utilities
+// =========================
+
+/** Escape HTML to safely inject highlighted markup */
+function escapeHtml(str){
+  return str
+    .replaceAll(\"&\",\"&amp;\")
+    .replaceAll(\"<\",\"&lt;\")
+    .replaceAll(\">\",\"&gt;\")
+    .replaceAll('\"',\"&quot;\")
+    .replaceAll(\"'\",\"&#39;\");
+}
+
+/** Split a query into normalized tokens */
+function tokenize(query){
+  return query
+    .toLowerCase()
+    .trim()
+    .split(/\\s+/)
+    .filter(Boolean);
+}
+
+// =========================
+// Core: processSearch
+// =========================
+/**
+ * Process a single document against the query.
+ * Called for EACH element in the collection.
+ *
+ * Returns:
+ *  - match: did it match at all?
+ *  - score: simple relevance score (higher is better)
+ *  - highlighted: HTML string with <mark> around matches
+ */
+function processSearch(doc, query){
+  const text = doc.content;
+  if(!query) {
+    return {
+      match: true,
+      score: 0,
+      highlighted: escapeHtml(text)
+    };
+  }
+
+  const tokens = tokenize(query);
+  const hay = text.toLowerCase();
+  let score = 0;
+
+  // Count occurrences for a very lightweight ranking
+  tokens.forEach(tok => {
+    if(!tok) return;
+    let idx = hay.indexOf(tok);
+    while(idx !== -1){
+      score += 1;
+      idx = hay.indexOf(tok, idx + tok.length);
+    }
+  });
+
+  const match = score > 0;
+
+  // Build highlighted HTML with a safe approach
+  let highlighted = escapeHtml(text);
+  // Sort tokens by length desc to avoid nested marks
+  const sorted = [...new Set(tokens)].sort((a,b)=>b.length - a.length);
+  sorted.forEach(tok => {
+    const safe = tok.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\$&'); // escape regex
+    const regex = new RegExp(`(${safe})`, 'gi');
+    highlighted = highlighted.replace(regex, '<mark>$1</mark>');
+  });
+
+  return { match, score, highlighted };
+}
+
+// =========================
+// Search & Render
+// =========================
+function search(query){
+  // Run processSearch on each element of the collection
+  const processed = documents.map(doc => {
+    const res = processSearch(doc, query);
+    return { ...doc, ...res };
+  });
+
+  // Keep only matched docs and sort by score descending, then by id for stability
+  return processed
+    .filter(x => x.match)
+    .sort((a,b) => b.score - a.score || a.id - b.id);
+}
+
+function displayResults(results, query){
+  const list = document.getElementById('results');
+  const empty = document.getElementById('empty');
+  const counter = document.getElementById('counter');
+
+  list.innerHTML = '';
+
+  if(!query){
+    counter.textContent = `Showing all documents (${documents.length})`;
+  }else{
+    counter.textContent = results.length
+      ? `Found ${results.length} result${results.length>1?'s':''}`
+      : `No results`;
+  }
+
+  if(results.length === 0){
+    empty.style.display = 'block';
+    return;
+  } else {
+    empty.style.display = 'none';
+  }
+
+  results.forEach(r => {
+    const li = document.createElement('li');
+    li.className = 'result';
+    li.innerHTML = `
+        <div>${r.highlighted}</div>
+        <small>ID: ${r.id} • Score: ${r.score}</small>
+      `;
+      list.appendChild(li);
+    });
+}
+
+// =========================
+// Controller
+// =========================
+const input = document.getElementById('searchBox');
+const btn = document.getElementById('searchBtn');
+const clearBtn = document.getElementById('clearBtn');
+
+function performSearch(){
+  const query = input.value;
+  const results = search(query);
+  displayResults(results, query);
+}
+
+// Debounced \"search as you type\"
+let t = null;
+input.addEventListener('input', () => {
+  window.clearTimeout(t);
+  t = window.setTimeout(performSearch, 160);
+});
+
+// Enter key triggers immediate search
+input.addEventListener('keydown', (e) => {
+  if(e.key === 'Enter'){
+    e.preventDefault();
+    performSearch();
+  }
+});
+
+btn.addEventListener('click', performSearch);
+
+clearBtn.addEventListener('click', () => {
+  input.value = '';
+  input.focus();
+  performSearch();
+});
+
+// Initial render: show all
+displayResults(search(''), '');
+
+"

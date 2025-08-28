@@ -4,6 +4,7 @@
 -- the full HTML `<head>`, embedded `<style>`, and opening `<body>` markup using
 -- the theme’s colors. This is consumed by the HTML renderer.
 
+include "./search.mc"
 
 include "string.mc"
 
@@ -206,7 +207,9 @@ a:hover {
 .comment { color: ", theme.commentColor, "; font-style: italic; }
 .string  { color: ", theme.stringColor, "}
 .multi  { color: ", theme.multiColor, "}
-    
+
+", searchCss, "
+
 </style>
 </head>
 <body>
@@ -222,6 +225,9 @@ function toggle(btn) {
     }
     window.scrollTo({ top: scrollY });
 }
-</script>"]
+",searchJs,"
+</script>
+", searchHtml, "
+"]
 
 
