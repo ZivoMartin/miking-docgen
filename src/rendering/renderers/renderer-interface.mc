@@ -56,7 +56,7 @@ lang RendererInterface =
     -- ## Documentation Blocks
 
     -- Renders the top section of a page.
-    -- Includes title, code toggle, and top documentation.
+    -- Includes code toggle, and top documentation.
     sem renderTopPageDoc : RenderingData -> RenderingOptions -> String
 
     -- Renders a documentation block for an object.

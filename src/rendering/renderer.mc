@@ -132,6 +132,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 -- From the source code tree, build the RenderingData
                 let data = renderTreeSourceCode trees obj opt in
     
+                write (renderObjTitle 1 data.obj opt);
                 write (renderTopPageDoc data opt);
 
                 -- Order objects into a set

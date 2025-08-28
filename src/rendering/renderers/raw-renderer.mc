@@ -36,7 +36,6 @@ lang RawRenderer = RendererInterface
     -- Top page section: title + details (e.g., parent langs) + default block.
     sem renderTopPageDoc (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
-        let title = renderObjTitle 1 data.obj opt in
         let nl = renderNewLine opt in
         let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } } then
@@ -51,8 +50,7 @@ lang RawRenderer = RendererInterface
         case { obj = obj } then
             ""
         end in
-        let bloc = renderBlocDefault data opt "" "" details "" in
-        join [title, nl, bloc]
+        renderBlocDefault data opt "" "" details ""
     
     -- Documentation block (optionally includes a “goto” link).
     sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
@@ -176,6 +174,7 @@ lang RawRenderer = RendererInterface
         end
 
     -- Top-level source code rendering: splits, renders, and aggregates.
+    -- If row's length is length than 30, we concatenate everything in left.
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
@@ -198,7 +197,7 @@ lang RawRenderer = RendererInterface
                 "" (reverse (concat left right)) in
         let row = concat row (match trimmed with TrimmedNotFormated code then buildSourceCodeRaw code else "") in
     
-        {
+        let res = {
             obj = obj,
             left = getFormatedString left,
             right = getFormatedString right,
@@ -209,7 +208,10 @@ lang RawRenderer = RendererInterface
             tests = "",
             rowTests = "",
             row = row
-        }
+        } in
+        if gti 50 (length res.row) then
+           { res with left = join [res.left, res.right, res.trimmed], right = "", trimmed = "" }
+        else res
 
     -- File-level wrappers (raw renderer leaves them empty).
     sem renderHeader (obj : Object) =
