@@ -4,13 +4,16 @@
 -- It chains together all major stages, starting from option parsing and file loading,
 -- down to rendering and serving the generated documentation.
 --
--- Execution pipeline:
---   execContextNew → gen → parse → extract → label → render → serve
---
 -- Each stage transforms the `ExecutionContext` in sequence,
 -- progressively enriching it until the final output is produced.
---
--- Each step is very well documented, so I encourage you to check out their modules for more information.
+
+-- To generate the stdlib documentation, you can run the following command
+-- assuming you want all the files in miking-lang.github.io/docs/stdlib/ and
+-- that entry.mc is the entry point of the stdlib.
+-- ```
+-- ./mi-doc-gen entry.mc --format mdx --output-folder miking-lang.github.io/docs/stdlib --url-prefix "/docs/stdlib" --depth 0
+-- ```
+-- For more details about each option, see options/options.mc
 
 include "./execution-context.mc"
 

@@ -34,7 +34,6 @@
 -- ```
 
 include "../global/format.mc"
-include "../global/theme.mc"
 include "../global/format-language.mc"    
         
 include "string.mc"
@@ -42,10 +41,9 @@ include "sys.mc"
 
 -- ## Options
 -- Data type representing the command-line options that can be passed to `my-doc-gen`.
-type Options = use Formats in use Themes in use FormatLanguages in {
+type Options = use Formats in use FormatLanguages in {
     noOpen: Bool,            -- Whether to skip opening the result in a web browser.
     fmt: Format,             -- Output format (HTML, Markdown, MDX).
-    theme: Theme,            -- Output theme.
     fmtLang: FormatLanguage, -- Output language for generated React components (JS/TS).
     file: String,            -- Path to the input file.
     debug: Bool,             -- Enable debug mode.
@@ -58,10 +56,9 @@ type Options = use Formats in use Themes in use FormatLanguages in {
 
 -- ## optionsDefault
 -- Default values for the command-line options.
-let optionsDefault : Options = use Formats in use Themes in use FormatLanguages in {
+let optionsDefault : Options = use Formats in use FormatLanguages in {
     noOpen = false,
     fmt = defaultFormat (),
-    theme = defaultTheme (),
     fmtLang = defaultFormatLanguage (),
     file = "",
     debug = false,
@@ -106,7 +103,7 @@ let usage = lam.
 -- Parse the list of command-line arguments into an `Options` record.
 -- Exits with an error if the arguments are invalid.
 let parseOptions : [String] -> Options = lam argv.
-    recursive let parse : [String] -> Options -> Options = use Formats in use Themes in use FormatLanguages in lam args. lam opts.
+    recursive let parse : [String] -> Options -> Options = use Formats in use FormatLanguages in lam args. lam opts.
         switch args
         case ["--help" | "--h"] then usage ()
 

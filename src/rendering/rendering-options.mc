@@ -28,16 +28,14 @@
 -- For details, see `./renderers/objects-renderer.mc`.
 
 include "./../global/format-language.mc"
-include "./../global/theme.mc"
 include "./../global/format.mc"
 include "./rendering-types.mc"
 
 -- ## RenderingOptions
 --
 -- The configuration object passed around during rendering.
-type RenderingOptions = use Formats in use Themes in use FormatLanguages in
+type RenderingOptions = use Formats in use FormatLanguages in
     {
-        theme: Theme, 
         fmt: Format, 
         noStdlib: Bool, 
         outputFolder: String, 

@@ -28,7 +28,6 @@ let getServeOption : Options -> String -> ServerOptions  = lam opt. lam link.
 -- used by the rendering step.
 let getRenderingOption : Options -> RenderingOptions = use FormatLanguages in lam opt.
     {
-        theme = opt.theme,
         fmt = opt.fmt,
         noStdlib = opt.noStdlib,
         outputFolder = opt.outputFolder,
