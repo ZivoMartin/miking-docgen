@@ -65,7 +65,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
     -- Debug logger for object rendering info.
     sem objLog : Object -> RenderingOptions -> ()
     sem objLog =
-    | obj -> lam opt. renderingLog (join [
+    | obj -> lam opt. opt.log (join [
         "Object ", objName obj, ":\n",
         "   kind: ", objKindToString (objKind obj), "\n",
         "   namespace: ", objNamespace obj, "\n",

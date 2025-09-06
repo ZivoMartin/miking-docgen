@@ -39,7 +39,7 @@ include "../global/logger.mc"
 -- Builds the AST from a file using the Miking compiler parser.
 -- Generates a temporary file, processes includes, preserves utests/mexpr,
 -- and type-checks the final AST.
-let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in use TokenReader in lam file.
+let buildMAstFromFile: Logger -> String -> MAst = use PMExprDemote in use BootParser in use TokenReader in lam log. lam file.
 
     let externalsExclude = mapKeys (externalGetSupportedExternalImpls ()) in
     let parseOpt = {{{{{{{ defaultBootParserParseMCoreFileArg
@@ -56,7 +56,7 @@ let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in us
     type Arg = { acc: [String], includeSet: IncludeSet ParsingFile } in
 
     recursive let work : Arg -> String -> Arg = lam arg. lam file.
-        parsingLog (join ["Assembling ast for the file ", file, "."]);
+        log (join ["Assembling ast for the file ", file, "."]);
 
         match arg with { acc = acc, includeSet = includeSet } in
 
@@ -107,12 +107,12 @@ let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in us
         fileWriteString wc code;
         fileWriteFlush wc;
 
-        parsingLog "Parsing final ast";
+        log "Parsing final ast";
         let ast = parseMCoreFile parseOpt tmpFile in
-        parsingLog "Symbolizing final ast";
+        log "Symbolizing final ast";
         let ast = symbolize ast in
 
-        parsingLog "Type checking final ast";
+        log "Type checking final ast";
         let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
 
         { expr = ast, includeSet = includeSet }

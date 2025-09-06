@@ -1,11 +1,11 @@
 -- # Step-Specific Options
 --
 -- Some steps in the documentation pipeline require a set of arguments
--- that are usually a subset of the full `Options` type.
--- Instead of passing the entire `Options` record, or a large number of parameters,
--- we define helper functions that convert `Options` into step-specific option types.
+-- that are usually a subset of the full `DocGenOptions` type.
+-- Instead of passing the entire `DocGenOptions` record, or a large number of parameters,
+-- we define helper functions that convert `DocGenOptions` into step-specific option types.
 --
--- This file provides basic utilities to cast `Options` into
+-- This file provides basic utilities to cast `DocGenOptions` into
 -- `ServerOptions` and `RenderingOptions`.
 
 include "./options.mc"
@@ -13,9 +13,9 @@ include "../server/server-options.mc"
 include "../rendering/rendering-options.mc"
 include "hashmap.mc"
 
--- Convert a global `Options` record and a link string representing the URL of the opening file.
+-- Convert a global `DocGenOptions` record and a link string representing the URL of the opening file.
 -- into a `ServerOptions` record used by the server.
-let getServeOption : Options -> String -> ServerOptions  = lam opt. lam link.
+let getServeOption : DocGenOptions -> String -> ServerOptions  = lam opt. lam link.
     {
         fmt = opt.fmt,
         folder = opt.outputFolder,
@@ -24,9 +24,9 @@ let getServeOption : Options -> String -> ServerOptions  = lam opt. lam link.
         link = link
     }
 
--- Convert a global `Options` record into a `RenderingOptions` record
+-- Convert a global `DocGenOptions` record into a `RenderingOptions` record
 -- used by the rendering step.
-let getRenderingOption : Options -> RenderingOptions = use FormatLanguages in lam opt.
+let getRenderingOption : DocGenOptions -> Logger -> RenderingOptions = use FormatLanguages in lam opt. lam log.
     {
         theme = opt.theme,
         fmt = opt.fmt,
@@ -35,5 +35,6 @@ let getRenderingOption : Options -> RenderingOptions = use FormatLanguages in la
         urlPrefix = opt.urlPrefix,
         fmtLang = opt.fmtLang,
         letDepth = opt.letDepth,
-        nameContext = hashmapEmpty ()
+        nameContext = hashmapEmpty (),
+        log = log
     }

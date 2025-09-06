@@ -44,5 +44,6 @@ type RenderingOptions = use Formats in use Themes in use FormatLanguages in
         urlPrefix: String, 
         fmtLang: FormatLanguage, 
         letDepth: Option Int, 
-        nameContext: HashMap String String 
+        nameContext: HashMap String String,
+        log: Logger
     }

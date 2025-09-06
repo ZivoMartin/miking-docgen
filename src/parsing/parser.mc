@@ -88,7 +88,7 @@ include "sys.mc"
 -- - And the MAST of this program
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
-let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in lam basePath. lam ast.
+let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use BreakerChooser in lam log. lam basePath. lam ast.
     -- Keywords that start new blocks (head snippets)
     -- Using HashSet to improve performances
     let headSnippets =
@@ -249,7 +249,7 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
             ) { includeSet = includeSet, lexingCtx = lexingCtx, tree = [] } headerTokens
         in
         match headerDocTree with { includeSet = includeSet, tree = headerTree, lexingCtx = lexingCtx } in
-        parsingLog (concat "Beginning of parsing stage on " loc);
+        log (concat "Beginning of parsing stage on " loc);
         match lex lexingCtx fileText with { stream = stream, ctx = lexingCtx } in
 
         let snippet = parseStream stream { x = 1, y = 1 } baseBreaker headerTree in
@@ -269,5 +269,5 @@ let parse : String -> MAst -> DocTree = use TokenReader in use BreakerChooser in
     match includeSetInsert includeSet "." basePath () with { includeSet = includeSet } in    
 
     match parse includeSet basePath lexingCtx with { includeSet = includeSet, tree = tree } & parseRes in
-    parsingLog (join ["Parsing is over, computed prefix: ", includeSetPrefix includeSet, "."]);
+    log (join ["Parsing is over, computed prefix: ", includeSetPrefix includeSet, "."]);
     parseRes2tree parseRes basePath

@@ -55,10 +55,10 @@ include "../global/logger.mc"
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
-let extract : DocTree -> ObjectTree =
+let extract : Logger -> DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
-    lam tree.
-    extractingLog "Beggining of extraction...";
+    lam log. lam tree.
+    log "Beggining of extraction...";
 
      -- Entry point: tree must be Program node
     match tree with Node { token = TokenProgram { content = content, includeSet = includeSet }, state = StateProgram {} } then
@@ -219,7 +219,7 @@ let extract : DocTree -> ObjectTree =
 
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = Some emptyInclude, utestCount = utestCount } in
             match tree with Some tree then
-                extractingLog (concat "Extracting on: " path);
+                log (concat "Extracting on: " path);
                 let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount in
                 match res with { obj = Some (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
                     let includeObj = { progObj with isStdlib = isStdlib, kind = ObjInclude { pathInFile = content }, sourceCode = sourceCodeEmpty () } in
