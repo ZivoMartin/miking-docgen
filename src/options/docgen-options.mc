@@ -58,7 +58,7 @@ type DocGenOptions = use Formats in use Themes in use FormatLanguages in {
 
 -- ## optionsDefault
 -- Default values for the command-line options.
-let optionsDefault : DocGenOptions = use Formats in use Themes in use FormatLanguages in {
+let docGenOptionsDefault : DocGenOptions = use Formats in use Themes in use FormatLanguages in {
     noOpen = false,
     fmt = defaultFormat (),
     theme = defaultTheme (),

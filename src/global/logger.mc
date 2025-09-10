@@ -1,5 +1,4 @@
 include "util.mc"
-include "../options/options.mc"
 include "format.mc"
 
 type Logger = String -> ()

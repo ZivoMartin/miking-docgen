@@ -24,7 +24,7 @@
 --
 -- The ExecutionContext also provides a logger for each steps.
 
-include "./options/options.mc"
+include "./options/docgen-options.mc"
 include "./options/cast-options.mc"
 include "./mast-gen/mast-generator.mc"
 include "./parsing/parser.mc"

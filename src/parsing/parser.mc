@@ -61,7 +61,7 @@
 -- Includes are handled through the IncludeSet API from the mast-gen module.
 -- The parser first processes the include header of the file and recursively
 -- parses all included files. Each include is represented in the DocTree by
--- an `IncludeNode`, which may either contain the included file’s tree or be
+-- an `DocTreeIncludeNode`, which may either contain the included file’s tree or be
 -- marked as already visited to prevent infinite loops.
 --
 -- ## Result
@@ -74,7 +74,7 @@ include "./lexing/lexer.mc"
 include "./doc-tree.mc"
 
 include "../global/util.mc"
-include "../options/options.mc"
+include "../options/docgen-options.mc"
 
 include "seq.mc"
 include "hashmap.mc"
@@ -118,7 +118,7 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
     } in
     
     let parseRes2tree : ParseRes -> String -> DocTree = lam parseRes. lam progName.
-        Node {
+        DocTreeNode {
             sons = parseRes.tree,
             pos = { x = 1, y = 1 },
             token = TokenProgram {
@@ -163,18 +163,18 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
                     match (match snippet.stream with [(last, lastPos)] ++ stream then (last, lastPos, stream) else (TokenEof {}, pos, [])) with (last, lastPos, lastStream) in
     
                     match (if and (not snippet.absorbed) (absorbIt (newState, content last)) then
-                        let leaf = Leaf { token = last, state = newState, pos = lastPos } in
+                        let leaf = DocTreeLeaf { token = last, state = newState, pos = lastPos } in
                         { stream = lastStream, newPos = lastPos, sons = concat snippet.tree [leaf] }
                     else
                         { stream = snippet.stream, newPos = snippet.pos, sons = snippet.tree }) with
                     { stream = stream, sons = sons, newPos = newPos } in
 
-                    let docNode = Node { sons = sons, pos = pos, token = token, state = newState } in
+                    let docNode = DocTreeNode { sons = sons, pos = pos, token = token, state = newState } in
                     let tree = reverse (cons docNode snippet.toAdd) in
                     parseStream stream newPos (tail breakers) (concat tree treeAcc)
                 else
                     -- Handle hard break
-                    let docNode = Node {
+                    let docNode = DocTreeNode {
                         pos = pos,
                         sons = snippet.tree, token = token,
                         state = newState
@@ -197,13 +197,13 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
         
             if any (eqString lword) (topBreakers breakers) then
                 if (head breakers).1 then
-                    let acc = (cons (Leaf { token = token, state = state, pos = pos }) treeAcc) in
+                    let acc = (cons (DocTreeLeaf { token = token, state = state, pos = pos }) treeAcc) in
                     parseStream stream pos (tail breakers) acc
                 else
                     let absorb = absorbIt (state, lword) in
                     {
                         tree = reverse (if absorb then
-                                            cons (Leaf { token = token, state = state, pos = pos }) treeAcc
+                                            cons (DocTreeLeaf { token = token, state = state, pos = pos }) treeAcc
                                         else treeAcc),
                         stream = if absorb then stream else oldStream,
                         absorbed = absorb,
@@ -216,13 +216,13 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
                     stream
                     pos
                     (cons ( { breakers = b.1, state = state }, true ) breakers)
-                    (cons (Leaf { token = token, state = state, pos = pos }) treeAcc)
+                    (cons (DocTreeLeaf { token = token, state = state, pos = pos }) treeAcc)
             else if hmMem lword headSnippets then
                 -- If head snippet -> build new snippet block
                 buildSnippet token stream pos breakers treeAcc
             else
                 -- Default case: accumulate leaf
-                parseStream stream pos breakers (cons (Leaf { token = token, state = state, pos = pos }) treeAcc)
+                parseStream stream pos breakers (cons (DocTreeLeaf { token = token, state = state, pos = pos }) treeAcc)
             end
     -- Here we parse the include header of the file, jump in all the includes before processing the actual code.
     let parse: IncludeSet () -> String -> LexingCtx -> ParseRes = lam includeSet. lam loc. lam lexingCtx.
@@ -243,9 +243,9 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
                 else
                     (arg, None {}) in
                 match insertResult with (arg, tree) in
-                go arg (IncludeNode { token = token, tree = tree, state = StateProgram {}, path = path, isStdlib = isStdlib, pos = pos })
+                go arg (DocTreeIncludeNode { token = token, tree = tree, state = StateProgram {}, path = path, isStdlib = isStdlib, pos = pos })
             else
-                go arg (Leaf { token = token, state = StateProgram {}, pos = pos })
+                go arg (DocTreeLeaf { token = token, state = StateProgram {}, pos = pos })
             ) { includeSet = includeSet, lexingCtx = lexingCtx, tree = [] } headerTokens
         in
         match headerDocTree with { includeSet = includeSet, tree = headerTree, lexingCtx = lexingCtx } in

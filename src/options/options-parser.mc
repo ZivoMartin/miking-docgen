@@ -1,4 +1,4 @@
-include "options.mc"
+include "./docgen-options.mc"
 
 -- ## parseDocGenOptions
 -- Parse the list of command-line arguments into an `DocGenOptions` record.
@@ -41,5 +41,5 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
         case [] then opts
         end
     in
-    parse (tail argv) optionsDefault
+    parse (tail argv) docGenOptionsDefault
 

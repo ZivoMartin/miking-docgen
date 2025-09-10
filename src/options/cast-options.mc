@@ -8,7 +8,7 @@
 -- This file provides basic utilities to cast `DocGenOptions` into
 -- `ServerOptions` and `RenderingOptions`.
 
-include "./options.mc"
+include "./docgen-options.mc"
 include "../server/server-options.mc"
 include "../rendering/rendering-options.mc"
 include "hashmap.mc"

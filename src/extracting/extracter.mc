@@ -23,7 +23,7 @@
 --     newline, we clear the buffer because it represents a break.
 --   * Anything else -> we clear the buffer.
 --
--- For each `Node`, we inspect its `state` and compute the object (and its metadata)
+-- For each `DocTreeNode`, we inspect its `state` and compute the object (and its metadata)
 -- from the children. For each object, we also compute a **name** and a **namespace**:
 -- 1. **Name** — obtained from children if the node is a `let` (the next word), or from
 --    the extraction context (e.g., utest names are numbered via a counter incremented
@@ -61,7 +61,7 @@ let extract : Logger -> DocTree -> ObjectTree =
     log "Beggining of extraction...";
 
      -- Entry point: tree must be Program node
-    match tree with Node { token = TokenProgram { content = content, includeSet = includeSet }, state = StateProgram {} } then
+    match tree with DocTreeNode { token = TokenProgram { content = content, includeSet = includeSet }, state = StateProgram {} } then
     let prefix = includeSetPrefix includeSet in
     
     -- Buffer of collected comments
@@ -84,7 +84,7 @@ let extract : Logger -> DocTree -> ObjectTree =
         in
     
         switch tree 
-        case Node { sons = sons, token = token, state = state } then
+        case DocTreeNode { sons = sons, token = token, state = state } then
 
             -- Builds doc string from comments
             let buildDoc : [String] -> String = lam commentBuffer.
@@ -123,10 +123,10 @@ let extract : Logger -> DocTree -> ObjectTree =
                 recursive
                 let extractProgramComments = lam sons.
                     switch sons
-                    case [Leaf { token = TokenComment { content = content } | TokenMultiLineComment { content = content } }] ++ rest then
+                    case [DocTreeLeaf { token = TokenComment { content = content } | TokenMultiLineComment { content = content } }] ++ rest then
                         let output = extractProgramComments rest in
                         { output with comments = cons content output.comments }
-                    case [Leaf { token = TokenSeparator { content = content } }] ++ rest then
+                    case [DocTreeLeaf { token = TokenSeparator { content = content } }] ++ rest then
                         if shouldClear content then { comments = [], sons = sons }
                         else extractProgramComments rest
                     case _ then { comments = [], sons = sons }
@@ -197,7 +197,7 @@ let extract : Logger -> DocTree -> ObjectTree =
             case _ then
                 error (concat "Not covered: " (toString state))
             end
-        case Leaf { token = token, state = state } then
+        case DocTreeLeaf { token = token, state = state } then
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = None {}, utestCount = utestCount } in
             -- Leaf dispatch
             switch token
@@ -209,7 +209,7 @@ let extract : Logger -> DocTree -> ObjectTree =
                 else { defaultRes with commentBuffer = commentBuffer }
             case TokenStr {} | TokenWord {} | TokenRecursiveEnder {} then defaultRes
             end
-        case IncludeNode  { token = TokenInclude { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
+        case DocTreeIncludeNode  { token = TokenInclude { content = content }, state = state, tree = tree, path = path, isStdlib = isStdlib } then
             -- Load included file
             let defaultObject = defaultObject path isStdlib in
             let defaultObject = objWithKind defaultObject (ObjInclude { pathInFile = content }) in
