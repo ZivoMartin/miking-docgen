@@ -41,7 +41,7 @@ include "sys.mc"
 
 -- ## DocGenOptions
 -- Data type representing the command-line options that can be passed to `my-doc-gen`.
-type DocGenOptions = use Formats in use Themes in use FormatLanguages in {
+type DocGenOptions = use Formats in use FormatLanguages in {
     noOpen: Bool,            -- Whether to skip opening the result in a web browser.
     fmt: Format,             -- Output format (HTML, Markdown, MDX).
     fmtLang: FormatLanguage, -- Output language for generated React components (JS/TS).
@@ -56,7 +56,7 @@ type DocGenOptions = use Formats in use Themes in use FormatLanguages in {
 
 -- ## optionsDefault
 -- Default values for the command-line options.
-let docGenOptionsDefault : DocGenOptions = use Formats in use Themes in use FormatLanguages in {
+let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in {
     noOpen = false,
     fmt = defaultFormat (),
     fmtLang = defaultFormatLanguage (),

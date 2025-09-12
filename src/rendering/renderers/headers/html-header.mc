@@ -339,30 +339,73 @@ a:hover {
 .string  { color: var(--stringColor); }
 .multi   { color: var(--multiColor); }
 
-/* Bouton basique */
 .theme-toggle {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  padding: 0.4em 0.8em;
+  border: 1px solid var(--topDocBorderColor);
+  border-radius: 6px;
+  font-size: 0.85em;
+  font-weight: 500;
+  background: var(--docSignatureBGColor);
+  color: var(--bodyTextColor);
   cursor: pointer;
-  padding: 0.6em 1.2em;
-  border: none;
-  border-radius: 8px;
-  font-size: 1em;
-  font-weight: 600;
-  background: var(--h2BorderColor);
-  color: var(--bodyBGColor);
-  transition: background-color 0.3s ease, transform 0.2s ease;
-  margin: 1em 0;
+  transition: background-color 0.2s ease, opacity 0.2s ease;
+  z-index: 1100;
 }
-   
-.theme-toggle:hover {
-  transform: scale(1.05);
-  opacity: 0.9;
- }
 
+.theme-toggle:hover {
+  background: var(--toggleHoverBGColor);
+  opacity: 0.9;
+}
+
+/* Dropdown container */
+#themeMenu {
+  position: fixed;
+  top: 55px;   /* just below the button */
+  right: 10px;
+  display: none; /* toggled by JS */
+  background: var(--topDocBgColor);
+  border: 1px solid var(--topDocBorderColor);
+  border-radius: 6px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+  padding: 0.4em;
+  z-index: 1000;
+}
+
+/* Theme option buttons */
+#themeMenu button {
+  display: block;
+  width: 100%;
+  padding: 0.4em 0.8em;
+  margin: 0.2em 0;
+  border: none;
+  border-radius: 4px;
+  background: var(--docSignatureBGColor);
+  color: var(--bodyTextColor);
+  cursor: pointer;
+  font-size: 0.95em;
+  text-align: left;
+  transition: background-color 0.2s ease;
+}
+
+#themeMenu button:hover {
+  background: var(--toggleHoverBGColor);
+}
 </style>
+
 </head>
 <body>
 <div class=\"main-container\">
-<button class=\"theme-toggle\" id=\"themeButton\">Change Theme</button>
+<button class=\"theme-toggle\" id=\"themeButton\"></button>
+<div id=\"themeMenu\" style=\"display:none;\">
+  <button data-theme=\"htmlLight\">Light</button>
+  <button data-theme=\"htmlDark\">Dark</button>
+  <button data-theme=\"htmlWarm\">Warm</button>
+  <button data-theme=\"htmlWarmDark\">Warm Dark</button>
+</div>
+
 <script>
 function toggle(btn) {
     const scrollY = window.scrollY;
@@ -374,20 +417,30 @@ function toggle(btn) {
     }
     window.scrollTo({ top: scrollY });
 }
-const themes = [\"htmlLight\", \"htmlDark\", \"htmlWarm\", \"htmlWarmDark\"];
-let currentIndex = 0;
 
-const button = document.getElementById(\"themeButton\");
 const root = document.documentElement;
+const button = document.getElementById(\"themeButton\");
+const menu = document.getElementById(\"themeMenu\");
 
+// Toggle the theme menu
 button.addEventListener(\"click\", () => {
-  currentIndex = (currentIndex + 1) % themes.length;
-  root.setAttribute(\"data-theme\", themes[currentIndex]);
-  button.textContent = \"Theme: \" + themes[currentIndex];
+  menu.style.display = menu.style.display === \"none\" ? \"block\" : \"none\";
+});
+
+// Apply a theme when a theme button is clicked
+menu.querySelectorAll(\"button\").forEach(btn => {
+  btn.addEventListener(\"click\", () => {
+    const theme = btn.dataset.theme;
+    root.setAttribute(\"data-theme\", theme);
+    button.textContent = \"Theme: \" + btn.textContent;
+    menu.style.display = \"none\";
+  });
 });
 
 // init label
-button.textContent = \"Theme: \" + themes[currentIndex];
+button.textContent = \"Theme: Dark\";
+root.setAttribute(\"data-theme\", \"htmlDark\");
+
 </script>"]
 
 

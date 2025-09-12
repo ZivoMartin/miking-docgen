@@ -4,7 +4,7 @@ include "./docgen-options.mc"
 -- Parse the list of command-line arguments into an `DocGenOptions` record.
 -- Exits with an error if the arguments are invalid.
 let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
-    recursive let parse : [String] -> DocGenOptions -> DocGenOptions = use Formats in use Themes in use FormatLanguages in lam args. lam opts.
+    recursive let parse : [String] -> DocGenOptions -> DocGenOptions = use Formats in use FormatLanguages in lam args. lam opts.
         switch args
         case ["--help" | "--h"] then usage ()
 
