@@ -67,10 +67,11 @@ include "../global/format.mc"
 --     - Returns `RenderingData` and updated `RenderingOptions` for each node.
 let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     lam opt. lam obj.
-
+    
+    let log = opt.log in
     preprocess obj opt;
     renderSetup opt;
-    renderingLog "Beginning of rendering stage.";
+    log "Beginning of rendering stage.";
     recursive
     let render: FileOpener ->  RenderingOptions -> ObjectTree -> (RenderingData, RenderingOptions) = lam opener. lam oldOpt. lam objTree.  -- # Global Rendering Pipeline
 
@@ -95,7 +96,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         case ObjectNode { obj = obj, sons = sons } then
 
             match fileOpenerOpen opener obj oldOpt with Some { wc = wc, write = write, path = path, fileOpener = opener, displaySons = displaySons } then
-                (match path with "" then () else renderingLog (concat "Rendering file " path));
+                (match path with "" then () else log (concat "Rendering file " path));
                 -- Push header of the output file
                 write (renderHeader obj oldOpt);
 

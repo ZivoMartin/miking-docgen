@@ -51,29 +51,6 @@ lang TypeStreamInterface = MExprAst
             { res with skipped = cons { name = ident.0, body = body, t = t } res.skipped }
 end
 
-
--- TmLet --
-lang LetTypeStream = TypeStreamInterface
-  sem typeStreamNext name =
-  | { stack = [TmLet { ident = ident, body = body, ident = ident, inexpr = inexpr, tyBody = tyBody }] ++ stack } & ctx ->
-        let ctx = { ctx with stack = concat [body, inexpr] stack } in
-        checkAndEnd name ident tyBody body ctx
-
-end
-
-
--- TmRecLets --
-lang RecLetsTypeStream = TypeStreamInterface
-
-    sem typeStreamNext name =
-    | { stack = [TmRecLets { bindings = [], inexpr = inexpr }] ++ stack } & ctx ->
-        typeStreamNext name { stack = cons inexpr stack }
-    | { stack = ([TmRecLets { bindings = [b] ++ bindings }] ++ stack) & ([TmRecLets tm] ++ stack) } & ctx ->
-        let ctx = { ctx with stack = concat [b.body, TmRecLets { tm with bindings = bindings } ] stack } in
-        checkAndEnd name b.ident (b.tyBody) b.body ctx
-end
-
-    
 lang AppTypeStream = TypeStreamInterface
 
   sem typeStreamNext name =
@@ -98,10 +75,8 @@ lang RecordTypeStream = TypeStreamInterface
     
     sem typeStreamNext name =
       | { stack = [TmRecord { bindings = bindings }] ++ stack } ->
-
         typeStreamNext name { stack = concat (mapValues  bindings) stack }
       | { stack = [TmRecordUpdate { rec = rec, value = value }] ++ stack } ->
-
         typeStreamNext name { stack = concat [rec, value] stack }
 
 end
@@ -115,36 +90,39 @@ lang MatchTypeStream = TypeStreamInterface
     
 end
 
+lang LamTypeStream = TypeStreamInterface
 
--- TmUtest --
-lang UtestTypeStream = TypeStreamInterface
-    
   sem typeStreamNext name =
-  | { stack = [TmUtest { test = test, expected = expected, tusing = tusing, tonfail = tonfail, next = next }] ++ stack }  ->
-    let arr = [next] in
-    let arr = match tusing with Some tusing then cons tusing arr else arr in
-    let arr = match tusing with Some tonfail then cons tonfail arr else arr in
-    let arr = concat [test, expected] arr in
-    typeStreamNext name { stack = concat arr stack }
-
+  | { stack = [TmLam { body = body }] ++ stack } ->
+    typeStreamNext name { stack = cons body stack }
+    
 end    
-    
--- TmConDef and TmConApp --
-lang SimpleSkip = TypeStreamInterface
+
+lang DeclTypeStream = TypeStreamInterface
     
   sem typeStreamNext name =
-  | { stack =
-          [TmConDef { inexpr = inexpr } 
-        | TmConApp { body = inexpr }
-        | TmLam { body = inexpr }
-        | TmType { inexpr = inexpr }
-        | TmExt { inexpr = inexpr }] ++ stack } & ctx ->
-
-            typeStreamNext name { ctx with stack = cons inexpr stack }
+  | { stack = [TmDecl ({ decl = decl, inexpr = inexpr } & tm)] ++ stack } & ctx ->
+            switch decl
+            case DeclRecLets { bindings = [] } then
+                typeStreamNext name { stack = cons inexpr stack }
+            case DeclRecLets ({ bindings = [b] ++ bindings } & dl) then
+                let ctx = { ctx with stack = concat [b.body, TmDecl { tm with decl = DeclRecLets { dl with bindings = bindings } } ] stack } in
+                checkAndEnd name b.ident (b.tyBody) b.body ctx
+            case DeclLet { ident = ident, body = body, tyBody = tyBody } then
+                let ctx = { ctx with stack = concat [body, inexpr] stack } in
+                checkAndEnd name ident tyBody body ctx
+            case DeclUtest { test = test, expected = expected, tusing = tusing, tonfail = tonfail }  then
+                let arr = [inexpr] in
+                let arr = match tusing with Some tusing then cons tusing arr else arr in
+                let arr = match tusing with Some tonfail then cons tonfail arr else arr in
+                let arr = concat [test, expected] arr in
+                typeStreamNext name { stack = concat arr stack }
+            case _ then typeStreamNext name { ctx with stack = cons inexpr stack }
+            end
 
 end
 
-lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + UtestTypeStream + SimpleSkip + MExprPrettyPrint
+lang TypeStream = DeclTypeStream + LamTypeStream + AppTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + MExprPrettyPrint
     sem typeStreamFromExpr : Expr -> TypeStreamContext 
     sem typeStreamFromExpr =
         | ast -> { stack = [ast] }
@@ -152,6 +130,6 @@ lang TypeStream = AppTypeStream + LetTypeStream + RecLetsTypeStream + SeqTypeStr
     -- Builds a TypeStream, creates an AST via the compiler's parser. Then types this AST via compiler's typer.
     -- Note that meta vars are not removed here    
     sem buildTypeStream : MAst -> TypeStreamContext
-    sem buildTypeStream = | ast -> { stack = [ast.expr] }
+    sem buildTypeStream = | ast -> typeStreamFromExpr ast.expr
 end 
     

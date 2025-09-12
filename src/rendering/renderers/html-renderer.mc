@@ -18,15 +18,14 @@
 --   The actual JS/CSS hooks are assumed to be present in the page header.
 
 include "./renderer-interface.mc"
-include "./headers/html-themes.mc"
+include "./headers/html-header.mc"
 
-           
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
 
     -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =
-    | { fmt = Html {}, theme = theme } & opt -> getHeader theme (objName obj)
+    | { fmt = Html {} } & opt -> getHeader (objName obj)
 
     -- HTML heading: delegates inner text to raw title rendering, then wraps as <hN>.
     sem renderTitle size s =

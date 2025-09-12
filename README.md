@@ -19,6 +19,7 @@ Will produce a documentation page for the function helloWorld, including the ext
 
 ```bash
 mi-doc-gen [options] <file>
+```
 
 ## Dependencies
 

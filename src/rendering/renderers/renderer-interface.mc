@@ -23,7 +23,6 @@
 
 include "../../extracting/objects.mc"
 include "../../global/format.mc"
-include "../../global/theme.mc"
 include "../../global/format-language.mc"
 include "../../extracting/source-code-word.mc"
 include "../rendering-types.mc"
@@ -35,7 +34,7 @@ include "mexpr/type-check.mc"
 include "mexpr/pprint.mc"
 
 lang RendererInterface = 
-    Formats + Themes + ObjectsRenderer + TokenReader + SourceCodeWordKinds + 
+    Formats + ObjectsRenderer + TokenReader + SourceCodeWordKinds + 
     MExprPrettyPrint + MetaVarTypePrettyPrint + FormatLanguages
 
     -- ## Setup and File Wrappers
