@@ -23,8 +23,8 @@ include "./types-stream.mc"
 include "../extracting/objects.mc"
 include "../global/util.mc"
 
-let label : ObjectTree -> MAst -> ObjectTree =
-    use ObjectKinds in use TypeStream in use RemoveMetaVar in lam tree. lam ast.
+let label : Logger -> ObjectTree -> MAst -> ObjectTree =
+    use ObjectKinds in use TypeStream in use RemoveMetaVar in lam log. lam tree. lam ast.
 
     type SkippedContext = { ctx: TypeStreamContext, t: Type } in
     type LangContext = { langName: String, semMap: HashMap String SkippedContext } in
@@ -100,9 +100,9 @@ let label : ObjectTree -> MAst -> ObjectTree =
             case ObjInclude { pathInFile = pathInFile } then
                 switch sons
                 case [program] then    
-                    labelingLog (concat "Labeling in" namespace);
+                    log (concat "Labeling in" namespace);
                     match labelRec ctx pathInFile (None {}) program with { ctx = ctx, tree = tree } in
-                    labelingLog (concat namespace " is labeled");
+                    log (concat namespace " is labeled");
                     buildRes obj ctx langContext [tree] (None {})
                 case [] then default
                 case _ then labelingWarn "Include objects should all have 0 or 1 son."; default
@@ -115,8 +115,8 @@ let label : ObjectTree -> MAst -> ObjectTree =
     in
     let obj = objTreeObj tree in
     let filePath = objAbsolutePath obj in
-    labelingLog (concat "Labeling on " filePath);
+    log (concat "Labeling on " filePath);
     let ctx = buildTypeStream ast in
-    labelingLog "Labeling types..";
+    log "Labeling types..";
     (labelRec ctx filePath (None {}) tree).tree
 

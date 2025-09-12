@@ -17,10 +17,10 @@ include "../global/logger.mc"
 type DocTree
 
 -- A single token with its formatting state
-con Leaf : use TokenReader in use BreakerChooser in { token: Token, state: State, pos: Pos } -> DocTree
+con DocTreeLeaf : use TokenReader in use BreakerChooser in { token: Token, state: State, pos: Pos } -> DocTree
 
 -- A code block node, representing a structural block (e.g., a `let ... in`)
-con Node : use TokenReader in use BreakerChooser in {
+con DocTreeNode : use TokenReader in use BreakerChooser in {
     sons: [DocTree], -- Subtree of this node
     token: Token,    -- Token that started the block (e.g. a `Word "let"`)
     state: State,    -- State after encountering this node
@@ -28,7 +28,7 @@ con Node : use TokenReader in use BreakerChooser in {
 } -> DocTree
 
 -- A node representing an `include`, may hold the included file’s tree
-con IncludeNode : use TokenReader in use BreakerChooser in {
+con DocTreeIncludeNode : use TokenReader in use BreakerChooser in {
     token: Token,         -- The include token
     tree: Option DocTree, -- Tree of the included file, or None if already visited
     state: State,         -- Always StateProgram
@@ -52,14 +52,14 @@ let displayTree : (DocTree -> ()) = use TokenReader in use BreakerChooser in lam
     -- Recursive printer with depth tracking
     recursive let displayTreeIndented = lam tree. lam depth.
         switch tree
-        case Node { sons = sons, token = token, state = state } then
+        case DocTreeNode { sons = sons, token = token, state = state } then
             printLn (join [indentString depth, "Node (", toString state, ")"]);
             iter (lam child. displayTreeIndented child (addi depth 1)) sons
-        case Leaf { token = token, state = state } then
+        case DocTreeLeaf { token = token, state = state } then
             -- Skip separators and EOF for cleaner output
             match token with TokenSeparator {} | TokenEof {} then () else 
                 printLn (join [indentString depth, "Leaf (", tokenToString token, "):", lit token])
-        case IncludeNode { tree = tree, token = token, state = state, path = path } then
+        case DocTreeIncludeNode { tree = tree, token = token, state = state, path = path } then
             printLn (join [indentString depth, "Include \"", path, "\" (", toString state, ")"]);
             match tree with Some tree then displayTreeIndented tree (addi depth 1) else ()
         case _ then parsingWarn "Non-covered variant in DocTree reached during displayTree execution."

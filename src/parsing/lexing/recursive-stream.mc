@@ -91,48 +91,54 @@ let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> Data
         
         let go : [Expr] -> WorkRes = lam toAdd. work first acc (concat toAdd rest) inCount in
         let addAndGo : [Expr] -> WorkRes = lam toAdd. work first acc (concat toAdd rest) (addi inCount 1) in
-
-        switch expr
-        case TmRecLets { bindings = bindings, inexpr = inexpr } then
-            type Arg = { recLetCount: Int, acc: [Int], map: RecursiveDataStreamMap } in
-            let foldRes = foldl (lam arg: Arg. lam node.
-                let name = removePrefix node.ident.0 in
-                match work false [] [node.body] 0 with { inCount = inCount, acc = subAcc } in
-                let subAcc = match (first, semMap) with (true, Some semMap) then
-                    match hmLookup name semMap with Some count then
-                        if lti (length subAcc) count then
-                           parsingWarn (join ["The number of recursive in the sem (", int2string (length subAcc), ") is lower than the counter in the semMap (", int2string count, ")."]);
-                           subAcc
-                        else
-                            subsequence subAcc 0 count
-                    else subAcc
-                else subAcc
-                in
-                let map: RecursiveDataStreamMap = hmInsert node.ident.0 (reverse subAcc) arg.map in
-                { recLetCount = addi inCount arg.recLetCount, acc = concat subAcc arg.acc, map = map }
-            ) { recLetCount = 0, acc = [], map = hashmapEmpty () } bindings in
             
-            if first then
-               { acc = reverse foldRes.acc, inCount = foldRes.recLetCount, stack = cons inexpr rest, map = foldRes.map }
-            else
-               let acc = join [foldRes.acc, [foldRes.recLetCount], acc] in
-               work false acc (cons inexpr rest) (addi inCount 1) 
-        case TmType { inexpr = e } | TmConDef { inexpr = e } then addAndGo [e]
-        case TmLet { body = e1, inexpr = e2 } then  addAndGo [e1, e2]
+        switch expr       
         case TmVar {} | TmConst {} | TmNever {} | TmPlaceholder {} then go []
-        case TmLam { body = e } | TmConApp { body = e } | TmExt { inexpr = e } then go [e]
         case TmApp { lhs = e2, rhs = e1 }
            | TmRecordUpdate { rec = e1, value = e2 } then go [e1, e2]
-        case TmMatch { target = e1, thn = e2, els = e3 } then go [e1, e2, e3]
-        case TmUtest { test = e1, expected = e2, next = e3, tusing = None {}, tonfail = None {} }
-             then addAndGo [e1, e2, e3]
-        case TmUtest { test = e1, expected = e2, tusing = Some e3, tonfail = None {}, next = e4 }
-           | TmUtest { test = e1, expected = e2, tusing = None {}, tonfail = Some e3, next = e4 }
-             then addAndGo [e1, e2, e3, e4]
-        case TmUtest { test = e1, expected = e2, tusing = Some e3, tonfail = Some e4, next = e5 }
-             then addAndGo [e1, e2, e3, e4, e5]
-        case TmSeq { tms = arr } then  go arr
         case TmRecord { bindings = map } then  go (mapValues map)
+        case TmSeq { tms = arr } then  go arr
+        case TmLam { body = e } | TmConApp { body = e } then go [e]
+        case TmMatch { target = e1, thn = e2, els = e3 } then go [e1, e2, e3]
+        case TmDecl { decl = decl, inexpr = inexpr} then
+             let go = lam arr. go (concat arr [inexpr]) in
+             let addAndGo = lam arr. addAndGo (concat arr [inexpr]) in 
+             switch decl
+             case DeclRecLets { bindings = bindings } then
+                type Arg = { recLetCount: Int, acc: [Int], map: RecursiveDataStreamMap } in
+                let foldRes = foldl (lam arg: Arg. lam node.
+                    let name = removePrefix node.ident.0 in
+                    match work false [] [node.body] 0 with { inCount = inCount, acc = subAcc } in
+                    let subAcc = match (first, semMap) with (true, Some semMap) then
+                        match hmLookup name semMap with Some count then
+                            if lti (length subAcc) count then
+                               parsingWarn (join ["The number of recursive in the sem (", int2string (length subAcc), ") is lower than the counter in the semMap (", int2string count, ")."]);
+                               subAcc
+                            else
+                                subsequence subAcc 0 count
+                        else subAcc
+                    else subAcc
+                    in
+                    let map: RecursiveDataStreamMap = hmInsert node.ident.0 (reverse subAcc) arg.map in
+                    { recLetCount = addi inCount arg.recLetCount, acc = concat subAcc arg.acc, map = map }
+                ) { recLetCount = 0, acc = [], map = hashmapEmpty () } bindings in
+            
+                if first then
+                   { acc = reverse foldRes.acc, inCount = foldRes.recLetCount, stack = cons inexpr rest, map = foldRes.map }
+                else
+                   let acc = join [foldRes.acc, [foldRes.recLetCount], acc] in
+                   work false acc (cons inexpr rest) (addi inCount 1) 
+            case DeclExt {} then go []
+            case DeclType {} | DeclConDef {} then addAndGo []
+            case DeclLet { body = e1 } then  addAndGo [e1]
+            case DeclUtest { test = e1, expected = e2, tusing = None {}, tonfail = None {} }
+                 then addAndGo [e1, e2]
+            case DeclUtest { test = e1, expected = e2, tusing = Some e3, tonfail = None {} }
+               | DeclUtest { test = e1, expected = e2, tusing = None {}, tonfail = Some e3 }
+                 then addAndGo [e1, e2, e3]
+            case DeclUtest { test = e1, expected = e2, tusing = Some e3, tonfail = Some e4 }
+                 then addAndGo [e1, e2, e3, e4]
+            end
         end
     in
     match work true [] stream.stack 0 with { map = map, acc = acc, inCount = inCount, stack = stack } in

@@ -13,7 +13,7 @@ include "./renderers/objects-renderer.mc"
 include "../global/util.mc"
 include "fileutils.mc"
 include "hashmap.mc"
-include "../options/options.mc"
+include "../options/docgen-options.mc"
 include "../global/format.mc"    
 
 let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in lam obj. lam opt.
