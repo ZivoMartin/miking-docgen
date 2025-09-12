@@ -35,5 +35,6 @@ let getRenderingOption : DocGenOptions -> Logger -> RenderingOptions = use Forma
         fmtLang = opt.fmtLang,
         letDepth = opt.letDepth,
         nameContext = hashmapEmpty (),
+        jsSearchCode = "",
         log = log
     }

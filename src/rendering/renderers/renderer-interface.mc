@@ -41,7 +41,7 @@ lang RendererInterface =
 
     -- Called before rendering starts for all files.
     -- Typically used to generate global headers.
-    sem renderSetup : RenderingOptions -> ()
+    sem renderSetup : ObjectTree -> RenderingOptions -> ()
 
     -- Called before rendering each file.
     -- Typically used to push file headers or includes.

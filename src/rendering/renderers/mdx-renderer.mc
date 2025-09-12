@@ -31,7 +31,7 @@ lang MdxRenderer = RendererInterface
         concat path name
 
     -- Create the MDX components file (TSX/JSX) in the output folder.
-    sem renderSetup =
+    sem renderSetup obj =
     | { fmt = Mdx {} } & opt ->
         let path = getComponentPath opt.fmtLang opt.outputFolder componentFileName in
         match fileWriteOpen path with Some wc then

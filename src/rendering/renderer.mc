@@ -69,8 +69,10 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     lam opt. lam obj.
     
     let log = opt.log in
+    let opt = { opt with jsSearchCode = searchJs (objToJsDict opt obj) } in
+    
     preprocess obj opt;
-    renderSetup opt;
+    renderSetup obj opt;
     log "Beginning of rendering stage.";
     recursive
     let render: FileOpener ->  RenderingOptions -> ObjectTree -> (RenderingData, RenderingOptions) = lam opener. lam oldOpt. lam objTree.  -- # Global Rendering Pipeline

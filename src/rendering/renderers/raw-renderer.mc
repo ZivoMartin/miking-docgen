@@ -15,7 +15,7 @@ include "./renderer-interface.mc"
 lang RawRenderer = RendererInterface
 
     -- Runs before rendering all files (e.g., to generate global headers).
-    sem renderSetup =
+    sem renderSetup obj =
     | opt -> ()
     
     -- Default block renderer: composes signature, description, code, and tests.

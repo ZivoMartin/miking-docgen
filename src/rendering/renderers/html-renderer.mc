@@ -23,6 +23,22 @@ include "./headers/html-header.mc"
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
 
+    -- Create the scripts and stylesheet in the output folder.
+    sem renderSetup obj =
+    | { fmt = Html {} } & opt ->
+        let openAndWrite = lam s. lam path.
+            let path = join [opt.outputFolder, "/", path] in
+            match fileWriteOpen path with Some wc then
+                fileWriteString wc s;
+                fileWriteClose wc
+            else
+                renderingWarn (join ["Failed to create ", path, " file."])
+        in
+        openAndWrite (searchJs (objToJsDict opt obj)) searchJsPath;
+        openAndWrite htmlStyle htmlStylePath;
+        openAndWrite htmlScript htmlScriptPath
+        
+
     -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =
     | { fmt = Html {} } & opt -> getHeader (objName obj)

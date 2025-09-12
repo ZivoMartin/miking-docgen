@@ -5,6 +5,7 @@
 
 include "../../extracting/objects.mc"
 include "../rendering-options.mc"
+include "./headers/search.mc"
 
 lang ObjectsRenderer = ObjectKinds + Formats
 
@@ -25,8 +26,8 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objPreserveNameCtx =
     | { kind = ObjLang {} | ObjProgram {} } -> true
     | _ -> false
-
     -- Build the canonical link for an object (prefix + namespace + extension).
+
     -- Uses "Lib" for stdlib objects, "Files" for user sources.
     sem objGetPureLink : Object -> RenderingOptions -> String
     sem objGetPureLink =
@@ -73,4 +74,30 @@ lang ObjectsRenderer = ObjectKinds + Formats
         "   link: ", objLink obj opt, "\n",
         "   isStdlib: ", bool2string (objIsStdlib obj), "\n"
     ])
+
+    sem objToJsDict : RenderingOptions -> ObjectTree -> [SearchDictObj]
+    sem objToJsDict opt = 
+    | tree ->
+      recursive let objToJsDict = lam opt. lam tree. 
+          let obj = objTreeObj tree in
+          -- Recursive calls: render all children and transmit the name-context through the fold.
+          let res =  foldl (lam arg. lam son.
+              let obj = objTreeObj son in
+              match (objTreeSons son, obj.kind) with ([], ObjInclude {}) then arg else
+              let nameContext =
+                  match objNameIfHas obj with Some name then
+                   hmInsert name (objGetPureLink obj arg.opt) arg.opt.nameContext
+                  else arg.opt.nameContext
+              in
+              let opt = { arg.opt with nameContext = nameContext } in
+              match objToJsDict opt son with { dicts = dicts, opt = opt } in
+              { opt = opt, dicts = concat dicts arg.dicts }
+              ) { dicts = [], opt = opt } (objTreeSons tree)
+          in
+          {
+             opt = if objPreserveNameCtx obj then res.opt else opt,
+             dicts = match objKind obj with ObjInclude {} then res.dicts else cons { name = objNamespace obj, link = objLink obj opt } res.dicts
+          }
+      in (objToJsDict opt tree).dicts 
+
 end
