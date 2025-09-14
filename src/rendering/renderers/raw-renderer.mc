@@ -15,7 +15,7 @@ include "./renderer-interface.mc"
 lang RawRenderer = RendererInterface
 
     -- Runs before rendering all files (e.g., to generate global headers).
-    sem renderSetup =
+    sem renderSetup obj =
     | opt -> ()
     
     -- Default block renderer: composes signature, description, code, and tests.
@@ -53,11 +53,11 @@ lang RawRenderer = RendererInterface
         renderBlocDefault data opt "" "" details ""
     
     -- Documentation block (optionally includes a “goto” link).
-    sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
+    sem renderDocBloc (data : RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         match data with { obj = obj } in
         let link =
-            if displayGotoLink then
+            if objRenderIt obj then
                 let link = objLink obj opt in
                 let link = concat (if strStartsWith "/" link then "" else "/") link in
                 renderGotoLink link opt

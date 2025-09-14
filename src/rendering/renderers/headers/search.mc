@@ -1,0 +1,203 @@
+let searchHtml: String = 
+"<div id=\"search-container\">
+  <input id=\"search-bar\" type=\"text\" placeholder=\"Type to search\" />
+  <div id=\"search-results\"></div>
+</div>"
+
+let searchCss: String =
+"
+/* Search Engine */
+#search-container {
+    padding: 15px;
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+#search-bar {
+    width: 60%;
+    max-width: 600px;
+    padding: 10px 14px;
+    font-size: 15px;
+    border: none;
+    border-radius: 3px;
+    background: var(--searchBarBGColor);
+    color: var(--searchBarTextColor);
+    box-shadow: inset 0 1px 2px var(--searchBarShadowColor);
+}
+
+#search-bar::placeholder {
+    color: var(--searchBarPlaceholderColor);
+}
+
+#search-results {
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60%;
+    max-width: 600px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    z-index: 1000;
+    border-radius: 6px;
+    padding: 6px 0;
+    box-shadow: 0 4px 12px var(--searchResultsShadowColor);
+}
+
+#search-results a:first-child {
+    margin-top: 0;
+}
+
+#search-bar:focus {
+    outline: none;
+}
+
+#search-results a {
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 6px;
+    color: var(--searchResultItemTextColor);
+    font-size: 15px;
+    margin: 0;
+    transition: background 0.2s, transform 0.15s;
+    backdrop-filter: blur(6px);
+}
+
+#search-results a + a {
+    border-top: 1px solid var(--searchResultItemBorderColor);
+}
+
+#search-results a:hover {
+    background: var(--searchResultItemHoverBGColor);
+    transform: translateX(4px);
+    cursor: pointer;
+}
+
+#search-results a:active {
+    background: var(--searchResultItemActiveBGColor);
+    transform: translateX(2px);
+}
+
+#search-results:empty {
+    display: none;
+}
+
+.highlight {
+    font-weight: bold;
+    color: var(--searchHighlightColor);
+}
+"
+
+let searchCore: String =
+"
+export function filterResults(results, query) {
+  if (!query || query.trim().length === 0) return [];
+
+  const normalized = query.trim().toLowerCase();
+
+  return results
+    .filter(word => word.name.toLowerCase().includes(normalized))
+    .sort((a, b) => a.name.length - b.name.length)
+    .slice(0, 10);
+}
+
+export function highlightMatch(text, query) {
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, \"gi\");
+  return text.replace(regex, \"<span class='highlight'>$1</span>\");
+}
+"
+
+let searchPath : String -> String = concat "search."
+
+type SearchDictObj = { name: String, link: String }
+
+let buildDict : [SearchDictObj] -> String = lam objects.
+    strJoin ",\n" (map (lam obj.
+        join ["{ name: \"", obj.name, "\", link: \"", obj.link, "\" }"]
+    ) objects)
+
+let searchReact: [SearchDictObj] -> String = lam objects.
+  let dict = buildDict objects in
+join [
+"
+import React, { useState } from 'react';
+
+", searchCore, "
+
+const results = [", dict, "];
+
+export default function Search() {
+  const [query, setQuery] = useState('');
+
+  const candidates = filterResults(results, query);
+
+  return (
+    <div id='search-container'>
+      <input
+        id='search-bar'
+        type='text'
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        placeholder='Type to search'
+      />
+      {candidates.length > 0 && (
+        <div id='search-results'>
+          {candidates.map(c => (
+            <a key={c.link} href={c.link}
+              dangerouslySetInnerHTML={{ __html: highlightMatch(c.name, query) }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+"
+]
+
+
+let searchJs: [SearchDictObj] -> String = lam objects.
+let dict = buildDict objects in
+join [
+"
+const results = [", dict, "];
+
+const searchBar = document.getElementById(\"search-bar\");
+const resultsDiv = document.getElementById(\"search-results\");
+
+let inputProcess = () => {
+    const query = searchBar.value.trim();
+    resultsDiv.innerHTML = \"\";
+
+    if (query.length === 0) return;
+
+    const candidates = results
+        .filter(word => word.name.includes(query))
+        .sort((a, b) => a.name.length - b.name.length)
+        .slice(0, 10);
+
+    const regex = new RegExp(`(${query})`, \"gi\");
+
+    const frag = document.createDocumentFragment();
+
+    for (const candidate of candidates) {
+        const choice = document.createElement(\"a\");
+        choice.innerHTML = candidate.name.replace(regex, \"<span class='highlight'>$1</span>\");
+        choice.href = candidate.link;
+        frag.appendChild(choice);
+    }
+
+    resultsDiv.appendChild(frag);
+};
+
+searchBar.addEventListener(\"input\", inputProcess);
+searchBar.addEventListener(\"focus\", inputProcess);
+searchBar.addEventListener(\"blur\", () => {
+  setTimeout(() => {
+    resultsDiv.innerHTML = \"\";
+  }, 150); // small delay so the <a> click works
+});
+"]

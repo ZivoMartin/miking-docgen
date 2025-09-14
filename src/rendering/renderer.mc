@@ -69,11 +69,13 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     lam opt. lam obj.
     
     let log = opt.log in
+    let opt = { opt with jsSearchCode = searchJs (objToJsDict opt obj) } in
+    
     preprocess obj opt;
-    renderSetup opt;
+    renderSetup obj opt;
     log "Beginning of rendering stage.";
     recursive
-    let render: FileOpener ->  RenderingOptions -> ObjectTree -> (RenderingData, RenderingOptions) = lam opener. lam oldOpt. lam objTree.  -- # Global Rendering Pipeline
+    let render: RenderingOptions -> ObjectTree -> (RenderingData, RenderingOptions) = lam oldOpt. lam objTree.  -- # Global Rendering Pipeline
 
         -- Base case for objects that do not require a documentation page.
         -- For objects such as Use or Include we just want to return source code data.
@@ -88,14 +90,14 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
         case ObjectNode { obj = { kind = ObjUse {}} & obj, sons = sons } then (emptyPreview obj, oldOpt)
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [ p ] } then
             if and (objIsStdlib obj) oldOpt.noStdlib then (emptyPreview obj, oldOpt) else
-            let res = render (fileOpenerCreate oldOpt.letDepth) oldOpt p in
+            let res = render oldOpt p in
             (emptyPreview obj, res.1)
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, sons = [] } then (emptyPreview obj, oldOpt)
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then
              renderingWarn "Include with more than one child detected"; (emptyPreview obj, oldOpt)
         case ObjectNode { obj = obj, sons = sons } then
 
-            match fileOpenerOpen opener obj oldOpt with Some { wc = wc, write = write, path = path, fileOpener = opener, displaySons = displaySons } then
+            match fileOpenerOpen objTree oldOpt with Some { wc = wc, write = write, path = path } then
                 (match path with "" then () else log (concat "Rendering file " path));
                 -- Push header of the output file
                 write (renderHeader obj oldOpt);
@@ -104,7 +106,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 let recDatas: [[RenderingData]] = foldl (lam buffer. lam tree.
                     let obj = objTreeObj tree in
                     match obj.kind with ObjRecursiveBloc {} then
-                        let datas = map (lam son. (render opener opt son).0) (objTreeSons tree) in
+                        let datas = map (lam son. (render opt son).0) (objTreeSons tree) in
                         cons datas buffer
                     else buffer) [] sons
                 in
@@ -118,7 +120,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                           else arg.opt.nameContext
                       in
                       let opt = { arg.opt with nameContext = nameContext } in
-                      match render opener opt son with (son, opt) in
+                      match render opt son with (son, opt) in
                       { opt = opt, sons = cons son arg.sons }
                       ) { sons = [], opt = oldOpt } sons with { sons = sons, opt = opt }
                 in
@@ -150,19 +152,17 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 in
     
                 -- Display types and constructors
-                let displayDefault = lam title. lam arr. lam displaySons.
+                let displayDefault = lam title. lam arr.
                     let title = match arr with [] then "" else match title with "" then "" else
                             renderSectionTitle title opt in
                     write title;
-                    iter (lam u. write (renderDocBloc u displaySons opt)) arr
+                    iter (lam u. write (renderDocBloc u opt)) arr
                 in
     
                 iter (lam a. displayUseInclude a.0 a.1) [("Using", set.sUse), ("Includes", set.sInclude), ("Stdlib Includes", if opt.noStdlib then [] else set.sLibInclude)];
-                iter (lam a. displayDefault a.0 a.1 displaySons)
-                    [("Types", set.sType), ("Constructors", set.sCon)];
-                displayDefault "Languages" set.sLang true;
-                iter (lam a. displayDefault a.0 a.1 displaySons)                 
-                 [("Syntaxes", set.sSyn), ("Variables", set.sLet), ("Semantics", set.sSem), ("Mexpr", set.sMexpr)];
+                iter (lam a. displayDefault a.0 a.1)
+                    [("Types", set.sType), ("Constructors", set.sCon), ("Languages", set.sLang),
+                    ("Syntaxes", set.sSyn), ("Variables", set.sLet), ("Semantics", set.sSem), ("Mexpr", set.sMexpr)];
 
                 -- Push the footer of the page
                 write (renderFooter obj opt);
@@ -174,4 +174,4 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
             else (emptyPreview obj, oldOpt)
         end
     in
-    let res = render (fileOpenerCreate opt.letDepth) opt obj in ()
+    let res = render opt obj in ()

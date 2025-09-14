@@ -74,7 +74,7 @@ let parse : Step =  lam ctx.
 let extract : Step =  lam ctx.
     match ctx.docTree with Some docTree then
     let log = buildLogger ctx "Extracting" in 
-    { ctx with object = Some (extract log docTree ) }
+    { ctx with object = Some (extract log docTree ctx.opt.letDepth ) }
     else crash "doc tree" "extract" "parse"
 
 let label : Step =  lam ctx.

@@ -31,7 +31,7 @@ lang MdxRenderer = RendererInterface
         concat path name
 
     -- Create the MDX components file (TSX/JSX) in the output folder.
-    sem renderSetup =
+    sem renderSetup obj =
     | { fmt = Mdx {} } & opt ->
         let path = getComponentPath opt.fmtLang opt.outputFolder componentFileName in
         match fileWriteOpen path with Some wc then
@@ -40,7 +40,13 @@ lang MdxRenderer = RendererInterface
             write components;
             fileWriteClose wc
         else
-            renderingWarn "Failed to create components file."
+            renderingWarn "Failed to create components file.";
+
+        match fileWriteOpen (searchPath (formatLanguageGetExt opt.fmtLang)) with Some wc then
+            fileWriteString wc (searchReact (objToJsDict opt obj));
+            fileWriteClose wc
+        else
+            renderingWarn "Failed to create search file."
 
     -- Emit import line for MDX components used by the page.
     sem renderHeader obj =
@@ -57,9 +63,10 @@ lang MdxRenderer = RendererInterface
             then subsequence importPath 0 (subi (length importPath) 3)
             else importPath in
         join [
-          "import { DocBlock, Signature, Description, ToggleWrapper, S } from '@site/",
+          "import { DocBlock, Signature, Description, ToggleWrapper, S, Search } from '@site/",
           importPath,
-          "';\n\n"
+          "';\n\n
+          <Search />"
         ]
 
     -- Reuse Markdown escaping for code.
@@ -144,7 +151,7 @@ lang MdxRenderer = RendererInterface
         join ["\n", desc, if eqString desc "" then "" else "\n\n", toggleCode]
 
     -- Render a full documentation block (title, signature, desc, code, optional tests).
-    sem renderDocBloc (data: RenderingData) (displayGotoLink: Bool) =
+    sem renderDocBloc (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
         let sign = renderDocSignature data.obj opt in
         let code  = renderCodeWithoutPreview data opt in
@@ -157,7 +164,7 @@ lang MdxRenderer = RendererInterface
         let link = concat opt.urlPrefix link in
         let linkLength = length link in
         let link = subsequence link 0 (subi linkLength 3) in -- remove extension for Docusaurus
-        let link = if displayGotoLink then join [" link=\"", link, "\""] else "" in 
+        let link = if objRenderIt data.obj then join [" link=\"", link, "\""] else "" in 
         
         let title = objTitle data.obj in
         let kind  = getFirstWord (objKind data.obj) in
@@ -167,7 +174,8 @@ lang MdxRenderer = RendererInterface
         let testsId = join ["tests-", ns] in
     
         join [
-          "<DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
+          "
+          <DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
           mdxRenderCode opt sign, "\n",
           desc, "\n",
           "<ToggleWrapper>", mdxRenderCode opt code, "</ToggleWrapper>\n",
