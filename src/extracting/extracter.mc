@@ -44,13 +44,14 @@
 
 include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
+include "../global/logger.mc"
 
 include "fileutils.mc"
 
+include "./name-context.mc"
 include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
-include "../global/logger.mc"
         
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens

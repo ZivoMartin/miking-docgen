@@ -57,13 +57,12 @@ include "../global/util.mc"
 
 type NameSpaceEntry a = { entry: a, id: Int, namespace: String }
 
-type NameContext = all a. {
-    map: HashMap String [NameSpaceEntry a]
-}
+type NameContext a = HashMap String [NameSpaceEntry a]
+
 
 let nameContextInsert : all a. NameContext -> String -> NameSpaceEntry a = lam ctx. lam name. lam entry.
-    let entries = optionMap (cons entry) (hmLookup name ctx.map) in
-    { ctx with map = hmInsert name entries ctx.map }
+    let entries = optionMap (cons entry) (hmLookup name ctx) in
+    hmInsert name entries ctx
 
 let nameContextFetch : NameContext -> String -> Int -> String -> Option String =
     lam ctx. lam name. lam id. lam namespace.
@@ -74,4 +73,4 @@ let nameContextFetch : NameContext -> String -> Int -> String -> Option String =
             lam entry.
             and (lti entry.id id) (strStartsWith entry.namespace namespace)
         ) entries)
-    ) hmLookup name ctx.map
+    ) hmLookup name ctx
