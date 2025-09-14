@@ -4,6 +4,58 @@
 -- during the documentation generation process.
 
 include "./rendering-types.mc"
+include "../extracting/objects.mc"
+include "../global/util.mc"
+
+-- ## removeDoubleNames
+--
+-- During rendering, we generate one page and one documentation block per child.
+-- But what if two children have the same name and the same kind?
+-- Since they share the same name, namespace and kind, they will end up with the same URL.
+-- However, two documentation blocks will still be generated, both pointing
+-- toward the last child’s page.
+--
+-- This function catches all duplicate names among children with same namespace
+-- and keeps only the last one. Moreover, if two children
+-- with the same namespace are next to each other, we merge their documentation.
+-- Otherwise, in this scenario:
+--
+-- -- Takes x and returns x + 1
+-- sem semX: Int -> Int
+-- sem semX = | x -> addi x 1
+--
+-- Since only the last sem remains, the previous documentation would be lost.
+let removeDoubleNames : [RenderingData] -> [RenderingData] = lam sons.
+    type MergeFoldArg = { doc: String, prev: String, sons: [RenderingData] } in
+    -- Merging the documentations of consecutive same elements.
+    let merged = foldl
+    (
+        lam arg. lam son.
+        match arg with { doc = doc, prev = prev, sons = sons } in
+        let namespace = objNamespace son.obj in
+        if eqString namespace prev then
+           let doc = concat doc (objDoc son.obj) in
+           let son = { son with obj = objWithDoc son.obj doc } in
+           { arg with doc = doc, sons = cons son sons }
+        else
+           { arg with doc = objDoc son.obj, sons = cons son sons, prev = namespace }
+        
+    ) { doc = "", prev = "", sons = [] } sons in
+
+    type SanitizeFoldArg = { saw: HashMap String (), sons: [RenderingData] } in
+    -- Removing double names
+    let sanitized =  foldl
+    (
+        lam arg. lam son.
+        match arg with { saw = saw, sons = sons } in
+        let namespace = objNamespace son.obj in
+        match hmLookup namespace saw with Some _ then arg
+        else { sons = cons son sons, saw = hmInsert namespace () saw }
+    ) { sons = [], saw = hashmapEmpty () } merged.sons in
+    sanitized.sons
+        
+
+
 
 -- ## injectTests
 --

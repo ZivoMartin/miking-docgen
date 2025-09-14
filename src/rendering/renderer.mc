@@ -136,6 +136,8 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
                 write (renderObjTitle 1 data.obj opt);
                 write (renderTopPageDoc data opt);
 
+                let sons = removeDoubleNames sons in
+
                 -- Order objects into a set
                 let set = buildSet sons recDatas in
     
