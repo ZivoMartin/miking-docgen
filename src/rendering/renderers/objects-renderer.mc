@@ -96,7 +96,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
           in
           {
              opt = if objPreserveNameCtx obj then res.opt else opt,
-             dicts = match objKind obj with ObjInclude {} then res.dicts else cons { name = objNamespace obj, link = objLink obj opt } res.dicts
+             dicts = if objRenderIt obj then cons { name = objNamespace obj, link = objLink obj opt } res.dicts else res.dicts
           }
       in (objToJsDict opt tree).dicts 
 

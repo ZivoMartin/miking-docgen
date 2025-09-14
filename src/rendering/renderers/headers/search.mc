@@ -91,14 +91,79 @@ let searchCss: String =
 }
 "
 
+let searchCore: String =
+"
+export function filterResults(results, query) {
+  if (!query || query.trim().length === 0) return [];
+
+  const normalized = query.trim().toLowerCase();
+
+  return results
+    .filter(word => word.name.toLowerCase().includes(normalized))
+    .sort((a, b) => a.name.length - b.name.length)
+    .slice(0, 10);
+}
+
+export function highlightMatch(text, query) {
+  if (!query) return text;
+  const regex = new RegExp(`(${query})`, \"gi\");
+  return text.replace(regex, \"<span class='highlight'>$1</span>\");
+}
+"
+
+let searchPath : String -> String = concat "search."
+
 type SearchDictObj = { name: String, link: String }
 
-let searchJsPath = "search.js"
+let buildDict : [SearchDictObj] -> String = lam objects.
+    strJoin ",\n" (map (lam obj.
+        join ["{ name: \"", obj.name, "\", link: \"", obj.link, "\" }"]
+    ) objects)
+
+let searchReact: [SearchDictObj] -> String = lam objects.
+  let dict = buildDict objects in
+join [
+"
+import React, { useState } from 'react';
+
+", searchCore, "
+
+const results = [", dict, "];
+
+export default function Search() {
+  const [query, setQuery] = useState('');
+
+  const candidates = filterResults(results, query);
+
+  return (
+    <div id='search-container'>
+      <input
+        id='search-bar'
+        type='text'
+        value={query}
+        onChange={e => setQuery(e.target.value)}
+        placeholder='Type to search'
+      />
+      {candidates.length > 0 && (
+        <div id='search-results'>
+          {candidates.map(c => (
+            <a key={c.link} href={c.link}
+              dangerouslySetInnerHTML={{ __html: highlightMatch(c.name, query) }} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+"
+]
+
 
 let searchJs: [SearchDictObj] -> String = lam objects.
-let dict = strJoin "," (map (lam obj. join ["\n  { \"name\": \"", obj.name, "\", \"link\": \"", obj.link, "\" }"]) objects) in
+let dict = buildDict objects in
 join [
-"const results = [", dict, "];
+"
+const results = [", dict, "];
 
 const searchBar = document.getElementById(\"search-bar\");
 const resultsDiv = document.getElementById(\"search-results\");
@@ -109,25 +174,23 @@ let inputProcess = () => {
 
     if (query.length === 0) return;
 
-    const candidates = results.filter(word =>
-        word[\"name\"].includes(query)
-    );
+    const candidates = results
+        .filter(word => word.name.includes(query))
+        .sort((a, b) => a.name.length - b.name.length)
+        .slice(0, 10);
 
-    const sorted = candidates.sort((a, b) => a[\"name\"].length - b[\"name\"].length);
+    const regex = new RegExp(`(${query})`, \"gi\");
 
-    const top = candidates
-      .sort((a, b) => a[\"name\"].length - b[\"name\"].length)
-      .slice(0, 10);
+    const frag = document.createDocumentFragment();
 
-
-    for (const candidate of top) {
+    for (const candidate of candidates) {
         const choice = document.createElement(\"a\");
-        const regex = new RegExp(`(${query})`, \"gi\");
-        const highlighted = candidate[\"name\"].replace(regex, \"<span class='highlight'>$1</span>\");
-        choice.innerHTML = highlighted;
-        choice.href = candidate[\"link\"];
-        resultsDiv.appendChild(choice);
+        choice.innerHTML = candidate.name.replace(regex, \"<span class='highlight'>$1</span>\");
+        choice.href = candidate.link;
+        frag.appendChild(choice);
     }
+
+    resultsDiv.appendChild(frag);
 };
 
 searchBar.addEventListener(\"input\", inputProcess);

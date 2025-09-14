@@ -31,7 +31,7 @@ let getHeader : String -> String = lam title.
 </div>
 ", searchHtml, "
 <script src=\"/", htmlScriptPath, "\"></script>
-<script src=\"/", searchJsPath, "\"></script>
+<script src=\"/", searchPath "js", "\"></script>
 "]
 
 

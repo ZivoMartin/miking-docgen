@@ -34,7 +34,7 @@ lang HtmlRenderer = RendererInterface
             else
                 renderingWarn (join ["Failed to create ", path, " file."])
         in
-        openAndWrite (searchJs (objToJsDict opt obj)) searchJsPath;
+        openAndWrite (searchJs (objToJsDict opt obj)) (searchPath "js");
         openAndWrite htmlStyle htmlStylePath;
         openAndWrite htmlScript htmlScriptPath
         
@@ -116,8 +116,8 @@ lang HtmlRenderer = RendererInterface
     | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
     
     -- Doc block wrapper; the Bool controls the goto-link inclusion
-    sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" (renderDocBloc data) displayGotoLink "</pre>\n</div>"
+    sem renderDocBloc (data : RenderingData) =
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
 
     -- Object description wrapper
     sem renderDocDescription (obj: Object) =
