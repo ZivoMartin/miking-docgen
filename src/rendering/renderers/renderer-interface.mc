@@ -41,7 +41,7 @@ lang RendererInterface =
 
     -- Called before rendering starts for all files.
     -- Typically used to generate global headers.
-    sem renderSetup : RenderingOptions -> ()
+    sem renderSetup : ObjectTree -> RenderingOptions -> ()
 
     -- Called before rendering each file.
     -- Typically used to push file headers or includes.
@@ -60,8 +60,7 @@ lang RendererInterface =
 
     -- Renders a documentation block for an object.
     -- Includes title, goto link, code toggle, top doc, and signature.
-    -- The Bool parameter controls whether the goto link is shown.
-    sem renderDocBloc : RenderingData -> Bool -> RenderingOptions -> String
+    sem renderDocBloc : RenderingData -> RenderingOptions -> String
 
     -- Renders the signature of an object.
     sem renderDocSignature : Object -> RenderingOptions -> String

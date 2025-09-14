@@ -46,19 +46,22 @@ include "../parsing/parser.mc"
 include "../parsing/doc-tree.mc"
 include "../global/logger.mc"
 
+include "../global/logger.mc"
+
 include "fileutils.mc"
 
 include "./name-context.mc"
 include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
+include "./depth.mc"
         
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
-let extract : Logger -> DocTree -> ObjectTree =
+let extract : Logger -> DocTree -> Option Int -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
-    lam log. lam tree.
+    lam log. lam tree. lam depth.
     log "Beggining of extraction...";
 
      -- Entry point: tree must be Program node
@@ -72,12 +75,12 @@ let extract : Logger -> DocTree -> ObjectTree =
     type ExtractRecOutput = { obj: Option ObjectTree, commentBuffer: CommentBuffer, sourceCodeBuilder: SourceCodeBuilder, utestCount: Int } in
 
     recursive
-    let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> Bool -> Int -> ExtractRecOutput ) =
-    lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam inStdlib. lam utestCount.
+    let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> Bool -> Int -> Depth -> ExtractRecOutput ) =
+    lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam inStdlib. lam utestCount. lam depth.
 
         let shouldClear : String -> Bool = lam content. gti (count (eqChar '\n') content) 1 in
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
-
+        
         let defaultObject = lam namespace. lam isStdlib.
             let defaultObject = objWithNamespace defaultObject namespace in
             let defaultObject = objWithIsStdlib defaultObject isStdlib in
@@ -102,17 +105,21 @@ let extract : Logger -> DocTree -> ObjectTree =
             -- Process children nodes
             let process : State -> [DocTree] -> String -> String -> String -> ObjectKind -> Int -> ExtractRecOutput =
                 lam state. lam sons. lam name. lam namespace. lam doc. lam kind. lam utestCount.
+                
+                let obj = { obj with name = name, kind = kind, doc = doc } in
+                let obj = objWithNamespace obj namespace in
+                match depthProcess depth obj with { obj = obj, depth = depth } in
+
                 type Arg = { sons: [ObjectTree], ctx: ExtractRecOutput } in
                 let foldResult = foldl
                     (lam arg: Arg. lam s: DocTree.
                         let ctx = arg.ctx in
-                        let ctx = extractRec s namespace ctx.commentBuffer ctx.sourceCodeBuilder inStdlib ctx.utestCount in
+                        let ctx = extractRec s namespace ctx.commentBuffer ctx.sourceCodeBuilder inStdlib ctx.utestCount depth in
                         let sons = match ctx.obj with Some obj then cons obj arg.sons else arg.sons in
                         { sons = sons, ctx = ctx })
                     { sons = [], ctx = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount, obj = None {} } }
                     sons in
-                let obj = objWithNamespace obj namespace in
-                let obj = { obj with name = name, kind = kind, doc = doc } in
+                    
                 match finish obj foldResult.ctx.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 let obj = ObjectNode { obj = obj, sons = reverse foldResult.sons } in
                 { foldResult.ctx with obj = Some obj, sourceCodeBuilder = sourceCodeBuilder } in
@@ -215,15 +222,15 @@ let extract : Logger -> DocTree -> ObjectTree =
             let defaultObject = defaultObject path isStdlib in
             let defaultObject = objWithKind defaultObject (ObjInclude { pathInFile = content }) in
             let defaultObject = objWithName defaultObject path in
-
             let emptyInclude = ObjectNode { obj = defaultObject, sons = [] } in
 
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = Some emptyInclude, utestCount = utestCount } in
             match tree with Some tree then
                 log (concat "Extracting on: " path);
-                let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount in
+                let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount depth in
                 match res with { obj = Some (ObjectNode { obj = progObj, sons = sons } & progObjTree) } then
-                    let includeObj = { progObj with isStdlib = isStdlib, kind = ObjInclude { pathInFile = content }, sourceCode = sourceCodeEmpty () } in
+                    let includeObj = { progObj with renderIt = false, isStdlib = isStdlib, kind = ObjInclude { pathInFile = content }, sourceCode = sourceCodeEmpty () } in
+                    
                     { defaultRes with obj = Some (ObjectNode { obj = includeObj, sons = [ progObjTree ] })  }
                 else
                     extractingWarn "Found a leaf at the root of a Program"; defaultRes
@@ -231,7 +238,7 @@ let extract : Logger -> DocTree -> ObjectTree =
         end
     in
 
-    let obj = match (extractRec tree content [] (newSourceCodeBuilder ()) false 0).obj with Some obj then
+    let obj = match (extractRec tree content [] (newSourceCodeBuilder ()) false 0 (depthCreate depth)).obj with Some obj then
         obj
     else
         error "Extraction failed: extractRec returned None" in

@@ -17,7 +17,7 @@
 
 include "sys.mc"
 include "./server-options.mc"
-    
+
 let pythonScript = lam servesMd. join ["
 import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
@@ -37,9 +37,8 @@ DOC_DIR = sys.argv[1]
 class Handler(BaseHTTPRequestHandler):
     def do_GET(self):
         path = unquote(self.path.lstrip('/'))
-        
         file_path = os.path.join(DOC_DIR, path)
-        
+
         if not os.path.isfile(file_path):
             self.send_response(404)
             self.send_header('Content-type', 'text/plain; charset=utf-8')
@@ -47,29 +46,25 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(f\"File not found: {file_path}\".encode('utf-8'))
             return
 
-        with open(file_path, 'r', encoding='utf-8') as f:
-            content = f.read()
+        # Serve markdown or html as text/html
+        if ",
+if servesMd then "file_path.endswith('.md') or " else "", 
+"file_path.endswith('.html'):
+            with open(file_path, 'r', encoding='utf-8') as f:
+                content = f.read()
+",
+if servesMd then
+"            if file_path.endswith('.md'):
+                content = markdown.markdown(content)"
+else
+"", "
 
-        html_output = ", if servesMd then " markdown.markdown(content)" else "content", "
-
-        full_html = ", if servesMd then "f\"\"\"<!DOCTYPE html>
-<html>
-    <head>
-        <meta charset=\"utf-8\">
-        <title>{os.path.basename(file_path)}</title>
-        <style>
-            body {{ font-family: sans-serif; max-width: 800px; margin: auto; padding: 2em; }}
-            h1, h2, h3 {{ color: #444; }}
-            pre, code {{ background: #f4f4f4; padding: 0.2em 0.4em; }}
-        </style>
-    </head>
-    <body>{html_output}</body>
-</html>\"\"\"" else "html_output", "
-
-        self.send_response(200)
-        self.send_header('Content-type', 'text/html; charset=utf-8')
-        self.end_headers()
-        self.wfile.write(full_html.encode('utf-8'))
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html; charset=utf-8')
+            self.end_headers()
+            self.wfile.write(content.encode('utf-8'))
+        else:
+            self.serve_static_file(file_path)
 
     def serve_static_file(self, file_path):
         if not os.path.isfile(file_path):
@@ -106,8 +101,7 @@ except KeyboardInterrupt:
     pass
 finally:
     httpd.server_close()
-"
-]    
+"]
 
 let pythonServerStart : Bool -> ServerOptions -> () = lam servesMd. lam opt.
     let file = sysTempFileMake () in

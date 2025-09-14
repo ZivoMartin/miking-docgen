@@ -23,6 +23,22 @@ include "./headers/html-header.mc"
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
 
+    -- Create the scripts and stylesheet in the output folder.
+    sem renderSetup obj =
+    | { fmt = Html {} } & opt ->
+        let openAndWrite = lam s. lam path.
+            let path = join [opt.outputFolder, "/", path] in
+            match fileWriteOpen path with Some wc then
+                fileWriteString wc s;
+                fileWriteClose wc
+            else
+                renderingWarn (join ["Failed to create ", path, " file."])
+        in
+        openAndWrite (searchJs (objToJsDict opt obj)) (searchPath "js");
+        openAndWrite htmlStyle htmlStylePath;
+        openAndWrite htmlScript htmlScriptPath
+        
+
     -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =
     | { fmt = Html {} } & opt -> getHeader (objName obj)
@@ -100,8 +116,8 @@ lang HtmlRenderer = RendererInterface
     | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
     
     -- Doc block wrapper; the Bool controls the goto-link inclusion
-    sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" (renderDocBloc data) displayGotoLink "</pre>\n</div>"
+    sem renderDocBloc (data : RenderingData) =
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
 
     -- Object description wrapper
     sem renderDocDescription (obj: Object) =
