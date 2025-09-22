@@ -52,6 +52,7 @@ let mdxCss =
     color: 'var(--docgen-muted, #6b7280)',
     whiteSpace: 'pre-wrap' as const,
     lineHeight: 1.65,
+    paddingBottom: '0.8rem'
   },
 
   spacer: {
@@ -82,13 +83,17 @@ let mdxCss =
   },
 
   toggler: {
-    fontSize: '1.1em',
-    textDecoration: 'none',
-    opacity: 0.7,
-    fontWeight: 500,
     background: 'transparent',
     border: 'none',
+    color: 'var(--docgen-accent, #3b82f6)',
     cursor: 'pointer',
+    fontSize: '0.95rem',
+    padding: '0.15rem 0.3rem',
+    borderRadius: 4,
+    transition: 'background 0.2s ease',
+    ':hover': {
+       background: 'rgba(59,130,246,0.1)',
+    }
   },
 
   anchor: {
@@ -189,19 +194,19 @@ export const Description = ({ children }) => {
 /** ------------------------------------------------------------------------------------
  *  Minimalist toggle button for top toggling code
  *  ---------------------------------------------------------------------------------- */
-export const ToggleWrapper = ({ children }) => {
+export const ToggleWrapper = ({ children, text }) => {
   const [visible, setVisible] = useState(false);
   return (
-    <span>
+    <div>
       <button
         onClick={() => setVisible(!visible)}
         style={S.toggler}
         aria-expanded={visible}
       >
-        ...
+        {text}
       </button>
       {visible && <span style={S.code}>{children}</span>} 
-    </span>
+    </div>
   );
 };"]
 
@@ -224,7 +229,7 @@ function useId(prefix?: string) {
   const ref = useRef<string>();
   if (!ref.current) {
     const rnd = Math.random().toString(36).slice(2, 8);
-    ref.current = `${prefix ?? 'docgen'}-${rnd}`;
+   ref.current = `${prefix ?? 'docgen'}-${rnd}`;
   }
   return ref.current;
 }
@@ -307,18 +312,18 @@ export const Description: React.FC<{ children?: React.ReactNode }> = ({ children
  *  ---------------------------------------------------------------------------------- */
 type ToggleWrapperProps = { children: React.ReactNode };
 
-export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children }) => {
+export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, text }) => {
   const [visible, setVisible] = useState(false);
   return (
-    <span>
+    <div>
       <button
         onClick={() => setVisible(!visible)}
         style={S.toggler}
         aria-expanded={visible}
       >
-        ...
+        {text}
       </button>
       {visible && <span style={S.code}>{children}</span>}
-    </span>
+    </div>
   );
 };"]

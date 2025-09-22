@@ -34,7 +34,7 @@ lang HtmlRenderer = RendererInterface
             else
                 renderingWarn (join ["Failed to create ", path, " file."])
         in
-        openAndWrite (searchJs (objToJsDict opt obj)) (searchPath "js");
+        openAndWrite (searchJs (objToJsDict opt obj)) (searchPath ".js");
         openAndWrite htmlStyle htmlStylePath;
         openAndWrite htmlScript htmlScriptPath
         

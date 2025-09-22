@@ -101,7 +101,7 @@ let buildMAstFromFile: Logger -> String -> MAst = use PMExprDemote in use BootPa
 
     match work { acc = [], includeSet = includeSet } file with { acc = code, includeSet = includeSet } in
 
-    let code = reverse (join code) in
+    let code = reverse (strJoin "\n" code) in
     let tmpFile = sysTempFileMake () in
     match fileWriteOpen tmpFile with Some wc then
         fileWriteString wc code;

@@ -1,7 +1,7 @@
 -- # Miking Doc Gen
 --
--- This file defines the **main execution pipeline** for mi-doc-gen.
--- It chains together all major stages, starting from option parsing and file loading,
+-- This file defines the main execution pipeline for Miking doc gen.
+-- It chains together all major stages, starting from parsing and file loading,
 -- down to rendering and serving the generated documentation.
 --
 -- Each stage transforms the `ExecutionContext` in sequence,

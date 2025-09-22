@@ -6,6 +6,7 @@
 include "../../extracting/objects.mc"
 include "../rendering-options.mc"
 include "./headers/search.mc"
+include "string.mc"
 
 lang ObjectsRenderer = ObjectKinds + Formats
 
@@ -28,13 +29,13 @@ lang ObjectsRenderer = ObjectKinds + Formats
     | _ -> false
     -- Build the canonical link for an object (prefix + namespace + extension).
 
-    -- Uses "Lib" for stdlib objects, "Files" for user sources.
+    -- Uses "Stdlib" for stdlib objects, "Files" for user sources.
     sem objGetPureLink : Object -> RenderingOptions -> String
     sem objGetPureLink =
     | obj -> lam opt.
         let namespace = objNamespace obj in
         let ext = concat "." (formatGetExtension opt.fmt) in
-        let prefix = if objIsStdlib obj then "Lib" else "Files" in
+        let prefix = if objIsStdlib obj then "Stdlib" else "Files" in
         let link =  join [prefix, namespace, ext] in
         if strStartsWith "/" link then link else cons '/' link     
 
@@ -94,9 +95,12 @@ lang ObjectsRenderer = ObjectKinds + Formats
               { opt = opt, dicts = concat dicts arg.dicts }
               ) { dicts = [], opt = opt } (objTreeSons tree)
           in
+          let link = concat opt.urlPrefix (objLink obj opt) in
+          let link = if strEndsWith ".md" link then subsequence link 0 (subi (length link) 3) else link in 
+
           {
              opt = if objPreserveNameCtx obj then res.opt else opt,
-             dicts = if objRenderIt obj then cons { name = objNamespace obj, link = objLink obj opt } res.dicts else res.dicts
+             dicts = if objRenderIt obj then cons { name = objNamespace obj, link = link } res.dicts else res.dicts
           }
       in (objToJsDict opt tree).dicts 
 

@@ -50,7 +50,6 @@ include "../global/logger.mc"
 
 include "fileutils.mc"
 
-include "./name-context.mc"
 include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
@@ -203,7 +202,7 @@ let extract : Logger -> DocTree -> Option Int -> ObjectTree =
                 process state sons name.word namespace doc kind utestCount
                 end
             case _ then
-                error (concat "Not covered: " (toString state))
+               error (concat "Not covered: " (toString state))
             end
         case DocTreeLeaf { token = token, state = state } then
             let defaultRes = { commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, obj = None {}, utestCount = utestCount } in

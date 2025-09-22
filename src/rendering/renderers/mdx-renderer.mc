@@ -7,9 +7,10 @@
 -- ## Design
 -- - Writes a reusable MDX components file (`MikingDocGen.tsx/.jsx`) at setup.
 -- - Renders headings/markdown via the Markdown renderer to keep escaping consistent.
--- - Builds semantic blocks (`DocBlock`, `Panel`, `ToggleWrapper`, etc.) in MDX.
+-- - Builds semantic blocks (`DocBlock`, `ToggleWrapper`, etc.) in MDX.
 -- - Trims trailing comment/blank lines from raw code when rendering code blocks.
 -- - Removes `.md` from links so Docusaurus routes match clean URLs.
+-- - Search bar here is still in todo.
 
 include "./renderer-interface.mc"
 include "./headers/mdx-components.mc"
@@ -17,6 +18,7 @@ include "./headers/mdx-components.mc"
 include "sys.mc"
 
 let componentFileName = "MikingDocGen"
+let searchFileName = searchPath ""
 
 -- Provides the MDX renderer implementation and its dispatch rules.
 lang MdxRenderer = RendererInterface
@@ -34,15 +36,16 @@ lang MdxRenderer = RendererInterface
     sem renderSetup obj =
     | { fmt = Mdx {} } & opt ->
         let path = getComponentPath opt.fmtLang opt.outputFolder componentFileName in
-        match fileWriteOpen path with Some wc then
+        (match fileWriteOpen path with Some wc then
             let write = fileWriteString wc in
             let components = match opt.fmtLang with Ts {} then mdxTsComponents else mdxJsComponents in
             write components;
             fileWriteClose wc
         else
-            renderingWarn "Failed to create components file.";
+            renderingWarn "Failed to create components file.");
 
-        match fileWriteOpen (searchPath (formatLanguageGetExt opt.fmtLang)) with Some wc then
+        let path = getComponentPath (Js {}) opt.outputFolder searchFileName in
+        match fileWriteOpen path with Some wc then
             fileWriteString wc (searchReact (objToJsDict opt obj));
             fileWriteClose wc
         else
@@ -51,22 +54,26 @@ lang MdxRenderer = RendererInterface
     -- Emit import line for MDX components used by the page.
     sem renderHeader obj =
     | { fmt = Mdx {} } & opt ->
-        let full = getComponentPath opt.fmtLang opt.urlPrefix componentFileName in
-        let importPath = if strStartsWith "/" full
-                         then subsequence full 1 (length full)
-                         else full in
-        --  strip .tsx/.js extension from the import path if present
-        let importPath =
+        let formatPath = lam full.
+            let importPath = if strStartsWith "/" full
+                             then subsequence full 1 (length full)
+                             else full in
+            --  strip .tsx/.js extension from the import path if present
             if strEndsWith ".tsx" importPath
             then subsequence importPath 0 (subi (length importPath) 4)
-            else if strEndsWith ".js" importPath
-            then subsequence importPath 0 (subi (length importPath) 3)
-            else importPath in
+            else if strEndsWith ".jsx" importPath
+            then subsequence importPath 0 (subi (length importPath) 4)
+            else importPath
+        in
+            
+
+        let import = formatPath (getComponentPath opt.fmtLang opt.urlPrefix componentFileName) in
+        let search = formatPath (getComponentPath (Js {}) opt.urlPrefix searchFileName) in
+        
         join [
-          "import { DocBlock, Signature, Description, ToggleWrapper, S, Search } from '@site/",
-          importPath,
-          "';\n\n
-          <Search />"
+          "import { DocBlock, Signature, Description, ToggleWrapper, S} from '@site/", import, "';\n",
+          "import Search from '@site/", search, "';\n\n",
+          "<Search />\n"
         ]
 
     -- Reuse Markdown escaping for code.
@@ -147,8 +154,7 @@ lang MdxRenderer = RendererInterface
         let rawDesc = renderDocDescription data.obj { opt with fmt = Md {} } in
         let desc = strTrim rawDesc in
         let desc = if eqString rawDesc "No documentation available here." then "" else rawDesc in
-        let toggleCode = join ["<ToggleWrapper>", mdxRenderCode opt (renderCodeWithoutPreview data opt), "</ToggleWrapper>"] in
-        join ["\n", desc, if eqString desc "" then "" else "\n\n", toggleCode]
+        join ["\n", desc, if eqString desc "" then "" else "\n\n"]
 
     -- Render a full documentation block (title, signature, desc, code, optional tests).
     sem renderDocBloc (data: RenderingData) =
@@ -177,9 +183,9 @@ lang MdxRenderer = RendererInterface
           "
           <DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
           mdxRenderCode opt sign, "\n",
-          desc, "\n",
-          "<ToggleWrapper>", mdxRenderCode opt code, "</ToggleWrapper>\n",
-          (if hasTests then join ["<Panel id=\"", testsId, "\" title=\"Tests\">", mdxRenderCode opt tests, "</Panel>\n"] else ""),
+          desc, "\n\n",
+          "<ToggleWrapper text=\"Code..\">", mdxRenderCode opt code, "</ToggleWrapper>\n",
+          (if hasTests then join ["<ToggleWrapper text=\"Tests..\">", mdxRenderCode opt tests, "</ToggleWrapper>\n"] else ""),
           "</DocBlock>\n\n"
         ]
 end

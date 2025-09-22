@@ -73,6 +73,7 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
     
     preprocess obj opt;
     renderSetup obj opt;
+
     log "Beginning of rendering stage.";
     recursive
     let render: RenderingOptions -> ObjectTree -> (RenderingData, RenderingOptions) = lam oldOpt. lam objTree.  -- # Global Rendering Pipeline
