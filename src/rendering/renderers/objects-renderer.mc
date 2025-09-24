@@ -97,7 +97,6 @@ lang ObjectsRenderer = ObjectKinds + Formats
           in
           let link = concat opt.urlPrefix (objLink obj opt) in
           let link = if strEndsWith ".md" link then subsequence link 0 (subi (length link) 3) else link in 
-
           {
              opt = if objPreserveNameCtx obj then res.opt else opt,
              dicts = if objRenderIt obj then cons { name = objNamespace obj, link = link } res.dicts else res.dicts

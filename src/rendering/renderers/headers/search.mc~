@@ -1,5 +1,4 @@
 include "./theme-variables.mc"
-include "string.mc"
 
 let searchHtml: String = 
 "<div id=\"search-container\">
@@ -246,10 +245,9 @@ let inputProcess = () => {
 
 searchBar.addEventListener(\"input\", inputProcess);
 searchBar.addEventListener(\"focus\", inputProcess);
-searchBar.addEventListener(\"focusout\", (event) => {
-  const newTarget = event.relatedTarget;
-  if (!resultsDiv.contains(newTarget)) {
+searchBar.addEventListener(\"blur\", () => {
+  setTimeout(() => {
     resultsDiv.innerHTML = \"\";
-  }
+  }, 150); // small delay so the <a> click works
 });
 "]

@@ -83,7 +83,7 @@ type DataStreamComputeNextRes = {
 }
 
 -- Computes the next recursive block count from the data stream.
-let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> DataStreamComputeNextRes = use MExprAst in lam stream. lam semMap.
+let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> DataStreamComputeNextRes = use MExprAst in use MExprPrettyPrint in lam stream. lam semMap.
     type WorkRes = { acc: [Int], inCount: Int, stack: [Expr], map: RecursiveDataStreamMap } in  
     recursive let work : Bool -> [Int] -> [Expr] -> Int -> WorkRes = lam first. lam acc. lam stack. lam inCount.
         match stack with [] then { inCount = inCount, acc = acc, stack = [], map = hashmapEmpty () } else
@@ -127,7 +127,7 @@ let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> Data
                    { acc = reverse foldRes.acc, inCount = foldRes.recLetCount, stack = cons inexpr rest, map = foldRes.map }
                 else
                    let acc = join [foldRes.acc, [foldRes.recLetCount], acc] in
-                   work false acc (cons inexpr rest) inCount
+                   work false acc (cons inexpr rest) (addi inCount 1) 
             case DeclExt {} then go []
             case DeclType {} | DeclConDef {} then addAndGo []
             case DeclLet { body = e1 } then  addAndGo [e1]
@@ -150,7 +150,7 @@ let recursiveDataStreamComputeNext: RecursiveDataStream -> Option SemMap -> Data
 type RecursiveDataStreamNextRes = { inCount: Int, stream: RecursiveDataStream }
 
 -- Returns the next recursive count from the stream, will take from the cache if not empty.
-let recursiveDataStreamNext: RecursiveDataStream -> RecursiveDataStreamNextRes = use MExprAst in lam stream.
+let recursiveDataStreamNext: RecursiveDataStream -> RecursiveDataStreamNextRes = use MExprAst in use MExprPrettyPrint in lam stream.
     match stream.cache with [inCount] ++ cache then
         { inCount = inCount, stream = { stream with cache = cache } } 
     else 
