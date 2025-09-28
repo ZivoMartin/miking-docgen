@@ -183,7 +183,7 @@ lang RawRenderer = RendererInterface
         let getFormatedString : [TreeSourceCode] -> String = lam code.
             foldl (lam s. lam node.
                 concat (switch node 
-                case TreeSourceCodeNode son then renderCodeWithPreview son opt
+                case TreeSourceCodeNode child then renderCodeWithPreview child opt
                 case TreeSourceCodeSnippet code then renderSourceCode code
                 end) s
                 ) "" (reverse code) in
@@ -191,7 +191,7 @@ lang RawRenderer = RendererInterface
         let buildSourceCodeRaw = lam code. join (map (lam w. lit w.word) code) in
         let row = foldl (lam row. lam tree.
              concat (switch tree 
-                case TreeSourceCodeNode son then son.row
+                case TreeSourceCodeNode child then child.row
                 case TreeSourceCodeSnippet code then buildSourceCodeRaw code
                 end) row)
                 "" (reverse (concat left right)) in
