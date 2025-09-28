@@ -14,6 +14,7 @@
 -- General DocGenOptions:
 --   --no-open                              Do not open the result in a web browser.
 --   --output-folder <name>                 Set the output folder (default: doc-gen-output).
+--   --src-folder <name>                    Destination folder for src files relative to outputFolder
 --   --format <html|md|mdx>                 Choose output format (default: html).
 --   --url-prefix <prefix>                  Prefix for all generated URLs.
 --   --depth <n|none>                       Limit nesting depth of `let` bindings.
@@ -42,16 +43,17 @@ include "sys.mc"
 -- ## DocGenOptions
 -- Data type representing the command-line options that can be passed to `my-doc-gen`.
 type DocGenOptions = use Formats in use FormatLanguages in {
-    noOpen: Bool,            -- Whether to skip opening the result in a web browser.
-    fmt: Format,             -- Output format (HTML, Markdown, MDX).
-    fmtLang: FormatLanguage, -- Output language for generated React components (JS/TS).
-    file: String,            -- Path to the input file.
-    debug: Bool,             -- Enable debug mode.
-    noWarn: Bool,            -- Suppress warnings.
-    outputFolder: String,    -- Destination folder for generated output.
-    noStdlib: Bool,          -- Whether to exclude the standard library.
-    urlPrefix: String,       -- Prefix for generated URLs.
-    letDepth: Option Int     -- Maximum nesting depth of let-bindings.
+    noOpen: Bool,              -- Whether to skip opening the result in a web browser.
+    fmt: Format,               -- Output format (HTML, Markdown, MDX).
+    fmtLang: FormatLanguage,   -- Output language for generated React components (JS/TS).
+    file: String,              -- Path to the input file.
+    debug: Bool,               -- Enable debug mode.
+    noWarn: Bool,              -- Suppress warnings.
+    outputFolder: String,      -- Destination folder for generated output.
+    srcFolder: String,         -- Destination folder for src files relative to outputFolder
+    noStdlib: Bool,            -- Whether to exclude the standard library.
+    urlPrefix: String,         -- Prefix for generated URLs.
+    letDepth: Option Int       -- Maximum nesting depth of let-bindings.
 }
 
 -- ## optionsDefault
@@ -63,6 +65,7 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     file = "",
     debug = false,
     outputFolder = "doc-gen-output",
+    srcFolder = "/",
     noWarn = false,
     noStdlib = false,
     urlPrefix = "",
@@ -82,6 +85,7 @@ let usage = lam.
     "General DocGenOptions:\n",
     "  --no-open                              Do not open the result in a web browser.\n",
     "  --output-folder <name>                 Set the output folder (default: doc-gen-output).\n",
+    "  --src-folder <name>                    Destination folder for src files relative to outputFolder.\n",
     "  --format <html|md|mdx>                 Choose output format (default: html).\n",
     "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
     "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",

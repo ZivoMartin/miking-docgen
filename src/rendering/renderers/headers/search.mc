@@ -63,10 +63,11 @@ let searchCss: String =
     padding: 10px 14px;
     border-radius: 6px;
     color: var(--searchResultItemTextColor);
+    background: var(--searchResultBGColor);
+    backdrop-filter: blur(6px);
     font-size: 15px;
     margin: 0;
     transition: background 0.2s, transform 0.15s;
-    backdrop-filter: blur(6px);
 }
 
 #search-results a + a {

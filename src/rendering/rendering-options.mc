@@ -38,7 +38,8 @@ type RenderingOptions = use Formats in use FormatLanguages in
     {
         fmt: Format, 
         noStdlib: Bool, 
-        outputFolder: String, 
+        outputFolder: String,
+        srcFolder: String,
         urlPrefix: String, 
         fmtLang: FormatLanguage, 
         letDepth: Option Int, 

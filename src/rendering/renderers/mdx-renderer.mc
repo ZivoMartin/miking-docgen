@@ -35,21 +35,22 @@ lang MdxRenderer = RendererInterface
     -- Create the MDX components file (TSX/JSX) in the output folder.
     sem renderSetup obj =
     | { fmt = Mdx {} } & opt ->
-        let path = getComponentPath opt.fmtLang opt.outputFolder componentFileName in
+        let srcPath = normalizePath (join [opt.outputFolder, "/", opt.srcFolder, "/"]) in
+        let path = getComponentPath opt.fmtLang srcPath componentFileName in
         (match fileWriteOpen path with Some wc then
             let write = fileWriteString wc in
             let components = match opt.fmtLang with Ts {} then mdxTsComponents else mdxJsComponents in
             write components;
             fileWriteClose wc
         else
-            renderingWarn "Failed to create components file.");
+            renderingWarn (concat "Failed to create components file: " path));
 
-        let path = getComponentPath (Js {}) opt.outputFolder searchFileName in
-        match fileWriteOpen path with Some wc then
+        let path = getComponentPath (Js {}) srcPath searchFileName in
+        (match fileWriteOpen path with Some wc then
             fileWriteString wc (searchReact (objToJsDict opt obj));
             fileWriteClose wc
         else
-            renderingWarn "Failed to create search file."
+            renderingWarn (concat "Failed to create search file: " path))
 
     -- Emit import line for MDX components used by the page.
     sem renderHeader obj =
@@ -59,20 +60,23 @@ lang MdxRenderer = RendererInterface
                              then subsequence full 1 (length full)
                              else full in
             --  strip .tsx/.js extension from the import path if present
-            if strEndsWith ".tsx" importPath
+            let path = if strEndsWith ".tsx" importPath
             then subsequence importPath 0 (subi (length importPath) 4)
             else if strEndsWith ".jsx" importPath
             then subsequence importPath 0 (subi (length importPath) 4)
-            else importPath
+            else importPath in
+            normalizePath path
         in
             
 
-        let import = formatPath (getComponentPath opt.fmtLang opt.urlPrefix componentFileName) in
-        let search = formatPath (getComponentPath (Js {}) opt.urlPrefix searchFileName) in
+        let path = normalizePath (join [opt.urlPrefix, "/", opt.srcFolder]) in
+        let import = formatPath (getComponentPath opt.fmtLang path componentFileName) in
+        let search = formatPath (getComponentPath (Js {}) path searchFileName) in
         
         join [
           "import { DocBlock, Signature, Description, ToggleWrapper, S} from '@site/", import, "';\n",
           "import Search from '@site/", search, "';\n\n",
+
           "<Search />\n"
         ]
 

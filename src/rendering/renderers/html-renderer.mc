@@ -26,8 +26,9 @@ lang HtmlRenderer = RendererInterface
     -- Create the scripts and stylesheet in the output folder.
     sem renderSetup obj =
     | { fmt = Html {} } & opt ->
+        let srcPath = normalizePath (join [opt.outputFolder, "/", opt.srcFolder]) in
         let openAndWrite = lam s. lam path.
-            let path = join [opt.outputFolder, "/", path] in
+            let path = normalizePath (join [srcPath, "/", path]) in
             match fileWriteOpen path with Some wc then
                 fileWriteString wc s;
                 fileWriteClose wc
@@ -41,7 +42,7 @@ lang HtmlRenderer = RendererInterface
 
     -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =
-    | { fmt = Html {} } & opt -> getHeader (objName obj)
+    | { fmt = Html {} } & opt -> getHeader (objName obj) opt.srcFolder
 
     -- HTML heading: delegates inner text to raw title rendering, then wraps as <hN>.
     sem renderTitle size s =

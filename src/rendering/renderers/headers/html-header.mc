@@ -8,9 +8,11 @@ include "./search.mc"
 include "./html-script.mc"
 include "./html-style.mc"
 include "string.mc"
+include "../../../global/util.mc"
 
 -- Build the HTML header + styles + opening body using a theme and a page title.
-let getHeader : String -> String = lam title.
+let getHeader : String -> String -> String = lam title. lam srcPath.
+    let getPath = lam path.  normalizePath (join [srcPath, "/", path]) in
     join [
 "<!DOCTYPE html>
 <html lang=\"en\">
@@ -18,7 +20,7 @@ let getHeader : String -> String = lam title.
 <meta charset=\"utf-8\">
 <title>", title, "</title>
 <meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">
-<link rel=\"stylesheet\" href=\"/", htmlStylePath , "\">
+<link rel=\"stylesheet\" href=\"", getPath htmlStylePath , "\">
 </head>
 <body>
 <div class=\"main-container\">
@@ -30,8 +32,8 @@ let getHeader : String -> String = lam title.
   <button data-theme=\"htmlWarmDark\">Warm Dark</button>
 </div>
 ", searchHtml, "
-<script src=\"/", htmlScriptPath, "\"></script>
-<script src=\"/", searchPath ".js", "\"></script>
+<script src=\"", getPath htmlScriptPath, "\"></script>
+<script src=\"", getPath (searchPath ".js"), "\"></script>
 "]
 
 

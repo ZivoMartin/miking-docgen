@@ -44,6 +44,7 @@ let themeVariables = "
   --searchResultItemActiveBGColor: #d9d9d9;
   --searchResultItemBorderColor: rgba(0,0,0,0.08);
   --searchHighlightColor: #0066cc;
+  --searchResultBGColor: #ffffff;
 }
 
 /* htmlLight */
@@ -100,6 +101,7 @@ let themeVariables = "
   --searchResultItemActiveBGColor: #d9d9d9;
   --searchResultItemBorderColor: rgba(0,0,0,0.08);
   --searchHighlightColor: #0066cc;
+  --searchResultBGColor: #ffffff;
 }
 
 /* htmlDark */
@@ -144,6 +146,7 @@ let themeVariables = "
   --searchResultItemActiveBGColor: #555555;
   --searchResultItemBorderColor: rgba(255,255,255,0.08);
   --searchHighlightColor: #4da6ff;
+  --searchResultBGColor: transparent;
 }
 
 /* htmlWarm */
@@ -188,6 +191,7 @@ let themeVariables = "
   --searchResultItemActiveBGColor: #fce8b1;
   --searchResultItemBorderColor: #f5deb0;
   --searchHighlightColor: #e09b00;
+  --searchResultBGColor: transparent;
 }
 
 /* htmlWarmDark */
@@ -232,6 +236,7 @@ let themeVariables = "
   --searchResultItemActiveBGColor: #555533;
   --searchResultItemBorderColor: #3f3f3f;
   --searchHighlightColor: #facc15;
+  --searchResultBGColor: transparent;
 }
 
 "

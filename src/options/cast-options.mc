@@ -31,6 +31,7 @@ let getRenderingOption : DocGenOptions -> Logger -> RenderingOptions = use Forma
         fmt = opt.fmt,
         noStdlib = opt.noStdlib,
         outputFolder = opt.outputFolder,
+        srcFolder = opt.srcFolder,
         urlPrefix = opt.urlPrefix,
         fmtLang = opt.fmtLang,
         letDepth = opt.letDepth,

@@ -52,7 +52,7 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
         match arr with [] then ()
         else
             let arr = if lti (length arr) batchSize then (arr, []) else splitAt arr batchSize in
-            let command = concat ["mkdir", "-p"] arr.0 in
+            let command = concat ["mkdir", "-p", join [opt.outputFolder, "/", opt.srcFolder]] arr.0 in
             let res = sysRunCommand command "" "." in
             match res.returncode with 0 then create arr.1 else error "Failed to create folders during preprocessing"
     in create (hmKeys pathMap)

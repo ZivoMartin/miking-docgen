@@ -15,6 +15,7 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
         case ["--typescript"] ++ rest then parse rest { opts with fmtLang = Ts {} }
 
         case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
+        case ["--src-folder", srcFolder] ++ rest then parse rest { opts with srcFolder = srcFolder }
         case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
  
