@@ -33,66 +33,27 @@ include "./rendering/renderer.mc"
 include "./server/server.mc"
 
 type ExecutionContext =  use TokenReader in {    
-<<<<<<< Updated upstream
     opt: Options,
     mainFile: String,
-=======
-    opt: DocGenOptions,
-    userOutputFolder: String,
-    currentFile: String
-    files: [{ path: String, outputFolder: String }],
->>>>>>> Stashed changes
     tokens: [Token],
     docTree : Option DocTree,
     ast: Option MAst,
     object: Option ObjectTree
 }
 
-<<<<<<< Updated upstream
 let execContextNew : () -> ExecutionContext = lam.
     let opt = parseOptions argv in
     optLog opt;
     if sysFileExists opt.file then
     {
-=======
-let execCtxNext : ExecutionContext -> Option ExecutionContext = lam ctx.
-    match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
-          Some { ctx with
-              opt = { ctx.opt with outputFolder = outputFolder }
-              currentFile = path,
-              files = files,
-              tokens = [],
-              docTree = None {},
-              ast = None {},
-              object = None {}
-          }
-    else None {}
-
-let execContextNew : DocGenOptions -> ExecutionContext = lam opt.
-    let files = if sysIfFolder opt.file then
-       let files = folderFetchMcFiles opt.file in
-       map (lam path.
-           strSplit opt.file path with [_] ++ t then
-           let f = strJoin opt.file t in
-           let outputFolder = normalizePath (join [opt.outputFolder, "/", f]) in
-           { path = path, outputFolder = dirname outputFolder }) files
-    else if sysFileExists opt.file then
-       [{ path = f, outputFolder = opt.outputFolder }]
-    else error (join ["The file ", opt.file, "doesn't exist."]) in
-    let ctx = {
->>>>>>> Stashed changes
         opt = opt,
-        currentFile = "",
-        userOutputFolder = opt.outputFolder,
-        files = files,
+        mainFile = opt.file,
         tokens = [],
         docTree = None {},
         object = None {},
         ast = None {}
     }
-    match execCtxNext ctx with Some ctx then ctx else
-    error "Please provide a file to process."
-    
+    else error (join ["The file ", opt.file, "doesn't exist."])
 
 let crash = lam miss. lam func. lam should.
     error (join ["Execution context: ", miss, " is missing in the exection context, ", func, " function should be called after having call the ", should, " function."])
@@ -120,15 +81,8 @@ let label : Step =  lam ctx.
 
 let render : Step =  lam ctx.
     match ctx.object with Some obj then
-<<<<<<< Updated upstream
     let opt = getRenderingOption ctx.opt in
     render opt obj; ctx
-=======
-    let log = buildLogger ctx "Rendering" in 
-    let opt = getRenderingOption ctx.opt log in
-    let searchDatas  render opt obj in
-    ctx
->>>>>>> Stashed changes
     else crash "object" "render" "label (or extract)"
 
 let serve : Step = use ObjectsRenderer in lam ctx.
