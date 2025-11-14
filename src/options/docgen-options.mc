@@ -1,4 +1,4 @@
--- # Command-Line Options Parser
+-- # Command-Line DocGenOptions Parser
 --
 -- This module provides parsing of command-line arguments
 -- for the `my-doc-gen` documentation generator.
@@ -11,9 +11,10 @@
 -- Required:
 --   <file>                                 Path to the Miking source file to document.
 --
--- General Options:
+-- General DocGenOptions:
 --   --no-open                              Do not open the result in a web browser.
 --   --output-folder <name>                 Set the output folder (default: doc-gen-output).
+--   --src-folder <name>                    Destination folder for src files relative to outputFolder
 --   --format <html|md|mdx>                 Choose output format (default: html).
 --   --url-prefix <prefix>                  Prefix for all generated URLs.
 --   --depth <n|none>                       Limit nesting depth of `let` bindings.
@@ -34,38 +35,37 @@
 -- ```
 
 include "../global/format.mc"
-include "../global/theme.mc"
 include "../global/format-language.mc"    
         
 include "string.mc"
 include "sys.mc"
 
--- ## Options
+-- ## DocGenOptions
 -- Data type representing the command-line options that can be passed to `my-doc-gen`.
-type Options = use Formats in use Themes in use FormatLanguages in {
-    noOpen: Bool,            -- Whether to skip opening the result in a web browser.
-    fmt: Format,             -- Output format (HTML, Markdown, MDX).
-    theme: Theme,            -- Output theme.
-    fmtLang: FormatLanguage, -- Output language for generated React components (JS/TS).
-    file: String,            -- Path to the input file.
-    debug: Bool,             -- Enable debug mode.
-    noWarn: Bool,            -- Suppress warnings.
-    outputFolder: String,    -- Destination folder for generated output.
-    noStdlib: Bool,          -- Whether to exclude the standard library.
-    urlPrefix: String,       -- Prefix for generated URLs.
-    letDepth: Option Int     -- Maximum nesting depth of let-bindings.
+type DocGenOptions = use Formats in use FormatLanguages in {
+    noOpen: Bool,              -- Whether to skip opening the result in a web browser.
+    fmt: Format,               -- Output format (HTML, Markdown, MDX).
+    fmtLang: FormatLanguage,   -- Output language for generated React components (JS/TS).
+    file: String,              -- Path to the input file.
+    debug: Bool,               -- Enable debug mode.
+    noWarn: Bool,              -- Suppress warnings.
+    outputFolder: String,      -- Destination folder for generated output.
+    srcFolder: String,         -- Destination folder for src files relative to outputFolder
+    noStdlib: Bool,            -- Whether to exclude the standard library.
+    urlPrefix: String,         -- Prefix for generated URLs.
+    letDepth: Option Int       -- Maximum nesting depth of let-bindings.
 }
 
 -- ## optionsDefault
 -- Default values for the command-line options.
-let optionsDefault : Options = use Formats in use Themes in use FormatLanguages in {
+let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in {
     noOpen = false,
     fmt = defaultFormat (),
-    theme = defaultTheme (),
     fmtLang = defaultFormatLanguage (),
     file = "",
     debug = false,
     outputFolder = "doc-gen-output",
+    srcFolder = "/",
     noWarn = false,
     noStdlib = false,
     urlPrefix = "",
@@ -82,9 +82,10 @@ let usage = lam.
     "Required:\n",
     "  <file>                                 Path to the Miking source file to document.\n\n",
 
-    "General Options:\n",
+    "General DocGenOptions:\n",
     "  --no-open                              Do not open the result in a web browser.\n",
     "  --output-folder <name>                 Set the output folder (default: doc-gen-output).\n",
+    "  --src-folder <name>                    Destination folder for src files relative to outputFolder.\n",
     "  --format <html|md|mdx>                 Choose output format (default: html).\n",
     "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
     "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
@@ -101,46 +102,3 @@ let usage = lam.
     "Help:\n",
     "  --help | --h                           Show this help message.\n"
   ])
-
--- ## parseOptions
--- Parse the list of command-line arguments into an `Options` record.
--- Exits with an error if the arguments are invalid.
-let parseOptions : [String] -> Options = lam argv.
-    recursive let parse : [String] -> Options -> Options = use Formats in use Themes in use FormatLanguages in lam args. lam opts.
-        switch args
-        case ["--help" | "--h"] then usage ()
-
-        case ["--debug"] ++ rest then parse rest { opts with debug = true } 
-        case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
-
-        case ["--javascript"] ++ rest then parse rest { opts with fmtLang = Js {} }
-        case ["--typescript"] ++ rest then parse rest { opts with fmtLang = Ts {} }
-
-        case ["--output-folder", outputFolder] ++ rest then parse rest { opts with outputFolder = outputFolder }
-        case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
-        case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
- 
-        case ["--depth", letDepth] ++ rest then
-            match letDepth with "none" then
-                parse rest { opts with letDepth = None {} }
-            else if stringIsInt letDepth then
-                parse rest { opts with letDepth = Some (string2int letDepth) }
-            else usage ()
-
-        case ["--format", fmt] ++ rest then
-            match formatFromStr fmt with Some fmt then
-                parse rest { opts with fmt = fmt }
-            else usage ()
-
-        case [s] ++ rest then
-            if eqString opts.file "" then
-               if sysFileExists s then
-                  parse rest { opts with file = s }
-               else
-                  error (join ["While parsing options: file", s, " does not exist."])
-            else usage ()
-
-        case [] then opts
-        end
-    in
-    parse (tail argv) optionsDefault

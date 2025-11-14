@@ -20,6 +20,7 @@ lang ObjectKinds = MExprAst
     -- All possible object kinds
     syn ObjectKind = 
     | ObjProgram {}
+    | ObjInclude { pathInFile: String }
     | ObjLet { rec : Bool, args : [String], ty: Option Type }
     | ObjLang { parents : [String] }
     | ObjType { t: Option String }
@@ -30,7 +31,6 @@ lang ObjectKinds = MExprAst
     | ObjMexpr {}
     | ObjUtest {}
     | ObjRecursiveBloc {}
-    | ObjInclude { pathInFile: String }
 
     -- Converts an ObjectKind to a readable string (for logs/debugging).
     sem objKindToString : ObjectKind -> String
@@ -81,7 +81,8 @@ end
 --   `objWithPrefix` both removes the given prefix (warning if the namespace does not start with it)
 --   and stores it so we can recover the original namespace later.  
 -- - `isStdlib`: Marks whether the object belongs to the stdlib.
-type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, prefix: String, isStdlib: Bool }
+-- - `renderIt` : Indicates if the object should be rendered during rendering stage.
+type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, prefix: String, isStdlib: Bool, renderIt: Bool }
 
 -- Absolute filesystem position of the current program start.
 let basePosition : String = concat (sysGetCwd ()) "/"
@@ -94,6 +95,7 @@ let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode
 let objNamespace : Object -> String = use ObjectKinds in lam obj. obj.namespace
 let objPrefix : Object -> String = lam obj. obj.prefix
 let objIsStdlib : Object -> Bool = lam obj. obj.isStdlib
+let objRenderIt : Object -> Bool = lam obj. obj.renderIt
 
 -- Object updaters (immutable setters).
 let objWithName : Object -> String -> Object = lam obj. lam name. { obj with name = name }
@@ -101,6 +103,7 @@ let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. l
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
 let objWithIsStdlib : Object -> Bool -> Object = lam obj. lam isStdlib. { obj with isStdlib = isStdlib }    
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
+let objWithRenderIt : Object -> Bool -> Object = lam obj. lam renderIt. { obj with renderIt = renderIt }    
 
 -- Sets a shorter namespace by removing `prefix`; stores the prefix for recovery.
 -- Warns if the namespace does not start with the given prefix.
@@ -134,7 +137,7 @@ let objAbsolutePath : Object -> String = lam obj.
     concat obj.prefix obj.namespace
 
 -- Empty default object (neutral values).
-let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", isStdlib = false, kind = ObjProgram {}, sourceCode = sourceCodeEmpty (), prefix = "" }
+let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", renderIt = false, isStdlib = false, kind = ObjProgram {}, sourceCode = sourceCodeEmpty (), prefix = "" }
 
 -- Extracts the language name from a Sem/Syn object; else empty string.
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.
@@ -162,15 +165,15 @@ let objSetType = use ObjectKinds in lam obj. lam ty.
     
 -- Object tree (hierarchy). Wraps Object to allow recursive nesting.
 type ObjectTree
-con ObjectNode : { obj: Object, sons: [ObjectTree] } -> ObjectTree
+con ObjectNode : { obj: Object, children: [ObjectTree] } -> ObjectTree
 
 -- Convenience helpers for ObjectTree.
 let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.kind obj.name
 let objTreeObj : ObjectTree -> Object = lam tree. match tree with ObjectNode { obj = obj } in obj
-let objTreeSons : ObjectTree -> [ObjectTree] = lam tree. match tree with ObjectNode { sons = sons } in sons
+let objTreeChildren : ObjectTree -> [ObjectTree] = lam tree. match tree with ObjectNode { children = children } in children
 let objTreeDoc : ObjectTree -> String = lam tree. objDoc (objTreeObj tree)
 let objTreeSourceCode : ObjectTree -> SourceCode = lam tree. objSourceCode (objTreeObj tree)
 let objTreeWithDoc : ObjectTree -> String -> ObjectTree = lam tree. lam doc.
-    match tree with ObjectNode { obj = obj, sons = sons } in ObjectNode { obj = { obj with doc = doc}, sons = sons }
+    match tree with ObjectNode { obj = obj, children = children } in ObjectNode { obj = { obj with doc = doc}, children = children }
 let objTreeWithSourceCode : ObjectTree -> SourceCode -> ObjectTree = lam tree. lam code.
-    match tree with ObjectNode { obj = obj, sons = sons } in ObjectNode { obj = { obj with sourceCode = code}, sons = sons }
+    match tree with ObjectNode { obj = obj, children = children } in ObjectNode { obj = { obj with sourceCode = code}, children = children }

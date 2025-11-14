@@ -16,7 +16,6 @@
 --   ```
 
 include "sys.mc"
-include "ext/file-ext.mc"
 include "./server-options.mc"
 
 let pythonScript = lam servesMd. join ["

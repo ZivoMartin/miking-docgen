@@ -1,7 +1,0 @@
-test-server/target
-test-server/static/*    
-output
-todo
-src/*.md
-doc-gen-output
-mi-doc-gen

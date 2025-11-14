@@ -18,15 +18,31 @@
 --   The actual JS/CSS hooks are assumed to be present in the page header.
 
 include "./renderer-interface.mc"
-include "./headers/html-themes.mc"
+include "./headers/html-header.mc"
 
-           
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
 
+    -- Create the scripts and stylesheet in the output folder.
+    sem renderSetup obj =
+    | { fmt = Html {} } & opt ->
+        let srcPath = normalizePath (join [opt.outputFolder, "/", opt.srcFolder]) in
+        let openAndWrite = lam s. lam path.
+            let path = normalizePath (join [srcPath, "/", path]) in
+            match fileWriteOpen path with Some wc then
+                fileWriteString wc s;
+                fileWriteClose wc
+            else
+                renderingWarn (join ["Failed to create ", path, " file."])
+        in
+        openAndWrite (searchJs (objToJsDict opt obj)) (searchPath ".js");
+        openAndWrite htmlStyle htmlStylePath;
+        openAndWrite htmlScript htmlScriptPath
+        
+
     -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =
-    | { fmt = Html {}, theme = theme } & opt -> getHeader theme (objName obj)
+    | { fmt = Html {} } & opt -> getHeader (objName obj) opt.srcFolder
 
     -- HTML heading: delegates inner text to raw title rendering, then wraps as <hN>.
     sem renderTitle size s =
@@ -101,8 +117,8 @@ lang HtmlRenderer = RendererInterface
     | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
     
     -- Doc block wrapper; the Bool controls the goto-link inclusion
-    sem renderDocBloc (data : RenderingData) (displayGotoLink: Bool) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" (renderDocBloc data) displayGotoLink "</pre>\n</div>"
+    sem renderDocBloc (data : RenderingData) =
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
 
     -- Object description wrapper
     sem renderDocDescription (obj: Object) =
@@ -121,9 +137,9 @@ lang HtmlRenderer = RendererInterface
     | { fmt = Html {} } & opt -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
     -- Toggleable hidden code block; uses a button and a collapsible div
-    sem renderHidenCode (code: String) (jumpLine: Bool) =
+    sem renderHidenCode (buttonText: String) (code: String) (jumpLine: Bool) =
     | { fmt = Html {} } & opt ->
-        let jsDisplay = "<button class=\"toggle-btn\" onclick=\"toggle(this)\">...</button><div class=\"hiden-code\" style=\"display: none;\">" in
+        let jsDisplay = join ["<button class=\"toggle-btn\" onclick=\"toggle(this)\">", buttonText, "</button><div class=\"hiden-code\" style=\"display: none;\">"] in
         join [jsDisplay, if jumpLine then "\n" else "", code, "</div>"]
     
     -- Generic link with optional URL prefix

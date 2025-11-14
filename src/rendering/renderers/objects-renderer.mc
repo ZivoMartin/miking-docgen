@@ -5,6 +5,8 @@
 
 include "../../extracting/objects.mc"
 include "../rendering-options.mc"
+include "./headers/search.mc"
+include "string.mc"
 
 lang ObjectsRenderer = ObjectKinds + Formats
 
@@ -25,15 +27,15 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objPreserveNameCtx =
     | { kind = ObjLang {} | ObjProgram {} } -> true
     | _ -> false
-
     -- Build the canonical link for an object (prefix + namespace + extension).
-    -- Uses "Lib" for stdlib objects, "Files" for user sources.
+
+    -- Uses "Stdlib" for stdlib objects, "Files" for user sources.
     sem objGetPureLink : Object -> RenderingOptions -> String
     sem objGetPureLink =
     | obj -> lam opt.
         let namespace = objNamespace obj in
         let ext = concat "." (formatGetExtension opt.fmt) in
-        let prefix = if objIsStdlib obj then "Lib" else "Files" in
+        let prefix = if objIsStdlib obj then "Stdlib" else "Files" in
         let link =  join [prefix, namespace, ext] in
         if strStartsWith "/" link then link else cons '/' link     
 
@@ -65,7 +67,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
     -- Debug logger for object rendering info.
     sem objLog : Object -> RenderingOptions -> ()
     sem objLog =
-    | obj -> lam opt. renderingLog (join [
+    | obj -> lam opt. opt.log (join [
         "Object ", objName obj, ":\n",
         "   kind: ", objKindToString (objKind obj), "\n",
         "   namespace: ", objNamespace obj, "\n",
@@ -73,4 +75,32 @@ lang ObjectsRenderer = ObjectKinds + Formats
         "   link: ", objLink obj opt, "\n",
         "   isStdlib: ", bool2string (objIsStdlib obj), "\n"
     ])
+
+    sem objToJsDict : RenderingOptions -> ObjectTree -> [SearchDictObj]
+    sem objToJsDict opt = 
+    | tree ->
+      recursive let objToJsDict = lam opt. lam tree. 
+          let obj = objTreeObj tree in
+          -- Recursive calls: render all children and transmit the name-context through the fold.
+          let res =  foldl (lam arg. lam child.
+              let obj = objTreeObj child in
+              match (objTreeChildren child, obj.kind) with ([], ObjInclude {}) then arg else
+              let nameContext =
+                  match objNameIfHas obj with Some name then
+                   hmInsert name (objGetPureLink obj arg.opt) arg.opt.nameContext
+                  else arg.opt.nameContext
+              in
+              let opt = { arg.opt with nameContext = nameContext } in
+              match objToJsDict opt child with { dicts = dicts, opt = opt } in
+              { opt = opt, dicts = concat dicts arg.dicts }
+              ) { dicts = [], opt = opt } (objTreeChildren tree)
+          in
+          let link = concat opt.urlPrefix (objLink obj opt) in
+          let link = if strEndsWith ".md" link then subsequence link 0 (subi (length link) 3) else link in 
+          {
+             opt = if objPreserveNameCtx obj then res.opt else opt,
+             dicts = if objRenderIt obj then cons { name = objNamespace obj, link = link } res.dicts else res.dicts
+          }
+      in (objToJsDict opt tree).dicts 
+
 end

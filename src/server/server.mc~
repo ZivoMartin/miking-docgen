@@ -12,7 +12,7 @@ include "../options/cast-options.mc"
 --
 -- Starts the preview server or prints where the output was generated, depending on `opt.fmt`.
 -- If `opt.noOpen` is true, it performs no action.
-let startServer : ServerOptions -> () = use Formats in lam opt.
+let startServer : ServerOptions -> () = use Formats in use ObjectsRenderer in lam opt.
     if opt.noOpen then () else
        switch opt.fmt
        case Md {} then pythonServerStart true opt    -- Serve Markdown with MD-aware flags

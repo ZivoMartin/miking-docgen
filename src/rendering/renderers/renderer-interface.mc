@@ -23,7 +23,6 @@
 
 include "../../extracting/objects.mc"
 include "../../global/format.mc"
-include "../../global/theme.mc"
 include "../../global/format-language.mc"
 include "../../extracting/source-code-word.mc"
 include "../rendering-types.mc"
@@ -35,14 +34,14 @@ include "mexpr/type-check.mc"
 include "mexpr/pprint.mc"
 
 lang RendererInterface = 
-    Formats + Themes + ObjectsRenderer + TokenReader + SourceCodeWordKinds + 
+    Formats + ObjectsRenderer + TokenReader + SourceCodeWordKinds + 
     MExprPrettyPrint + MetaVarTypePrettyPrint + FormatLanguages
 
     -- ## Setup and File Wrappers
 
     -- Called before rendering starts for all files.
     -- Typically used to generate global headers.
-    sem renderSetup : RenderingOptions -> ()
+    sem renderSetup : ObjectTree -> RenderingOptions -> ()
 
     -- Called before rendering each file.
     -- Typically used to push file headers or includes.
@@ -56,13 +55,12 @@ lang RendererInterface =
     -- ## Documentation Blocks
 
     -- Renders the top section of a page.
-    -- Includes title, code toggle, and top documentation.
+    -- Includes code toggle, and top documentation.
     sem renderTopPageDoc : RenderingData -> RenderingOptions -> String
 
     -- Renders a documentation block for an object.
     -- Includes title, goto link, code toggle, top doc, and signature.
-    -- The Bool parameter controls whether the goto link is shown.
-    sem renderDocBloc : RenderingData -> Bool -> RenderingOptions -> String
+    sem renderDocBloc : RenderingData -> RenderingOptions -> String
 
     -- Renders the signature of an object.
     sem renderDocSignature : Object -> RenderingOptions -> String
@@ -91,7 +89,7 @@ lang RendererInterface =
 
     -- Renders a block of code wrapped in a toggleable hidden section.
     -- Bool argument decides whether it starts hidden.
-    sem renderHidenCode : String -> Bool -> RenderingOptions -> String
+    sem renderHidenCode : String -> String -> Bool -> RenderingOptions -> String
 
     -- Renders code with preview:
     -- - Left part (raw code)

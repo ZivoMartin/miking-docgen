@@ -52,6 +52,7 @@ let mdxCss =
     color: 'var(--docgen-muted, #6b7280)',
     whiteSpace: 'pre-wrap' as const,
     lineHeight: 1.65,
+    paddingBottom: '0.8rem'
   },
 
   spacer: {
@@ -82,13 +83,17 @@ let mdxCss =
   },
 
   toggler: {
-    fontSize: '1.1em',
-    textDecoration: 'none',
-    opacity: 0.7,
-    fontWeight: 500,
     background: 'transparent',
     border: 'none',
+    color: 'var(--docgen-accent, #3b82f6)',
     cursor: 'pointer',
+    fontSize: '0.95rem',
+    padding: '0.15rem 0.3rem',
+    borderRadius: 4,
+    transition: 'background 0.2s ease',
+    ':hover': {
+       background: 'rgba(59,130,246,0.1)',
+    }
   },
 
   anchor: {
@@ -110,9 +115,6 @@ join ["import React, { useMemo, useRef, useState, useCallback, createContext, us
 
 ", mdxCss, "
 
-/** ------------------------------------------------------------------------------------
- *  Utils
- *  ---------------------------------------------------------------------------------- */
 function slugify(input) {
   return input
     .toLowerCase()
@@ -129,9 +131,6 @@ function useId(prefix) {
   return ref.current;
 }
 
-/** ------------------------------------------------------------------------------------
- *  Context : Pannels gestion
- *  ---------------------------------------------------------------------------------- */
 const Ctx = createContext(null);
 
 function useDocBlockCtx() {
@@ -140,18 +139,11 @@ function useDocBlockCtx() {
   return ctx;
 }
 
-/** ------------------------------------------------------------------------------------
- *  Badge
- *  ---------------------------------------------------------------------------------- */
-
 export const Badge = ({ kind }) => {
   if (!kind) return null;
   return <span style={S.badge(kind)}>{kind}</span>;
 };
 
-/** ------------------------------------------------------------------------------------
- *  DocBlock
- *  ---------------------------------------------------------------------------------- */
 export const DocBlock = ({ title, kind, link, compact = false, children }) => {
   const [open, setOpen] = useState({});
   const anchorId = useMemo(() => slugify(title), [title]);
@@ -177,33 +169,28 @@ export const DocBlock = ({ title, kind, link, compact = false, children }) => {
   );
 };
 
-/** ------------------------------------------------------------------------------------
- *  Description
- *  ---------------------------------------------------------------------------------- */
-
 export const Description = ({ children }) => {
   if (!children) return null;
   return <div style={S.desc}>{children}</div>;
 };
 
-/** ------------------------------------------------------------------------------------
- *  Minimalist toggle button for top toggling code
- *  ---------------------------------------------------------------------------------- */
-export const ToggleWrapper = ({ children }) => {
+export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenText, shownText }) => {
   const [visible, setVisible] = useState(false);
+
   return (
-    <span>
+    <div>
       <button
         onClick={() => setVisible(!visible)}
         style={S.toggler}
         aria-expanded={visible}
       >
-        ...
+        {visible ? hiddenText : shownText}
       </button>
-      {visible && <span style={S.code}>{children}</span>} 
-    </span>
+      {visible && <span style={S.code}>{children}</span>}
+    </div>
   );
-};"]
+};
+"]
 
 let mdxTsComponents =
 join ["import React, { useMemo, useRef, useState, useCallback, createContext, useContext } from 'react';
@@ -224,7 +211,7 @@ function useId(prefix?: string) {
   const ref = useRef<string>();
   if (!ref.current) {
     const rnd = Math.random().toString(36).slice(2, 8);
-    ref.current = `${prefix ?? 'docgen'}-${rnd}`;
+   ref.current = `${prefix ?? 'docgen'}-${rnd}`;
   }
   return ref.current;
 }
@@ -292,33 +279,28 @@ export const DocBlock: React.FC<DocBlockProps> = ({ title, kind, link, compact =
     </Ctx.Provider>
   );
 };
-
-/** ------------------------------------------------------------------------------------
- *  Description
- *  ---------------------------------------------------------------------------------- */
-
+  
 export const Description: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   if (!children) return null;
   return <div style={S.desc}>{children}</div>;
 };
 
-/** ------------------------------------------------------------------------------------
- *  Minimalist toggle button for top toggling code
- *  ---------------------------------------------------------------------------------- */
 type ToggleWrapperProps = { children: React.ReactNode };
 
-export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children }) => {
+export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenText, shownText }) => {
   const [visible, setVisible] = useState(false);
+
   return (
-    <span>
+    <div>
       <button
         onClick={() => setVisible(!visible)}
         style={S.toggler}
         aria-expanded={visible}
       >
-        ...
+        {visible ? hiddenText : shownText}
       </button>
       {visible && <span style={S.code}>{children}</span>}
-    </span>
+    </div>
   );
-};"]
+};
+"]

@@ -16,7 +16,7 @@ let sourceCodeEmpty : () -> SourceCode = lam . []
 -- ## SourceCodeBuilder
 --
 -- Accumulates source code tokens while traversing the `DocTree`.
--- When entering a `Node`, a new builder context is pushed.
+-- When entering a `DocTreeNode`, a new builder context is pushed.
 -- When finishing a node, the buffer is returned and the parent context is restored.
 type SourceCodeBuilder
 con SourceCodeNode : { parent: Option SourceCodeBuilder, buffer: SourceCode } -> SourceCodeBuilder
@@ -30,14 +30,14 @@ con SourceCodeNode : { parent: Option SourceCodeBuilder, buffer: SourceCode } ->
 let absorbWord : SourceCodeBuilder -> DocTree -> SourceCodeBuilder =
     use TokenReader in lam builder. lam word.
     match builder with SourceCodeNode { buffer = buffer, parent = parent } in
-    let token = (match word with Node { token = token } | Leaf { token = token } | IncludeNode { token = token } in token) in
+    let token = (match word with DocTreeNode { token = token } | DocTreeLeaf { token = token } | DocTreeIncludeNode { token = token } in token) in
     let token = sourceCodeWordFormat token in
     switch word
-    case Node {} then
+    case DocTreeNode {} then
         let buffer = cons (None {}) buffer in
         let parent = SourceCodeNode { parent = parent, buffer = buffer } in
         SourceCodeNode { parent = Some parent, buffer = [Some token] }
-    case Leaf {} | IncludeNode {} then
+    case DocTreeLeaf {} | DocTreeIncludeNode {} then
         let buffer = cons (Some token) buffer in
         SourceCodeNode { parent = parent, buffer = buffer }
     end

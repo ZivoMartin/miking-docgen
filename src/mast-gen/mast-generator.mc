@@ -21,13 +21,14 @@
 -- 3. The parsing step later needs the raw code, and re-opening files would be
 --    wasteful. We therefore insert all file contents into the `include-set`.
 
+include "mexpr/boot-parser.mc"
 include "mexpr/keywords.mc"
-include "pmexpr/demote.mc"
 include "ocaml/external.mc"
 include "mexpr/type-check.mc"
 include "mexpr/ast.mc"
 include "mexpr/info.mc"
 include "sys.mc"
+include "ext/file-ext.mc"
 
 include "./include-set.mc"
 include "./file-opener.mc"
@@ -39,7 +40,11 @@ include "../global/logger.mc"
 -- Builds the AST from a file using the Miking compiler parser.
 -- Generates a temporary file, processes includes, preserves utests/mexpr,
 -- and type-checks the final AST.
-let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in use TokenReader in lam file.
+let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
+    use MExprTypeCheck in
+    use MExprSym in
+    use BootParser in
+    use TokenReader in
 
     let externalsExclude = mapKeys (externalGetSupportedExternalImpls ()) in
     let parseOpt = {{{{{{{ defaultBootParserParseMCoreFileArg
@@ -56,7 +61,7 @@ let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in us
     type Arg = { acc: [String], includeSet: IncludeSet ParsingFile } in
 
     recursive let work : Arg -> String -> Arg = lam arg. lam file.
-        parsingLog (join ["Assembling ast for the file ", file, "."]);
+        log (join ["Assembling ast for the file ", file, "."]);
 
         match arg with { acc = acc, includeSet = includeSet } in
 
@@ -101,18 +106,18 @@ let buildMAstFromFile: String -> MAst = use PMExprDemote in use BootParser in us
 
     match work { acc = [], includeSet = includeSet } file with { acc = code, includeSet = includeSet } in
 
-    let code = reverse (join code) in
+    let code = reverse (strJoin "\n" code) in
     let tmpFile = sysTempFileMake () in
     match fileWriteOpen tmpFile with Some wc then
         fileWriteString wc code;
         fileWriteFlush wc;
 
-        parsingLog "Parsing final ast";
+        log "Parsing final ast";
         let ast = parseMCoreFile parseOpt tmpFile in
-        parsingLog "Symbolizing final ast";
+        log "Symbolizing final ast";
         let ast = symbolize ast in
 
-        parsingLog "Type checking final ast";
+        log "Type checking final ast";
         let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
 
         { expr = ast, includeSet = includeSet }
