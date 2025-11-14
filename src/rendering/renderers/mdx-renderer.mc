@@ -107,9 +107,9 @@ lang MdxRenderer = RendererInterface
       let desc = if eqString rawDesc "No documentation available here." then "" else rawDesc in
       if eqString "" desc then "" else join ["<Description>{`", desc, "`}</Description>\n"]
         
-    -- Delegate goto link rendering to Markdown renderer (keeps URL rules consistent).
+    -- The goto link is directly handled in mdx component, so we always return empty string.
     sem renderGotoLink (link: String) =
-    | { fmt = Mdx {} } & opt -> renderGotoLink link { opt with fmt = Md {} }
+    | { fmt = Mdx {} } & opt -> ""
     
     -- Render a single link, removing the trailing ".md" for Docusaurus routes.
     sem renderLink (title : String) (link : String) =
@@ -130,11 +130,16 @@ lang MdxRenderer = RendererInterface
     sem mdxRenderCode =
     | opt -> lam code. join ["\n```mc\n", renderRemoveCodeForbidenChars code opt, "\n```\n"]
 
+    sem mdxRenderToggle : String -> String -> String -> String
+    sem mdxRenderToggle =
+    | hidden -> lam shown. lam content.
+      join ["<ToggleWrapper shownText=\"", shown, "\" hiddenText=\"", hidden, "\">", content, "</ToggleWrapper>\n"]
+
     -- Render signature via the raw MDX dispatcher; omit if empty.
     sem renderDocSignature (obj: Object) =
     | { fmt = Mdx {} } & opt -> 
         let sign = renderDocSignature obj { opt with fmt = Raw { fmt = Mdx {} } } in
-        if eqString sign "" then "" else sign
+        if eqString sign "" then "" else mdxRenderCode opt sign 
 
     -- Render the full code (trim trailing comments/empties), escaped for MDX.
     sem renderCodeWithoutPreview (data: RenderingData) =
@@ -144,32 +149,21 @@ lang MdxRenderer = RendererInterface
             let trimmed = strTrim l in
             not (or (strStartsWith "--" trimmed) (eqString "" trimmed))
         ) (reverse split) with { right = right } in
-        let row = strJoin "\n" (reverse right) in
-        renderRemoveCodeForbidenChars row opt
+        let code = strJoin "\n" (reverse right) in
+        let code = mdxRenderCode opt code in
+        mdxRenderToggle "Hide Implementation" "Show Implementation" code
 
     -- Render tests as raw text if available (panels are added by the caller).
     sem renderDocTests (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
-        if eqString data.rowTests "" then "" else strFullTrim data.rowTests
-
-    -- Render the top-of-page doc + a toggleable code preview.
-    sem renderTopPageDoc (data: RenderingData) =
-    | { fmt = Mdx {} } & opt ->
-        let rawDesc = renderDocDescription data.obj { opt with fmt = Md {} } in
-        let desc = strTrim rawDesc in
-        let desc = if eqString rawDesc "No documentation available here." then "" else rawDesc in
-        join ["\n", desc, if eqString desc "" then "" else "\n\n"]
+        if null data.rowTests then "" else
+        let tests = strFullTrim data.rowTests in
+        let tests = mdxRenderCode opt tests in
+        mdxRenderToggle "Hide Tests" "Show Tess" tests
 
     -- Render a full documentation block (title, signature, desc, code, optional tests).
     sem renderDocBloc (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
-        let sign = renderDocSignature data.obj opt in
-        let code  = renderCodeWithoutPreview data opt in
-        let tests = renderDocTests data opt in
-        let desc = renderDocDescription data.obj opt in
- 
-        let hasTests = not (eqString tests "") in
-
         let link = objLink data.obj opt in
         let link = concat opt.urlPrefix link in
         let linkLength = length link in
@@ -179,17 +173,9 @@ lang MdxRenderer = RendererInterface
         let title = objTitle data.obj in
         let kind  = getFirstWord (objKind data.obj) in
     
-        let ns = objNamespace data.obj in
-        let codeId  = join ["code-", ns] in
-        let testsId = join ["tests-", ns] in
-    
         join [
-          "
-          <DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
-          mdxRenderCode opt sign, "\n",
-          desc, "\n\n",
-          "<ToggleWrapper text=\"Show Implementation\">", mdxRenderCode opt code, "</ToggleWrapper>\n",
-          (if hasTests then join ["<ToggleWrapper text=\"Show Tests\">", mdxRenderCode opt tests, "</ToggleWrapper>\n"] else ""),
+          "<DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
+          renderDocBloc data { opt with fmt = Raw { fmt = Mdx {} } },
           "</DocBlock>\n\n"
         ]
 end

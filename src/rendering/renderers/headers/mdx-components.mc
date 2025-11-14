@@ -115,9 +115,6 @@ join ["import React, { useMemo, useRef, useState, useCallback, createContext, us
 
 ", mdxCss, "
 
-/** ------------------------------------------------------------------------------------
- *  Utils
- *  ---------------------------------------------------------------------------------- */
 function slugify(input) {
   return input
     .toLowerCase()
@@ -134,9 +131,6 @@ function useId(prefix) {
   return ref.current;
 }
 
-/** ------------------------------------------------------------------------------------
- *  Context : Pannels gestion
- *  ---------------------------------------------------------------------------------- */
 const Ctx = createContext(null);
 
 function useDocBlockCtx() {
@@ -145,18 +139,11 @@ function useDocBlockCtx() {
   return ctx;
 }
 
-/** ------------------------------------------------------------------------------------
- *  Badge
- *  ---------------------------------------------------------------------------------- */
-
 export const Badge = ({ kind }) => {
   if (!kind) return null;
   return <span style={S.badge(kind)}>{kind}</span>;
 };
 
-/** ------------------------------------------------------------------------------------
- *  DocBlock
- *  ---------------------------------------------------------------------------------- */
 export const DocBlock = ({ title, kind, link, compact = false, children }) => {
   const [open, setOpen] = useState({});
   const anchorId = useMemo(() => slugify(title), [title]);
@@ -182,20 +169,14 @@ export const DocBlock = ({ title, kind, link, compact = false, children }) => {
   );
 };
 
-/** ------------------------------------------------------------------------------------
- *  Description
- *  ---------------------------------------------------------------------------------- */
-
 export const Description = ({ children }) => {
   if (!children) return null;
   return <div style={S.desc}>{children}</div>;
 };
 
-/** ------------------------------------------------------------------------------------
- *  Minimalist toggle button for top toggling code
- *  ---------------------------------------------------------------------------------- */
-export const ToggleWrapper = ({ children, text }) => {
+export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenText, shownText }) => {
   const [visible, setVisible] = useState(false);
+
   return (
     <div>
       <button
@@ -203,12 +184,13 @@ export const ToggleWrapper = ({ children, text }) => {
         style={S.toggler}
         aria-expanded={visible}
       >
-        {text}
+        {visible ? hiddenText : shownText}
       </button>
-      {visible && <span style={S.code}>{children}</span>} 
+      {visible && <span style={S.code}>{children}</span>}
     </div>
   );
-};"]
+};
+"]
 
 let mdxTsComponents =
 join ["import React, { useMemo, useRef, useState, useCallback, createContext, useContext } from 'react';
@@ -297,23 +279,17 @@ export const DocBlock: React.FC<DocBlockProps> = ({ title, kind, link, compact =
     </Ctx.Provider>
   );
 };
-
-/** ------------------------------------------------------------------------------------
- *  Description
- *  ---------------------------------------------------------------------------------- */
-
+  
 export const Description: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
   if (!children) return null;
   return <div style={S.desc}>{children}</div>;
 };
 
-/** ------------------------------------------------------------------------------------
- *  Minimalist toggle button for top toggling code
- *  ---------------------------------------------------------------------------------- */
 type ToggleWrapperProps = { children: React.ReactNode };
 
-export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, text }) => {
+export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenText, shownText }) => {
   const [visible, setVisible] = useState(false);
+
   return (
     <div>
       <button
@@ -321,9 +297,10 @@ export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, text }) 
         style={S.toggler}
         aria-expanded={visible}
       >
-        {text}
+        {visible ? hiddenText : shownText}
       </button>
       {visible && <span style={S.code}>{children}</span>}
     </div>
   );
-};"]
+};
+"]
