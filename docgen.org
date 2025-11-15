@@ -1,0 +1,21 @@
+* TODO Recovering
+** TODO Recover name-context
+** TODO Recover doc-renderer
+** TODO Rewrite folder processing
+** DONE Refactorise mdx renderer
+CLOSED: [2025-11-14 Fri 01:58]
+** TODO Rewrite doc-renderer output processing
+** TODO No code flag
+** TODO Add show/hide in html renderer
+
+* TODO Allow providing multiple file/folders
+* TODO Check that the js version is still working
+* TODO Mouse over on hooks
+* TODO Cick on hooks
+* TODO Integrate name-context api
+* TODO Being able to click on any subtypes
+* TODO Types annotation in the documentations
+* TODO Clean all error/warnings messages
+* TODO noStdlib flag
+* TODO Allow the user to declare where to put the stdlib files
+* TODO Support markdown formatting
