@@ -44,6 +44,8 @@ type RenderingOptions = use Formats in use FormatLanguages in
         fmtLang: FormatLanguage, 
         letDepth: Option Int, 
         nameContext: HashMap String String,
-        jsSearchCode: String,
+        noCode: Bool,
         log: Logger
     }
+
+let renderingOptionsSrcPath : RenderingOptions -> String = lam opt. normalizePath (join [opt.outputFolder, "/", opt.srcFolder])

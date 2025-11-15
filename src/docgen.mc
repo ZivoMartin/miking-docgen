@@ -19,11 +19,18 @@ include "./execution-context.mc"
 
 let docgen : DocGenOptions -> () = lam opt.
     let execCtx = execContextNew opt in
-    let execCtx = gen execCtx in
-    let execCtx = parse execCtx in
-    let execCtx = extract execCtx in
-    let execCtx = label execCtx in
-    let execCtx = render execCtx in
+
+    recursive let process: ExecutionContext -> ExecutionContext =
+        lam execCtx.
+        let execCtx = gen execCtx in
+        let execCtx = parse execCtx in
+        let execCtx = extract execCtx in
+        let execCtx = label execCtx in
+        let execCtx = render execCtx in
+        optionMapOr execCtx process (execCtxNext execCtx)
+    in
+
+    let execCtx = process execCtx in
     let execCtx = serve execCtx in
     ()
 

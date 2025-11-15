@@ -152,3 +152,26 @@ let strFullTrim = lam s.
   reverse (work (reverse s))
 
 let pwd = sysGetCwd ()
+
+
+let isFolder : String -> Bool = lam path.
+  if eqi (_commandList ["test", "-d", path]) 0 then true else false
+
+let folderFetchMcFiles : String -> [String] = lam dir.
+  let res = sysRunCommand ["find", dir, "-type", "f", "-name", "*.mc"] "" "." in
+  let out = strTrim res.stdout in
+  if null out then []
+  else strSplit "\n" out
+
+
+let sysMoveDirContents : String -> String -> ReturnCode = lam p1. lam p2.
+  _commandList [
+    "bash", "-c",
+    strJoin " " [
+        "\"",
+        "set -e;",
+        "mkdir -p", p1, "&&",
+        "mv -f", p2, "/*", p1, "/", "2>/dev/null || true &&",
+        "rm -rf", p2,
+        "\""]
+  ]

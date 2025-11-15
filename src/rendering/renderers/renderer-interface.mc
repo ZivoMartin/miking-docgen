@@ -51,6 +51,11 @@ lang RendererInterface =
     -- Can be used to push file footers.
     sem renderFooter : Object -> RenderingOptions -> String
 
+    -- Write the final version of the search engine.
+    sem renderSearchFile : [SearchDictObj] -> RenderingOptions -> ()
+
+    -- Returns the path to the search files source code.
+    sem renderGetSearchPath : RenderingOptions -> String
 
     -- ## Documentation Blocks
 

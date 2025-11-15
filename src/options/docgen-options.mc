@@ -53,7 +53,8 @@ type DocGenOptions = use Formats in use FormatLanguages in {
     srcFolder: String,         -- Destination folder for src files relative to outputFolder
     noStdlib: Bool,            -- Whether to exclude the standard library.
     urlPrefix: String,         -- Prefix for generated URLs.
-    letDepth: Option Int       -- Maximum nesting depth of let-bindings.
+    letDepth: Option Int,      -- Maximum nesting depth of let-bindings.
+    noCode: Bool               -- If true, implementations will not appears on the output.
 }
 
 -- ## optionsDefault
@@ -69,7 +70,8 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     noWarn = false,
     noStdlib = false,
     urlPrefix = "",
-    letDepth = None {}
+    letDepth = None {},
+    noCode = false
 }
 
 -- ## usage
@@ -90,6 +92,7 @@ let usage = lam.
     "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
     "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
     "  --no-stdlib                            Do not include the standard library in output.\n",
+    "  --no-code                              If true, implementations will not appears on the output",
 
     "Language Formatting:\n",
     "  --javascript                           Use JavaScript for the React components\n",

@@ -29,13 +29,13 @@ lang ObjectsRenderer = ObjectKinds + Formats
     | _ -> false
     -- Build the canonical link for an object (prefix + namespace + extension).
 
-    -- Uses "Stdlib" for stdlib objects, "Files" for user sources.
+    -- Uses "Stdlib" for stdlib objects, root for user sources.
     sem objGetPureLink : Object -> RenderingOptions -> String
     sem objGetPureLink =
     | obj -> lam opt.
         let namespace = objNamespace obj in
         let ext = concat "." (formatGetExtension opt.fmt) in
-        let prefix = if objIsStdlib obj then "Stdlib" else "Files" in
+        let prefix = if objIsStdlib obj then "Stdlib" else "" in
         let link =  join [prefix, namespace, ext] in
         if strStartsWith "/" link then link else cons '/' link     
 

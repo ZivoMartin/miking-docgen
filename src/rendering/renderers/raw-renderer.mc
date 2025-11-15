@@ -24,7 +24,7 @@ lang RawRenderer = RendererInterface
     | { obj = obj } & data -> lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
         let signature = renderDocSignature obj opt in
         let description = renderDocDescription obj opt in
-        let code = renderCodeWithoutPreview data opt in
+        let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
         let tests = renderDocTests data opt in
 
         join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc, tests]
@@ -41,17 +41,29 @@ lang RawRenderer = RendererInterface
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } } then
             let parents = strJoin " + " (map (lam p. renderLink p (objLangLink p opt) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
-            strJoin nl [sectionTitle, parents]
+            strJoin nl [sectionTitle, parents, ""]
         case { obj = { kind = ( ObjSyn {} | ObjSem {} )} & obj } then
             let langName = objGetLangName obj in
             let langLink = renderLink langName (objLangLink langName opt) opt in
             let sectionTitle = renderBold "From:" opt in
-            strJoin nl [sectionTitle, langLink]
+            strJoin nl [sectionTitle, langLink, ""]
         case { obj = obj } then
             ""
         end in
         renderBlocDefault data opt "" "" details ""
+
+    sem renderSearchFile (searchDatas: [SearchDictObj]) =
+    | opt -> let opt = fixOptFormat opt in
+        let path = renderGetSearchPath opt in
+        match fileWriteOpen path with Some wc then
+              fileWriteString wc (searchReact searchDatas);
+              fileWriteClose wc
+        else
+              renderingWarn (concat "Failed to create search file: " path)
     
+    sem renderGetSearchPath =
+    | opt -> ""
+
     -- Documentation block (optionally includes a “goto” link).
     sem renderDocBloc (data : RenderingData) =
     | opt -> let opt = fixOptFormat opt in

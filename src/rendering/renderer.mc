@@ -52,6 +52,8 @@ include "../global/util.mc"
 include "../global/logger.mc"
 include "../global/format.mc"
 
+type RenderingResult = { searchDatas: [SearchDictObj] }
+
 -- ## render
 --
 -- Entrypoint to rendering. This function traverses the entire `ObjectTree` and writes
@@ -65,11 +67,11 @@ include "../global/format.mc"
 --     - Organizes them by type.
 --     - Writes formatted output to file.
 --     - Returns `RenderingData` and updated `RenderingOptions` for each node.
-let render : RenderingOptions -> ObjectTree -> () = use Renderer in
+let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
     lam opt. lam obj.
     
     let log = opt.log in
-    let opt = { opt with jsSearchCode = searchJs (objToJsDict opt obj) } in
+    let res = { searchDatas = objToJsDict opt obj } in
     
     preprocess obj opt;
     renderSetup obj opt;
@@ -175,4 +177,4 @@ let render : RenderingOptions -> ObjectTree -> () = use Renderer in
             else (emptyPreview obj, oldOpt)
         end
     in
-    let res = render opt obj in ()
+    let output = render opt obj in res
