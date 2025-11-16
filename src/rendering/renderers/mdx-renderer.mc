@@ -14,6 +14,7 @@
 
 include "./renderer-interface.mc"
 include "./headers/mdx-components.mc"
+include "../util.mc"
 
 include "sys.mc"
 
@@ -32,22 +33,19 @@ lang MdxRenderer = RendererInterface
         let name = concatIfNot name (strEndsWith ext) ext in
         concat path name
 
-    sem renderGetSearchPath = 
-    | { fmt = Mdx {} } & opt -> getComponentPath (Js {}) (renderingOptionsSrcPath opt) searchFileName
+    sem renderSearchFile (searchDatas: [SearchDictObj]) = 
+    | { fmt = Mdx {} } & opt ->
+        let path = getComponentPath (Js {}) (renderingOptionsSrcPath opt) searchFileName in
+        let content = searchReact searchDatas in
+        renderFileOrWarn path content
 
     -- Create the MDX components file (TSX/JSX) in the output folder.
     sem renderSetup obj =
     | { fmt = Mdx {} } & opt ->
         let srcPath = renderingOptionsSrcPath opt in
         let path = getComponentPath opt.fmtLang srcPath componentFileName in
-        match fileWriteOpen path with Some wc then
-            let write = fileWriteString wc in
-            let components = match opt.fmtLang with Ts {} then mdxTsComponents else mdxJsComponents in
-            write components;
-            fileWriteClose wc
-        else
-            renderingWarn (concat "Failed to create components file: " path)
-        
+        let components = match opt.fmtLang with Ts {} then mdxTsComponents else mdxJsComponents in
+        renderFileOrWarn path components
 
     -- Emit import line for MDX components used by the page.
     sem renderHeader obj =

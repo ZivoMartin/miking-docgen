@@ -19,6 +19,7 @@
 
 include "./renderer-interface.mc"
 include "./headers/html-header.mc"
+include "../util.mc"
 
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
@@ -29,20 +30,19 @@ lang HtmlRenderer = RendererInterface
         let srcPath = renderingOptionsSrcPath opt in
         let openAndWrite = lam s. lam path.
             let path = normalizePath (join [srcPath, "/", path]) in
-            match fileWriteOpen path with Some wc then
-                fileWriteString wc s;
-                fileWriteClose wc
-            else
-                renderingWarn (join ["Failed to create ", path, " file."])
+            renderFileOrWarn path s 
         in
         openAndWrite htmlStyle htmlStylePath;
         openAndWrite htmlScript htmlScriptPath
         
 
-    sem renderGetSearchPath =
+    sem renderSearchFile (searchDatas: [SearchDictObj]) = 
     | { fmt = Html {} } & opt ->
       let srcPath = renderingOptionsSrcPath opt in
-      normalizePath (join [srcPath, "/", searchPath ".js"])
+      let path = normalizePath (join [srcPath, "/", searchPath ".js"]) in
+      let content = searchJs searchDatas in
+      renderFileOrWarn path content
+      
 
     -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =

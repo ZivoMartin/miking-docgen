@@ -41,6 +41,7 @@ type ExecutionContext =  use TokenReader in {
     tokens: [Token],
     docTree : Option DocTree,
     ast: Option MAst,
+    searchDatas: HashMap String String,
     object: Option ObjectTree
 }
 
@@ -59,8 +60,11 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
           }
     else
         let log = buildLogger ctx "Rendering" in 
-        let ropt = getRenderingOption ctx.opt log in 
-        renderSearchFile [] ropt;
+        let ropt = getRenderingOption ctx.opt log in
+        let ropt = { ropt with outputFolder = ctx.userOutputFolder } in
+        let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
+                          (hashmap2seq ctx.searchDatas) in
+        renderSearchFile searchDatas ropt;
         None {}
 
 let execContextNew : DocGenOptions -> ExecutionContext = lam opt.
@@ -82,7 +86,8 @@ let execContextNew : DocGenOptions -> ExecutionContext = lam opt.
         tokens = [],
         docTree = None {},
         object = None {},
-        ast = None {}
+        ast = None {},
+        searchDatas = hashmapEmpty ()
     } in
     match execCtxNext ctx with Some ctx then ctx else
     error "Please provide a file to process."
@@ -117,13 +122,35 @@ let label : Step =  lam ctx.
 
 let render : Step =  lam ctx.
     match ctx.object with Some obj then
-    let opt = getRenderingOption ctx.opt in
     let log = buildLogger ctx "Rendering" in 
-    let opt = getRenderingOption ctx.opt log in
-    let log = buildLogger ctx "Rendering" in 
-    let opt = getRenderingOption ctx.opt log in
-    let searchDatas = render opt obj in
-    ctx
+    let ropt = getRenderingOption ctx.opt log in
+    let renderingRes = render ropt obj in
+    let searchDatas = foldl (lam acc. lam arg.
+        let isStdlib = strStartsWith "/Stdlib" arg.link in
+
+        let prefix = tail (strSplit ctx.userOutputFolder ctx.opt.outputFolder) in
+        let prefix = if isStdlib then "" else join prefix in
+        
+        let link = normalizePath (join [prefix, "/", arg.link]) in
+        let name = normalizePath (join [prefix, "/", arg.name]) in
+        hmInsert name link acc
+    ) ctx.searchDatas renderingRes.searchDatas in
+    
+
+    (if neqString ctx.opt.outputFolder ctx.userOutputFolder then    
+        let newStdlibPath = normalizePath (join [ctx.opt.outputFolder, "/", "Stdlib"]) in
+        let actualStdlibPath = normalizePath (join [ctx.userOutputFolder, "/", "Stdlib"]) in
+
+        let code = sysRemoveSrcFiles ctx.opt.outputFolder in
+        (if neqi code 0 then renderingWarn "Failed to clean source files." else ());
+
+        if isFolder newStdlibPath then
+            let code = sysMoveDirContents actualStdlibPath newStdlibPath in
+            if neqi code 0 then renderingWarn "Failed to move Stdlib contents." else ()
+        else ()
+    else ());
+
+    { ctx with searchDatas = searchDatas }
     else crash "object" "render" "label (or extract)"
 
 let serve : Step = use ObjectsRenderer in lam ctx.

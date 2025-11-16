@@ -175,3 +175,12 @@ let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet = use Obj
         case [] then set
         end
     in buildSet { sUse = [], sLet = [], sLang = [],  sSem = [], sSyn = [], sCon = [], sMexpr = [], sInclude = [], sLibInclude = [], sType = [], sUtest = [] } (reverse children) (reverse recDatas)
+
+
+
+let renderFileOrWarn : String -> String -> () = lam path. lam content.
+    match fileWriteOpen path with Some wc then
+          fileWriteString wc content;
+          fileWriteClose wc
+    else
+          renderingWarn (concat "Failed to create search file: " path)

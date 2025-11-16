@@ -1,7 +1,8 @@
 * TODO Recovering
 ** TODO Recover name-context
 ** TODO Recover doc-renderer
-** TODO Rewrite folder processing
+** DONE Rewrite folder processing
+CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non mc files at the root, keep track of each search datas.
 ** DONE Refactorise mdx renderer
 CLOSED: [2025-11-14 Fri 01:58]
@@ -9,6 +10,7 @@ CLOSED: [2025-11-14 Fri 01:58]
 ** DONE No code flag
 CLOSED: [2025-11-15 Sat 02:21]
 ** TODO Add show/hide in html renderer
+* TODO Try to make nested importing files from the root
 * TODO Allow providing multiple file/folders
 * TODO Check that the js version is still working
 * TODO Mouse over on hooks

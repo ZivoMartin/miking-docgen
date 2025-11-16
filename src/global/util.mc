@@ -167,11 +167,25 @@ let folderFetchMcFiles : String -> [String] = lam dir.
 let sysMoveDirContents : String -> String -> ReturnCode = lam p1. lam p2.
   _commandList [
     "bash", "-c",
-    strJoin " " [
+    join [
         "\"",
         "set -e;",
-        "mkdir -p", p1, "&&",
-        "mv -f", p2, "/*", p1, "/", "2>/dev/null || true &&",
-        "rm -rf", p2,
+        "mkdir -p ", p1, " && ",
+        "mv -f ", p2, "/* ", p1, "/ 2>/dev/null", " && ",
+        "rm -rf ", p2,
         "\""]
   ]
+
+let sysRemoveSrcFiles : String -> ReturnCode = lam dir.
+  _commandList [
+    "bash", "-c",
+    join [
+        "\"",
+        "set -e;",
+        "rm -f ", dir, "/*.js ", dir, "/*.css ",
+        dir, "/*.tsx ", dir, "/*.jsx ",
+        "2>/dev/null",
+        "\""
+    ]
+  ]
+    

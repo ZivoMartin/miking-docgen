@@ -54,9 +54,6 @@ lang RendererInterface =
     -- Write the final version of the search engine.
     sem renderSearchFile : [SearchDictObj] -> RenderingOptions -> ()
 
-    -- Returns the path to the search files source code.
-    sem renderGetSearchPath : RenderingOptions -> String
-
     -- ## Documentation Blocks
 
     -- Renders the top section of a page.
