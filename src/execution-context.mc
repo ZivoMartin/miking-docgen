@@ -125,8 +125,10 @@ let render : Step =  lam ctx.
     let log = buildLogger ctx "Rendering" in 
     let ropt = getRenderingOption ctx.opt log in
     let renderingRes = render ropt obj in
+
     let searchDatas = foldl (lam acc. lam arg.
-        let isStdlib = strStartsWith "/Stdlib" arg.link in
+        let prefix = normalizePath (join [ctx.opt.urlPrefix, "/", "Stdlib"]) in
+        let isStdlib = strStartsWith prefix arg.link in
 
         let prefix = tail (strSplit ctx.userOutputFolder ctx.opt.outputFolder) in
         let prefix = if isStdlib then "" else join prefix in
@@ -136,7 +138,6 @@ let render : Step =  lam ctx.
         hmInsert name link acc
     ) ctx.searchDatas renderingRes.searchDatas in
     
-
     (if neqString ctx.opt.outputFolder ctx.userOutputFolder then    
         let newStdlibPath = normalizePath (join [ctx.opt.outputFolder, "/", "Stdlib"]) in
         let actualStdlibPath = normalizePath (join [ctx.userOutputFolder, "/", "Stdlib"]) in

@@ -1,6 +1,8 @@
 * TODO Recovering
-** TODO Recover name-context
-** TODO Recover doc-renderer
+** DONE Recover name-context
+CLOSED: [2025-11-19 Wed 15:42]
+** DONE Recover doc-renderer
+CLOSED: [2025-11-19 Wed 15:43]
 ** DONE Rewrite folder processing
 CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non mc files at the root, keep track of each search datas.

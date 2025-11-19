@@ -170,9 +170,9 @@ let sysMoveDirContents : String -> String -> ReturnCode = lam p1. lam p2.
     join [
         "\"",
         "set -e;",
-        "mkdir -p ", p1, " && ",
-        "mv -f ", p2, "/* ", p1, "/ 2>/dev/null", " && ",
-        "rm -rf ", p2,
+        "mkdir -p \"", p1, "\" && ",
+        "mv -f \"", p2, "\"/* \"", p1, "\"/ 2>/dev/null || true", " && ",
+        "rm -rf \"", p2, "\"",
         "\""]
   ]
 
