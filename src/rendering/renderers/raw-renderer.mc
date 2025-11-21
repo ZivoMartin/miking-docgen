@@ -23,15 +23,17 @@ lang RawRenderer = RendererInterface
     sem renderBlocDefault =
     | { obj = obj } & data -> lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
         let signature = renderDocSignature obj opt in
-        let description = renderDocDescription obj opt in
+
+        let doc = objDoc data.obj in
+        let doc = renderRemoveDocForbidenChars doc opt in
+        let doc = renderDocObjectParse doc opt in
+        let doc = renderFormattedDoc doc opt in
+        let doc = renderDocDescription doc opt in
+
         let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
         let tests = renderDocTests data opt in
 
-        join [bonusTopDoc, signature, bonusSignDescDoc, description, bonusDescCodeDoc, code, bonusBottomDoc, tests]
-
-    -- Ensure RenderingOptions uses the wrapped (non-raw) format.
-    sem fixOptFormat : RenderingOptions -> RenderingOptions
-    sem fixOptFormat = | opt -> { opt with fmt = unwrapRaw opt.fmt }
+        join [bonusTopDoc, signature, bonusSignDescDoc, doc, bonusDescCodeDoc, code, bonusBottomDoc, tests]
             
     -- Top page section: title + details (e.g., parent langs) + default block.
     sem renderTopPageDoc (data: RenderingData) =
@@ -78,10 +80,9 @@ lang RawRenderer = RendererInterface
         renderBlocDefault data opt "" "" link ""
     
     -- Renders the description text of an object (from obj.doc).
-    sem renderDocDescription (obj: Object) =
+    sem renderDocDescription (desc: String) =
     | opt -> let opt = fixOptFormat opt in
-        let doc = objDoc obj in
-        concat (renderRemoveDocForbidenChars doc opt) (renderNewLine opt)
+        concat desc (renderNewLine opt)
 
     -- Renders the object signature as source code.
     sem renderDocSignature (obj : Object) =
@@ -114,9 +115,9 @@ lang RawRenderer = RendererInterface
     -- Renders the unit tests section (hidden if empty).
     sem renderDocTests (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
-        let nl = renderNewLine opt in
-        if eqString data.tests "" then ""
-        else concat nl (renderHidenCode "Show Tests" (strFullTrim data.tests) true opt)
+        let tests = strFullTrim data.tests in
+        if eqString tests "" then ""
+        else renderHidenCode "Show Tests" tests true opt
     
     -- Goto link wrapper (uses renderLink).
     sem renderGotoLink (link: String) =
@@ -238,6 +239,9 @@ lang RawRenderer = RendererInterface
         renderTitle 2 title opt
 
     sem renderBold (text : String) =
+    | _ -> text
+
+    sem renderItalic (text : String) =
     | _ -> text
 
     -- Escaping/sanitizing hooks for docs and code (no-op in raw).

@@ -68,11 +68,16 @@ lang RendererInterface =
     sem renderDocSignature : Object -> RenderingOptions -> String
 
     -- Renders the documentation string of an object (from its `doc` field).
-    sem renderDocDescription : Object -> RenderingOptions -> String
+    sem renderDocDescription : String -> RenderingOptions -> String
 
     -- Renders the unit tests associated with an object.
     sem renderDocTests : RenderingData -> RenderingOptions -> String
 
+    -- Parses a documentation block.
+    sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
+
+    -- Render the output of renderDocObjectParse into a string well formatted.
+    sem renderFormattedDoc : DocObjectParsed -> RenderingOptions -> String
 
     -- ## Navigation / Linking
 
@@ -124,6 +129,9 @@ lang RendererInterface =
 
     -- Renders a string in bold.
     sem renderBold : String -> RenderingOptions -> String
+
+    -- Renders a string in italic.
+    sem renderItalic : String -> RenderingOptions -> String
 
     -- Sanitizes a string for safe inclusion in documentation.
     sem renderRemoveDocForbidenChars : String -> RenderingOptions -> String

@@ -12,6 +12,7 @@ CLOSED: [2025-11-14 Fri 01:58]
 ** DONE No code flag
 CLOSED: [2025-11-15 Sat 02:21]
 ** TODO Add show/hide in html renderer
+** TODO Fix test buttons design to make it like implementation
 * TODO Try to make nested importing files from the root
 * TODO Allow providing multiple file/folders
 * TODO Check that the js version is still working
@@ -24,3 +25,54 @@ CLOSED: [2025-11-15 Sat 02:21]
 * TODO noStdlib flag
 * TODO Allow the user to declare where to put the stdlib files
 * TODO Support markdown formatting
+
+
+* Summary of Code Review
+
+** 1. Shell Usage & Command Construction
+- Use of "bash -c" with hand-constructed strings is fragile.
+- Missing shell-escaping for paths (risk of breakage or injection).
+- Quoting is inconsistent and unsafe when paths contain special chars.
+- Recommendation: prefer direct sysRunCommand; if bash is necessary, add robust quoting.
+
+** 2. Python HTTP Server (Directory Traversal Risk)
+- Server joins paths without normalization.
+- A request like "/../../etc/passwd" could escape the doc directory.
+- Recommendation: normalize with abspath and enforce DOC_DIR prefix.
+
+** 3. Platform Assumptions & Portability
+- Hard POSIX assumptions: bash, find, rm, mv, python3, "/", etc.
+- Will not work on Windows without WSL.
+- Recommendation: document POSIX requirement or reduce reliance on shell tools.
+
+** 4. Escaping & Output Safety
+*** 4.1 Markdown/HTML Escaping
+- Escaping system is generally good.
+- Weakness: new renderers could accidentally bypass escaping.
+- Recommendation: document mandatory use of renderFormattedDoc.
+
+*** 4.2 MDX Template Literals
+- MDX embeds docstrings inside JS template literals.
+- `${` is not escaped → potential injection/XSS if input is untrusted.
+- Recommendation: escape `${` → `\${`, or avoid template literals entirely.
+
+*** 4.3 Search Component Generation
+- buildDict generates JS objects with unescaped strings.
+- Not currently dangerous but fragile for future changes.
+- Recommendation: add minimal JS string escaping or generate JSON.
+
+** 5. Error Handling & UX
+- Many direct error calls with minimal context.
+- Recommendation: wrap errors with contextual information; use Options/Results where reasonable.
+
+** 6. Other Robustness Notes
+- Breaker/snippet heuristics are complex and potentially brittle.
+- Heavy use of string concatenation → possible scaling issues.
+- Temporary Python server files are never deleted.
+
+** TL;DR Priorities
+1. Fix directory traversal in Python server.
+2. Sanitize or avoid bash -c usage.
+3. Escape `${` in MDX template literals.
+4. Clarify POSIX assumptions and reduce shell dependence.
+5. Add JS string escaping in buildDict.

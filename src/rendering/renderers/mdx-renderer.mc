@@ -91,15 +91,19 @@ lang MdxRenderer = RendererInterface
     sem renderBold (text : String) =
     | { fmt = Mdx {} } & opt -> renderBold text { opt with fmt = Md {} }
 
+    -- Delegate italic text to Markdown renderer.
+    sem renderItalic (text : String) =
+    | { fmt = Mdx {} } & opt -> renderItalic text { opt with fmt = Md {} }
+
     -- Delegate newline rendering to Markdown renderer ("  \n").
     sem renderNewLine =
     | { fmt = Mdx {} } & opt -> renderNewLine { opt with fmt = Md {} }
 
     -- Render object description as an MDX <Description> block (omit empty default).
-    sem renderDocDescription obj =
+    sem renderDocDescription desc =
     | { fmt = Mdx {} } & opt ->
-      let rawDesc = renderDocDescription obj { opt with fmt = Md {} } in
-      let desc = if eqString rawDesc "No documentation available here." then "" else rawDesc in
+      let desc = renderDocDescription desc { opt with fmt = Md {} } in
+      let desc = if eqString desc "No documentation available here." then "" else desc in
       if eqString "" desc then "" else join ["<Description>{`", desc, "`}</Description>\n"]
         
     -- The goto link is directly handled in mdx component, so we always return empty string.
@@ -154,7 +158,7 @@ lang MdxRenderer = RendererInterface
         if null data.rowTests then "" else
         let tests = strFullTrim data.rowTests in
         let tests = mdxRenderCode opt tests in
-        mdxRenderToggle "Hide Tests" "Show Tess" tests
+        mdxRenderToggle "Hide Tests" "Show Tests" tests
 
     -- Render a full documentation block (title, signature, desc, code, optional tests).
     sem renderDocBloc (data: RenderingData) =

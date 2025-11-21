@@ -30,6 +30,10 @@ lang MarkdownRenderer = RendererInterface
     -- Bold text
     sem renderBold (text : String) =
     | { fmt = Md {} } & opt -> join ["**", text, "**"]
+    
+    -- Italic text
+    sem renderItalic (text : String) =
+    | { fmt = Md {} } & opt -> join ["*", text, "*"]
 
     -- New line (Markdown convention: 2 spaces before newline)
     sem renderNewLine =
@@ -56,15 +60,8 @@ lang MarkdownRenderer = RendererInterface
         end
 
     -- Render documentation text (cleans spaces and escapes forbidden chars)
-    sem renderDocDescription : Object -> Format -> String
-    sem renderDocDescription obj =
-    | { fmt = Md {} } & opt ->
-        let nl = renderNewLine opt in
-        let doc = objDoc obj in
-        match splitOnR (lam c. match c with ' ' | '\n' then false else true) doc with { right = doc } in
-        let doc = strReplace "\n " "\n" doc in
-        renderRemoveDocForbidenChars doc opt
-    
+    sem renderDocDescription desc =
+    | { fmt = Md {} } & opt -> desc
 
     -- Render object signature inside a fenced code block
     sem renderDocSignature (obj: Object) =

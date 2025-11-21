@@ -49,3 +49,8 @@ type RenderingOptions = use Formats in use FormatLanguages in
     }
 
 let renderingOptionsSrcPath : RenderingOptions -> String = lam opt. normalizePath (join [opt.outputFolder, "/", opt.srcFolder])
+
+
+-- Ensure RenderingOptions uses the wrapped (non-raw) format.
+let fixOptFormat : RenderingOptions -> RenderingOptions = lam opt. { opt with fmt = use Formats in unwrapRaw opt.fmt }
+

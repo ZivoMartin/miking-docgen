@@ -50,7 +50,6 @@ lang Formats
     | Md {} | Mdx {} -> "md"
     | Raw { fmt = fmt } -> formatGetExtension fmt
 
-
     -- Returns the default rendering format to use when none is specified.    
     sem defaultFormat /- () -> Format -/ =
     | _ -> Html {}

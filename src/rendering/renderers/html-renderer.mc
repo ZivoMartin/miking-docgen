@@ -58,6 +58,10 @@ lang HtmlRenderer = RendererInterface
     sem renderBold (text : String) =
     | { fmt = Html {} } & opt -> join ["<strong>", text, "</strong>"]
 
+    -- Italic text
+    sem renderItalic (text : String) =
+    | { fmt = Html {} } & opt -> join ["<em>", text, "</em>"]
+
     -- Page/file footer
     sem renderFooter obj =
     | { fmt = Html {} } & opt -> "</div></body>\n</html>"   
@@ -125,8 +129,8 @@ lang HtmlRenderer = RendererInterface
     | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
 
     -- Object description wrapper
-    sem renderDocDescription (obj: Object) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class = \"doc-description\"><pre>" renderDocDescription obj "</pre></div>"
+    sem renderDocDescription (desc: String) =
+    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class = \"doc-description\"><pre>" renderDocDescription desc "</pre></div>"
 
     -- Object signature wrapper
     sem renderDocSignature (obj: Object) =

@@ -2,8 +2,10 @@ include "string.mc"
 include "common.mc"
 include "../../global/logger.mc"
 include "../../global/util.mc"
+include "../rendering-options.mc"
+include "./renderer-interface.mc"
 
-lang DocContentInterface
+lang DocContentInterface = RendererInterface
      
     syn DocContent = 
 
@@ -15,12 +17,19 @@ lang DocContentInterface
     sem docContentIsHook =
     | _ -> false
 
+    sem renderDocContent : DocContent -> RenderingOptions -> String
+    sem renderDocContent =
+    | _ -> lam opt. renderingWarn "docContentStr is not fully implemented."; ""
+
 end
 
 lang DocContentRawTextLang = DocContentInterface
 
     syn DocContent =
     | DocContentRawText String
+
+    sem renderDocContent =
+    | DocContentRawText s -> lam opt. s
 
     sem docContentNext =
     | ([c] ++ _) & s ->
@@ -41,6 +50,9 @@ lang DocContentArgHookLang = DocContentInterface
     syn DocContent =
     | DocContentArgHook String
 
+    sem renderDocContent =
+    | DocContentArgHook s -> lam opt. renderItalic s opt
+
     sem docContentIsHook =
     | ['@'] ++ _ -> true
 
@@ -57,6 +69,9 @@ lang DocContentObjHookLang = DocContentInterface
     syn DocContent =
     | DocContentObjHook String
 
+    sem renderDocContent =
+    | DocContentObjHook s -> lam opt. renderBold s opt
+
     sem docContentIsHook =
     | ['#'] ++ _ -> true
 
@@ -65,12 +80,16 @@ lang DocContentObjHookLang = DocContentInterface
       match splitOnR (eqc ' ') s with { left = hook, right = stream } in
       { stream = stream, content = Some (DocContentObjHook hook)}
 
-
 end
 
 lang DocContentLang = DocContentArgHookLang + DocContentObjHookLang + DocContentRawTextLang
 
     type DocContentText = [DocContent]
+
+    sem renderDocContentText : DocContentText -> RenderingOptions -> String
+    sem renderDocContentText =
+    | txt -> lam opt.
+          foldl (lam acc. lam content. concat (renderDocContent content opt) acc) "" (reverse txt)
 
     sem docContentParse : String -> DocContentText
     sem docContentParse =
@@ -97,6 +116,10 @@ lang DocObjectInterface = DocContentLang
     sem docObjectNext =
     | _ -> { stream = [], obj = None {} }
 
+    sem renderDocObject : DocObject -> RenderingOptions -> String
+    sem renderDocObject =
+    | _ -> lam str. renderingWarn "One of the doc object does not implement docObjToStr."; ""
+
     sem docObjectFetchDocLines : [String] -> { doc: [String], rest: [String] }
     sem docObjectFetchDocLines =
     | [] -> { doc = [], rest = [] }
@@ -121,6 +144,9 @@ lang DocObjectArgLang = DocObjectInterface
     syn DocObject =
     | DocObjectArg { arg: String, doc: DocContentText }
  
+    sem renderDocObject =
+    | DocObjectArg { arg = arg, doc = doc } -> lam opt. join [arg, ":", renderDocContentText doc opt]
+
     sem docObjectIsDirective =
     | ".lam[" ++ _ -> true
 
@@ -128,6 +154,7 @@ lang DocObjectArgLang = DocObjectInterface
     | [".lam[" ++ line] ++ lines ->
       match strSplit "]" line with [arg] ++ line then
         let line = strJoin "]" line in
+        let lines = cons line lines in
         match docObjectFetchDoc lines with { doc = doc, rest = rest } in
         { stream = rest, obj = Some (DocObjectArg { doc = doc, arg = arg }) }
       else
@@ -139,12 +166,16 @@ lang DocObjectReturnLang = DocObjectInterface
 
     syn DocObject =
     | DocObjectReturn { doc: DocContentText }
+
+    sem renderDocObject =
+    | DocObjectReturn { doc = doc } -> lam opt. renderDocContentText doc opt
  
     sem docObjectIsDirective =
     | ".return " ++ _ -> true
 
     sem docObjectNext =
     | [".return " ++ line] ++ lines ->
+      let lines = cons line lines in
       match docObjectFetchDoc lines with { doc = doc, rest = rest } in
       { stream = rest, obj = Some (DocObjectReturn { doc = doc }) }
 
@@ -155,11 +186,15 @@ lang DocObjectBriefLang = DocObjectInterface
     syn DocObject =
     | DocObjectBrief { doc: DocContentText }
 
+    sem renderDocObject =
+    | DocObjectBrief { doc = doc } -> lam opt. renderDocContentText doc opt
+
     sem docObjectIsDirective =
     | ".brief " ++ _ -> true
  
     sem docObjectNext =
     | [".brief " ++ line] ++ lines ->
+      let lines = cons line lines in
       match docObjectFetchDoc lines with { doc = doc, rest = rest } in
       { stream = rest, obj = Some (DocObjectBrief { doc = doc }) }
 
@@ -175,9 +210,9 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
        args: [DocObject]
      }
 
-    sem docObjectParse : String -> DocObjectParsed
-    sem docObjectParse =
-    | s ->
+    sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
+    sem renderDocObjectParse =
+    | s -> lam opt.
        let sTrimmed = strTrim s in
        let beginDelimitor = "*-" in
        let endDelimitor = "-*" in
@@ -215,5 +250,28 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
              DocObjectFormatted { parsed with args = reverse parsed.args }
        else
         DocObjectRaw s
+
+
+    sem renderFormattedDoc (obj: DocObjectParsed) =
+    | opt -> let opt = fixOptFormat opt in
+        let nl = renderNewLine opt in
+        switch obj
+        case DocObjectRaw s then s
+        case DocObjectFormatted {
+               brief = brief,
+               args = args,
+               return = return
+             } then
+             let brief = optionMapOr "" (lam brief. renderDocObject brief opt) brief in
+             let briefTitle = renderBold "Description:" opt in
+
+             let args = strJoin "\n" (map (lam arg. renderDocObject arg opt) args) in
+             let argsTitle = renderBold "Arguments:" opt in             
+             
+             let return = optionMapOr "" (lam return. renderDocObject return opt) return in
+             let returnTitle = renderBold "Returns:" opt in
+             
+             join [briefTitle, "\n", brief, nl, argsTitle, "\n", args, nl, returnTitle, "\n", return]
+        end 
 
 end
