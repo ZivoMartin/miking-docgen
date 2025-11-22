@@ -22,10 +22,10 @@ lang RawRenderer = RendererInterface
     sem renderBlocDefault : RenderingData -> RenderingOptions -> String -> String -> String -> String -> String
     sem renderBlocDefault =
     | { obj = obj } & data -> lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
+        let opt = fixOptFormat opt in
         let signature = renderDocSignature obj opt in
 
         let doc = objDoc data.obj in
-        let doc = renderRemoveDocForbidenChars doc opt in
         let doc = renderDocObjectParse doc opt in
         let doc = renderFormattedDoc doc opt in
         let doc = renderDocDescription doc opt in
@@ -117,7 +117,7 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let tests = strFullTrim data.tests in
         if eqString tests "" then ""
-        else renderHidenCode "Show Tests" tests true opt
+        else renderHidenCode "Show Tests" "Hide Tests" tests true opt
     
     -- Goto link wrapper (uses renderLink).
     sem renderGotoLink (link: String) =
@@ -135,7 +135,7 @@ lang RawRenderer = RendererInterface
     -- Renders code as a hidden, toggleable block (raw + preview-less).
     sem renderCodeWithoutPreview (data: RenderingData) = 
     | opt -> let opt = fixOptFormat opt in
-        renderHidenCode "Show Implementation" (concat data.left data.right) true opt
+        renderHidenCode "Show Implementation" "Hide Implementation" (concat data.left data.right) true opt
 
     -- Renders code with an optional preview section (uses renderHidenCode).
     sem renderCodeWithPreview (data: RenderingData) =
@@ -143,10 +143,10 @@ lang RawRenderer = RendererInterface
         match data.right with [] then
             join [data.left, data.trimmed]
         else 
-            join [data.left, renderHidenCode "..." data.right false opt, data.trimmed]
+            join [data.left, renderHidenCode "..." "..." data.right false opt, data.trimmed]
 
     -- Default hidden-code renderer (no-op for raw).
-    sem renderHidenCode (buttonText: String) (code : String) (jumpLine: Bool) =
+    sem renderHidenCode (hidden: String) (shown: String) (code : String) (jumpLine: Bool) =
     | _ -> ""
 
     -- String → tokenized/colored source code (delegates to renderSourceCode).

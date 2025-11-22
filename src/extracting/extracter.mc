@@ -54,7 +54,7 @@ include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
 include "./depth.mc"
-        
+
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared

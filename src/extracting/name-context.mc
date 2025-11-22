@@ -49,6 +49,8 @@
 -- We then return the link such that:
 --   - the no-file part is included in the caller’s no-file part, and  
 --   - it has the greatest ID still lower than the caller’s ID.
+-- If the caller namespace is the top-level of the file, then we expect the
+-- result to also be a top level.
 -- This ensures we only get links in our scope.  
 -- Since, at the end of the day, all objects are placed sequentially
 -- regardless of their origin file, this works regardless of the include structure.
@@ -59,18 +61,19 @@ type NameSpaceEntry a = { entry: a, id: Int, namespace: String }
 
 type NameContext a = HashMap String [NameSpaceEntry a]
 
-
 let nameContextInsert : all a. NameContext -> String -> NameSpaceEntry a = lam ctx. lam name. lam entry.
     let entries = optionMap (cons entry) (hmLookup name ctx) in
     hmInsert name entries ctx
 
-let nameContextFetch : NameContext -> String -> Int -> String -> Option String =
-    lam ctx. lam name. lam id. lam namespace.
+let nameContextFetch : all a. NameContext a -> String -> Int -> String -> Option a =
+    lam ctx. lam name. lam callerId. lam callerNamespace.
     optionMap (
         lam entries.
-        optionMap (lam entry. entry.entry)
-        (find (
-            lam entry.
-            and (lti entry.id id) (strStartsWith entry.namespace namespace)
-        ) entries)
+        match strSplitOnce '/' callerNamespace with Some { right = noFile } then -- Top level case
+            let predicate = if null noFile then
+                lam entry. and (lti entry.id id) (eqi 1 (strCount entry.namespace '/'))
+            else
+                lam entry. and (lti entry.id id) (strStartsWith entry.namespace callerNamespace) in
+            optionMap (lam entry. Some entry.entry) (find predicate entries)
+        else extractingWarn "name has no file part."; None {}
     ) hmLookup name ctx

@@ -81,7 +81,7 @@ lang MdxRenderer = RendererInterface
 
     -- Reuse Markdown escaping for docs.
     sem renderRemoveDocForbidenChars (s: String) =
-    | { fmt = Mdx {} } & opt -> renderRemoveCodeForbidenChars s { opt with fmt = Md {} }
+    | { fmt = Mdx {} } & opt -> renderRemoveDocForbidenChars s { opt with fmt = Md {} }
 
     -- Delegate headings to Markdown renderer.
     sem renderTitle size s =
@@ -104,7 +104,7 @@ lang MdxRenderer = RendererInterface
     | { fmt = Mdx {} } & opt ->
       let desc = renderDocDescription desc { opt with fmt = Md {} } in
       let desc = if eqString desc "No documentation available here." then "" else desc in
-      if eqString "" desc then "" else join ["<Description>{`", desc, "`}</Description>\n"]
+      if eqString "" desc then "" else join ["<Description>\n", desc, "\n</Description>\n"]
         
     -- The goto link is directly handled in mdx component, so we always return empty string.
     sem renderGotoLink (link: String) =
@@ -121,24 +121,25 @@ lang MdxRenderer = RendererInterface
     -- Render a list of links by delegating to raw rendering, then add a newline.
     sem renderLinkList (objects: [Object]) =
     | { fmt = Mdx {} } & opt ->
-        let nl = renderNewLine opt in
-        join [renderLinkList objects { opt with fmt = Raw { fmt = Mdx {}} }, nl]
+        renderWithRaw opt "" renderLinkList objects (renderNewLine opt)
 
     -- Format a code string as a fenced block ```mc (with proper escaping).
     sem mdxRenderCode : RenderingOptions -> String -> String
     sem mdxRenderCode =
-    | opt -> lam code. join ["\n```mc\n", renderRemoveCodeForbidenChars code opt, "\n```\n"]
+    | opt -> lam code.
+      if null code then "" else
+      join ["\n```mc\n", code, "\n```\n"]
 
-    sem mdxRenderToggle : String -> String -> String -> String
-    sem mdxRenderToggle =
-    | hidden -> lam shown. lam content.
-      join ["<ToggleWrapper shownText=\"", shown, "\" hiddenText=\"", hidden, "\">", content, "</ToggleWrapper>\n"]
+    sem renderHidenCode (hidden: String) (shown: String) (code: String) (jumpLine: Bool) =
+    | { fmt = Mdx {} } & opt ->
+      let code = mdxRenderCode opt code in
+      join ["<ToggleWrapper shownText=\"", shown, "\" hiddenText=\"", hidden, "\">", code, "</ToggleWrapper>", if jumpLine then "\n" else ""]
 
     -- Render signature via the raw MDX dispatcher; omit if empty.
     sem renderDocSignature (obj: Object) =
     | { fmt = Mdx {} } & opt -> 
-        let sign = renderDocSignature obj { opt with fmt = Raw { fmt = Mdx {} } } in
-        if eqString sign "" then "" else mdxRenderCode opt sign 
+        let code = renderWithRaw opt "" renderDocSignature obj "" in
+        mdxRenderCode opt code 
 
     -- Render the full code (trim trailing comments/empties), escaped for MDX.
     sem renderCodeWithoutPreview (data: RenderingData) =
@@ -146,19 +147,18 @@ lang MdxRenderer = RendererInterface
         let split = strSplit "\n" data.row in
         match splitOnR (lam l.
             let trimmed = strTrim l in
-            not (or (strStartsWith "--" trimmed) (eqString "" trimmed))
+            not (or (strStartsWith "--" trimmed) (null trimmed))
         ) (reverse split) with { right = right } in
         let code = strJoin "\n" (reverse right) in
-        let code = mdxRenderCode opt code in
-        mdxRenderToggle "Hide Implementation" "Show Implementation" code
+        renderHidenCode "Show Implementation" "Hide Implementation" code true opt
+
+    sem renderCodeWithPreview (data: RenderingData) =
+    | { fmt = Mdx {} } -> join [data.left, data.right, data.trimmed]
 
     -- Render tests as raw text if available (panels are added by the caller).
     sem renderDocTests (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
-        if null data.rowTests then "" else
-        let tests = strFullTrim data.rowTests in
-        let tests = mdxRenderCode opt tests in
-        mdxRenderToggle "Hide Tests" "Show Tests" tests
+        renderWithRaw opt "" renderDocTests data ""
 
     -- Render a full documentation block (title, signature, desc, code, optional tests).
     sem renderDocBloc (data: RenderingData) =
@@ -172,9 +172,7 @@ lang MdxRenderer = RendererInterface
         let title = objTitle data.obj in
         let kind  = getFirstWord (objKind data.obj) in
     
-        join [
-          "<DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n",
-          renderDocBloc data { opt with fmt = Raw { fmt = Mdx {} } },
-          "</DocBlock>\n\n"
-        ]
+        let left = join ["<DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n"] in
+        let right = "</DocBlock>\n\n" in
+        renderWithRaw opt left renderDocBloc data right
 end

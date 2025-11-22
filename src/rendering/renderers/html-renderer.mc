@@ -113,41 +113,39 @@ lang HtmlRenderer = RendererInterface
     sem renderNumber (content : String) =
     | { fmt = Html {} } & opt -> htmlRenderSpan content "number"
 
-    -- Wrapper that renders inner content via raw renderer, then wraps it with HTML
-    sem htmlRenderWrapper : all a. RenderingOptions -> String -> (a -> RenderingOptions -> String) -> a -> String -> String
-    sem htmlRenderWrapper =
-    | opt -> lam left. lam f. lam arg. lam right.
-        let inner = f arg { opt with fmt = Raw { fmt = Html {} } } in
-        match inner with "" then "" else join [left, inner, right]
-
     -- Top-of-page documentation wrapper
     sem renderTopPageDoc (data: RenderingData) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
     
     -- Doc block wrapper; the Bool controls the goto-link inclusion
     sem renderDocBloc (data : RenderingData) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
 
     -- Object description wrapper
     sem renderDocDescription (desc: String) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class = \"doc-description\"><pre>" renderDocDescription desc "</pre></div>"
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class = \"doc-description\"><pre>" renderDocDescription desc "</pre></div>"
 
     -- Object signature wrapper
     sem renderDocSignature (obj: Object) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"doc-signature\">" renderDocSignature obj "</div>"
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"doc-signature\">" renderDocSignature obj "</div>"
     
     -- Code block wrapper (without preview toggle)
     sem renderCodeWithoutPreview (data: RenderingData) =
-    | { fmt = Html {} } & opt -> htmlRenderWrapper opt "<div class=\"code-block\"><pre>" renderCodeWithoutPreview data "</pre></div>"
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"code-block\"><pre>" renderCodeWithoutPreview data "</pre></div>"
+
+    -- Tests block wrapper (without preview toggle)
+    sem renderDocTests (data: RenderingData) =
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"code-block\"><pre>" renderDocTests data "</pre></div>"
 
     -- Plain anchor for “goto” links
     sem renderGotoLink (link: String) =
     | { fmt = Html {} } & opt -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
     -- Toggleable hidden code block; uses a button and a collapsible div
-    sem renderHidenCode (buttonText: String) (code: String) (jumpLine: Bool) =
+    sem renderHidenCode (hidden: String) (shown: String) (code: String) (jumpLine: Bool) =
     | { fmt = Html {} } & opt ->
-        let jsDisplay = join ["<button class=\"toggle-btn\" onclick=\"toggle(this)\">", buttonText, "</button><div class=\"hiden-code\" style=\"display: none;\">"] in
+        let jsDisplay = join ["<button class=\"toggle-btn\" hidden=\"", hidden, "\", shown=\"", shown, "\" onclick=\"toggle(this)\">",
+                      hidden, "</button><div class=\"hiden-code\" style=\"display: none;\">"] in
         join [jsDisplay, if jumpLine then "\n" else "", code, "</div>"]
     
     -- Generic link with optional URL prefix

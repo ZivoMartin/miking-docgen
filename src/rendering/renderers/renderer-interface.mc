@@ -96,7 +96,7 @@ lang RendererInterface =
 
     -- Renders a block of code wrapped in a toggleable hidden section.
     -- Bool argument decides whether it starts hidden.
-    sem renderHidenCode : String -> String -> Bool -> RenderingOptions -> String
+    sem renderHidenCode : String -> String -> String -> Bool -> RenderingOptions -> String
 
     -- Renders code with preview:
     -- - Left part (raw code)
@@ -178,5 +178,15 @@ lang RendererInterface =
 
     -- Renders a single newline.
     sem renderNewLine : RenderingOptions -> String
+
+    -- Shared helpers
+
+    -- Wrapper that renders inner content via raw renderer, then wraps it with HTML
+    sem renderWithRaw : all a. RenderingOptions -> String -> (a -> RenderingOptions -> String) -> a -> String -> String
+    sem renderWithRaw =
+    | opt -> lam left. lam f. lam arg. lam right.
+        let inner = f arg { opt with fmt = Raw { fmt = opt.fmt } } in
+        match inner with "" then "" else join [left, inner, right]
+
 
 end

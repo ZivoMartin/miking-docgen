@@ -29,7 +29,7 @@ lang DocContentRawTextLang = DocContentInterface
     | DocContentRawText String
 
     sem renderDocContent =
-    | DocContentRawText s -> lam opt. s
+    | DocContentRawText s -> lam opt. renderRemoveDocForbidenChars s opt
 
     sem docContentNext =
     | ([c] ++ _) & s ->
@@ -51,7 +51,7 @@ lang DocContentArgHookLang = DocContentInterface
     | DocContentArgHook String
 
     sem renderDocContent =
-    | DocContentArgHook s -> lam opt. renderItalic s opt
+    | DocContentArgHook s -> lam opt. renderItalic (renderRemoveDocForbidenChars s opt) opt
 
     sem docContentIsHook =
     | ['@'] ++ _ -> true
@@ -70,7 +70,7 @@ lang DocContentObjHookLang = DocContentInterface
     | DocContentObjHook String
 
     sem renderDocContent =
-    | DocContentObjHook s -> lam opt. renderBold s opt
+    | DocContentObjHook s -> lam opt. renderBold (renderRemoveDocForbidenChars s opt) opt
 
     sem docContentIsHook =
     | ['#'] ++ _ -> true
@@ -145,7 +145,9 @@ lang DocObjectArgLang = DocObjectInterface
     | DocObjectArg { arg: String, doc: DocContentText }
  
     sem renderDocObject =
-    | DocObjectArg { arg = arg, doc = doc } -> lam opt. join [arg, ":", renderDocContentText doc opt]
+    | DocObjectArg { arg = arg, doc = doc } -> lam opt.
+      let arg = renderRemoveDocForbidenChars arg opt in
+      join [arg, ":", renderDocContentText doc opt]
 
     sem docObjectIsDirective =
     | ".lam[" ++ _ -> true
@@ -256,7 +258,7 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
         switch obj
-        case DocObjectRaw s then s
+        case DocObjectRaw s then renderRemoveDocForbidenChars s opt
         case DocObjectFormatted {
                brief = brief,
                args = args,

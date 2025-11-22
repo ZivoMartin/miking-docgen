@@ -184,7 +184,7 @@ export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenTe
         style={S.toggler}
         aria-expanded={visible}
       >
-        {visible ? hiddenText : shownText}
+        {visible ? shownText : hiddenText}
       </button>
       {visible && <span style={S.code}>{children}</span>}
     </div>
@@ -297,7 +297,7 @@ export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenTe
         style={S.toggler}
         aria-expanded={visible}
       >
-        {visible ? hiddenText : shownText}
+        {visible ? shownText : hiddenText}
       </button>
       {visible && <span style={S.code}>{children}</span>}
     </div>
