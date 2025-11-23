@@ -17,6 +17,7 @@
 -- - `parse`   : Build DocTree from MAst.
 -- - `extract` : Extract ObjectTree from DocTree.
 -- - `label`   : Label ObjectTree with semantic metadata.
+-- - `name`    : Create a Namespace to lookup url of a name depending on the context.
 -- - `render`  : Generate documentation files.
 -- - `serve`   : Start preview server.
 --
@@ -30,6 +31,7 @@ include "./mast-gen/mast-generator.mc"
 include "./parsing/parser.mc"
 include "./extracting/extracter.mc"
 include "./labeling/labeler.mc"
+include "./naming/namer.mc"
 include "./rendering/renderer.mc"
 include "./server/server.mc"
 
@@ -42,7 +44,8 @@ type ExecutionContext =  use TokenReader in {
     docTree : Option DocTree,
     ast: Option MAst,
     searchDatas: HashMap String String,
-    object: Option ObjectTree
+    object: Option ObjectTree,
+    nameContext: Option NameContext
 }
 
 let buildLogger : ExecutionContext -> String -> Logger = lam ctx. lam step. if ctx.opt.debug then message "INFO" step else lam. ()
@@ -56,7 +59,8 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
               tokens = [],
               docTree = None {},
               ast = None {},
-              object = None {}
+              object = None {},
+              nameContext = None {}
           }
     else
         let log = buildLogger ctx "Rendering" in 
@@ -87,6 +91,7 @@ let execContextNew : DocGenOptions -> ExecutionContext = lam opt.
         docTree = None {},
         object = None {},
         ast = None {},
+        nameContext = None {},
         searchDatas = hashmapEmpty ()
     } in
     match execCtxNext ctx with Some ctx then ctx else
@@ -119,6 +124,13 @@ let label : Step =  lam ctx.
     let log = buildLogger ctx "Labeling" in    
     { ctx with object = Some (label log object ast) }
     else crash "object" "label" "extract"
+
+let name : Step =  lam ctx.
+    match ctx.object with Some object then
+    let log = buildLogger ctx "Naming" in
+    let opt = getNamingOption ctx.opt in
+    { ctx with nameContext = Some (name log opt object) }
+    else crash "object" "name" "extract"
 
 let render : Step =  lam ctx.
     match ctx.object with Some obj then

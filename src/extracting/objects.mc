@@ -64,7 +64,11 @@ lang ObjectKinds = MExprAst
     | ObjRecursiveBloc {} -> "recursive"
     | ObjProgram {} -> ""
     | _ -> warn "All object kinds are not supported in getFirstWord sementic"; ""
-  
+
+    sem objKindHasUrl : ObjectKind -> Bool
+    sem objKindHasUrl =
+    | ObjRecursiveBloc {} | ObjUse {} -> false
+    | _ -> true  
 end
 
 -- The object type is designed to represent the documentation-side structure of the code.
@@ -82,7 +86,17 @@ end
 --   and stores it so we can recover the original namespace later.  
 -- - `isStdlib`: Marks whether the object belongs to the stdlib.
 -- - `renderIt` : Indicates if the object should be rendered during rendering stage.
-type Object = use ObjectKinds in { name: String, doc : String, namespace: String, kind: ObjectKind, sourceCode: SourceCode, prefix: String, isStdlib: Bool, renderIt: Bool }
+type Object = use ObjectKinds in {
+    name: String,
+    doc : String,
+    namespace: String,
+    kind: ObjectKind,
+    sourceCode: SourceCode,
+    prefix: String,
+    isStdlib: Bool,
+    renderIt: Bool,
+    id: Int
+}
 
 -- Absolute filesystem position of the current program start.
 let basePosition : String = concat (sysGetCwd ()) "/"
@@ -96,6 +110,7 @@ let objNamespace : Object -> String = use ObjectKinds in lam obj. obj.namespace
 let objPrefix : Object -> String = lam obj. obj.prefix
 let objIsStdlib : Object -> Bool = lam obj. obj.isStdlib
 let objRenderIt : Object -> Bool = lam obj. obj.renderIt
+let objId : Object -> Int = lam obj. obj.id
 
 -- Object updaters (immutable setters).
 let objWithName : Object -> String -> Object = lam obj. lam name. { obj with name = name }
@@ -103,7 +118,8 @@ let objWithKind : Object -> use ObjectKinds in ObjectKind -> Object = lam obj. l
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
 let objWithIsStdlib : Object -> Bool -> Object = lam obj. lam isStdlib. { obj with isStdlib = isStdlib }    
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
-let objWithRenderIt : Object -> Bool -> Object = lam obj. lam renderIt. { obj with renderIt = renderIt }    
+let objWithRenderIt : Object -> Bool -> Object = lam obj. lam renderIt. { obj with renderIt = renderIt }
+let objWithId : Object -> Int -> Object = lam obj. lam id. { obj with id = id }
 
 -- Sets a shorter namespace by removing `prefix`; stores the prefix for recovery.
 -- Warns if the namespace does not start with the given prefix.
@@ -132,17 +148,29 @@ let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     let obj = { obj with namespace = namespace } in
     objWithPrefix obj obj.prefix
 
+-- Returns true if the object has a meaningful id.
+let objHasId : Object -> Bool = lam obj. neqi obj.id 0
+
 -- Returns absolute path = prefix + namespace.
 let objAbsolutePath : Object -> String = lam obj.
     concat obj.prefix obj.namespace
 
 -- Empty default object (neutral values).
-let defaultObject : Object = use ObjectKinds in { name = "", doc = "", namespace = "", renderIt = false, isStdlib = false, kind = ObjProgram {}, sourceCode = sourceCodeEmpty (), prefix = "" }
+let defaultObject : Object = use ObjectKinds in {
+    name = "",
+    doc = "",
+    namespace = "",
+    renderIt = false,
+    isStdlib = false,
+    kind = ObjProgram {},
+    sourceCode = sourceCodeEmpty (),
+    prefix = "",
+    id = 0
+}
 
 -- Extracts the language name from a Sem/Syn object; else empty string.
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.
     match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
-
 
 -- Renders a short textual representation of an object (for printing).
 let objToString = use ObjectKinds in lam kind. lam name.

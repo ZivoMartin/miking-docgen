@@ -11,6 +11,7 @@
 include "./docgen-options.mc"
 include "../server/server-options.mc"
 include "../rendering/rendering-options.mc"
+include "../naming/naming-options.mc"
 include "hashmap.mc"
 
 -- Convert a global `DocGenOptions` record and a link string representing the URL of the opening file.
@@ -38,4 +39,10 @@ let getRenderingOption : DocGenOptions -> Logger -> RenderingOptions = use Forma
         nameContext = hashmapEmpty (),
         log = log,
         noCode = opt.noCode
+    }
+
+let getNamingOption : DocGenOptions -> NamingOptions = lam opt.
+    {
+        fmt = opt.fmt,
+        urlPrefix = opt.urlPrefix
     }

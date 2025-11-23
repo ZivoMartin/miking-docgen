@@ -25,6 +25,9 @@ CLOSED: [2025-11-21 Fri 19:13]
 * TODO Allow the user to declare where to put the stdlib files
 * TODO In case of actual error, report a precise messagee (at least the file in which error occured)
 * TODO Add tests in top page
+* TODO Add fields docs in syntaxes
+* TODO On the documentation of a type, put all the constructors.
+* TODO On the documentation of a syntax extend the variant with what is actually used
 * TODO Support markdown formatting
 
 * TODO Name context
