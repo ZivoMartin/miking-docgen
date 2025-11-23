@@ -67,7 +67,7 @@ lang ObjectKinds = MExprAst
 
     sem objKindHasUrl : ObjectKind -> Bool
     sem objKindHasUrl =
-    | ObjRecursiveBloc {} | ObjUse {} -> false
+    | ObjRecursiveBloc {} | ObjMexpr {} | ObjInclude {} | ObjUtest {} | ObjUse {} -> false
     | _ -> true  
 end
 
@@ -205,3 +205,4 @@ let objTreeWithDoc : ObjectTree -> String -> ObjectTree = lam tree. lam doc.
     match tree with ObjectNode { obj = obj, children = children } in ObjectNode { obj = { obj with doc = doc}, children = children }
 let objTreeWithSourceCode : ObjectTree -> SourceCode -> ObjectTree = lam tree. lam code.
     match tree with ObjectNode { obj = obj, children = children } in ObjectNode { obj = { obj with sourceCode = code}, children = children }
+let objTreeRemoveChildren : ObjectTree -> ObjectTree = lam tree. ObjectNode { children = [], obj = objTreeObj tree }

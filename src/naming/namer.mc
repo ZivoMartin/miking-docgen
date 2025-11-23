@@ -9,20 +9,47 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
     let buildUrl : Bool -> String -> String = lam isStdlib. lam namespace. use Formats in
         let ext = concat "." (formatGetExtension opt.fmt) in
         let prefix = if isStdlib then "Stdlib" else "" in
-        let link =  strJoin "/" [opt.urlPrefix, prefix, namespace, ext] in
+        let link =  strJoin "/" [opt.urlPrefix, prefix, concat namespace ext] in
         normalizePath link
     in
 
-    recursive let work : ObjectTree -> NameContext -> Int -> { ctx: NameContext, nextId: Int } = use ObjectKinds in
-        lam objTree. lam ctx. lam nextId.
+
+    type WorkRes = { ctx: NameContext, nextId: Int } in
+    recursive let work : ObjectTree -> NameContext -> Int -> Bool -> WorkRes = use ObjectKinds in
+        lam objTree. lam ctx. lam nextId. lam isNested.
         let default = { ctx = ctx, nextId = nextId} in
 
         let obj = objTreeObj objTree in
         let children = objTreeChildren objTree in
         let kind = objKind obj in
-        
 
-        match kind with ObjUse {} then
+        let process : NameContext -> Int -> [ObjectTree] -> Bool -> WorkRes =
+            lam ctx. lam nextId. lam children. lam isNested.
+            foldl (
+                lam acc. lam child.
+                work child acc.ctx acc.nextId isNested
+            ) { nextId = nextId, ctx = ctx } children
+        in
+
+        let nameDirectChildrenAndProcess : NameContext -> Int -> [ObjectTree] -> Bool -> WorkRes =
+            lam ctx. lam nextId. lam children. lam isNested.
+            let foldRes = foldl (
+                lam acc. lam child.
+                let indirectChildren = reverse (objTreeChildren child) in
+                let directChild = objTreeRemoveChildren child in
+                {
+                    directChildren = cons directChild acc.directChildren,
+                    indirectChildren = concat indirectChildren acc.indirectChildren
+                }
+            ) { directChildren = [], indirectChildren = [] } children
+            in
+            match foldRes with { directChildren = directChildren, indirectChildren = indirectChildren } in
+            match process ctx nextId directChildren isNested with { nextId = nextId, ctx = ctx } in
+            process ctx nextId indirectChildren true
+        in
+
+        switch kind
+        case ObjUse {} then
              let used = objName obj in
              match langNamespaceGetByName ctx.langNamespaceSet used with Some langNamespace then
                  let useThis : NameMap -> Int -> String -> [String] -> { nameMap: NameMap, nextId: Int} =
@@ -32,6 +59,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
                          let namespace = join [langNamespace.objNamespace, "/", kind, "-", name] in
                          let url = buildUrl langNamespace.objIsStdlib namespace in
                          let entry = { entry = url, id = acc.nextId, namespace = namespace, isNested = false } in
+                         printLn url;
                          let nameMap = nameMapInsert acc.nameMap name entry in
                          { nameMap = nameMap, nextId = addi nextId 1 }
                      ) { nameMap = nameMap, nextId = nextId } names
@@ -45,41 +73,68 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
              else
                  namingWarn (join ["Failed to fetch the ", used, "lang."]);
                  default
-    
-        else if objKindHasUrl kind then
+
+        case ObjRecursiveBloc {} then nameDirectChildrenAndProcess ctx nextId children true
+
+        case ObjLang { parents = parents} then
             let name = objName obj in
-            let langNamespace = match kind with ObjLang { parents = parents } then
-                let filterIt : (ObjectKind -> Bool) -> [String] =
-                    lam keepIt.
-                    mapOption (
-                        lam child.
-                        let obj = objTreeObj child in
-                        if keepIt (objKind obj) then
-                           Some (objName obj)
-                        else
-                           None {}
-                    ) children
-                in
+            let namespace = objNamespace obj in
+            let isStdlib = objIsStdlib obj in
 
-                let langNamespace = {
-                    objNamespace = objNamespace obj,
-                    objIsStdlib = objIsStdlib obj,
-
-                    parents = [], -- Will be filled in langNamespaceSetBuildNamespace
-
-                    syns = filterIt (lam k. match k with ObjSyn {} then true else false),
-                    sems = filterIt (lam k. match k with ObjSem {} then true else false),
-                    types = filterIt (lam k. match k with ObjType {} then true else false),
-                    cons = filterIt (lam k. match k with ObjCon {} then true else false)
-               } in
-               let langNamespace = langNamespaceSetBuildNamespace ctx.langNamespaceSet langNamespace parents in
-               langNamespaceSetInsert ctx.langNamespaceSet name langNamespace
-            else
-                ctx.langNamespaceSet
+            let filterIt : (ObjectKind -> Bool) -> [String] =
+                lam keepIt.
+                mapOption (
+                    lam child.
+                    let obj = objTreeObj child in
+                    if keepIt (objKind obj) then
+                       Some (objName obj)
+                    else
+                       None {}
+                ) children
             in
+
+            let langNamespace = {
+                objNamespace = objNamespace obj,
+                objIsStdlib = objIsStdlib obj,
+
+                parents = [], -- Will be filled in langNamespaceSetBuildNamespace
+
+                syns = filterIt (lam k. match k with ObjSyn {} then true else false),
+                sems = filterIt (lam k. match k with ObjSem {} then true else false),
+                types = filterIt (lam k. match k with ObjType {} then true else false),
+                cons = filterIt (lam k. match k with ObjCon {} then true else false)
+           } in
+
+           let langNamespace = langNamespaceSetBuildNamespace ctx.langNamespaceSet langNamespace parents in
+           let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet name langNamespace in
+           
+           let url = buildUrl isStdlib namespace in
+           let entry = { entry = url, id = nextId, namespace = namespace, isNested = false } in -- lang is never nested
+           printLn url;
+           let nameMap = nameMapInsert ctx.nameMap name entry in
+           
+           let nextId = addi 1 nextId in
+           let ctx = { ctx with nameMap = nameMap, langNamespaceSet = langNamespaceSet } in
+           
+           nameDirectChildrenAndProcess ctx nextId children false
+
+        case _ then
+            match
+                if objKindHasUrl kind then
+                    let name = objName obj in
+                    let namespace = objNamespace obj in
+                    let url = buildUrl (objIsStdlib obj) namespace in
+                    let entry = { entry = url, id = nextId, namespace = namespace, isNested = isNested } in
+
+                    let nextId = addi nextId 1 in
+                    printLn url;                    
+                    { nameMap = nameMapInsert ctx.nameMap name entry, nextId = nextId }
+                else { nameMap = ctx.nameMap, nextId = nextId }
+            with { nameMap = nameMap, nextId = nextId } in
             
-            error "todo"
-        else error "todo"
+            let ctx = { ctx with nameMap = nameMap } in
+            process ctx nextId children true
+        end
     in 
 
-    (work objTree (nameContextEmpty ()) 1).ctx
+    (work objTree (nameContextEmpty ()) 1 false).ctx

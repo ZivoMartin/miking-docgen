@@ -10,8 +10,7 @@ let nameMapInsert : all a. NameMap a -> String -> NameMapEntry a -> NameMap a = 
     match optionMap (cons entry) (hmLookup name nameMap) with Some entries then
         hmInsert name entries nameMap
     else
-        namingWarn (join ["Failed to fetch ", name, "."]);
-        nameMap
+        hmInsert name [entry] nameMap
 
 let nameMapFetch : all a. NameMap a -> String -> Int -> String -> Option a =
     lam nameMap. lam name. lam callerId. lam callerNamespace.
