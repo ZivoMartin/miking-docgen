@@ -70,7 +70,9 @@ lang DocContentObjHookLang = DocContentInterface
     | DocContentObjHook String
 
     sem renderDocContent =
-    | DocContentObjHook s -> lam opt. renderBold (renderRemoveDocForbidenChars s opt) opt
+    | DocContentObjHook s -> lam opt.
+      let txt = txt in
+      renderBold txt opt
 
     sem docContentIsHook =
     | ['#'] ++ _ -> true
@@ -265,13 +267,13 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
                return = return
              } then
              let brief = optionMapOr "" (lam brief. renderDocObject brief opt) brief in
-             let briefTitle = renderBold "Description:" opt in
+             let briefTitle = if null brief then "" else renderBold "Description:" opt in
 
              let args = strJoin "\n" (map (lam arg. renderDocObject arg opt) args) in
-             let argsTitle = renderBold "Arguments:" opt in             
+             let argsTitle = if null args then "" else renderBold "Arguments:" opt in             
              
              let return = optionMapOr "" (lam return. renderDocObject return opt) return in
-             let returnTitle = renderBold "Returns:" opt in
+             let returnTitle = if null return then "" else renderBold "Returns:" opt in
              
              join [briefTitle, "\n", brief, nl, argsTitle, "\n", args, nl, returnTitle, "\n", return]
         end 

@@ -127,7 +127,11 @@ lang RawRenderer = RendererInterface
     -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
     | opt -> let opt = fixOptFormat opt in
-        let doc = map (lam u. renderLink (objTitle u) (objGetMyLink u opt) opt) objects in
+        let doc = map (lam u.
+            let link = objGetLink u opt (objName u) in
+            renderLink (objTitle u) link opt
+            ) objects
+        in
         let doc = strJoin ", " doc in
         match doc with "" then "" else
             concat (renderText doc opt) (renderNewLine opt)

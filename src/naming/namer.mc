@@ -27,12 +27,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
         let children = objTreeChildren objTree in
         let kind = objKind obj in
 
-        match if objKindHasUrl kind then 
-           let obj = objWithId obj nextId in
-           { objTree = ObjectNode { children = children, obj = obj }, obj = obj, nextId = addi 1 nextId }
-        else
-           { objTree = objTree, obj = obj, nextId = nextId }
-        with { objTree = objTree, obj = obj, nextId = nextId } in
+        let obj = objWithId obj nextId in
+        let nextId = addi 1 nextId in
+        let objTree = ObjectNode { children = children, obj = obj } in
 
         let default = { ctx = ctx, nextId = nextId, objTree = objTree} in
 
@@ -48,21 +45,19 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             { res with objTree = ObjectNode { obj = obj, children = reverse (objTreeChildren res.objTree) } }
         in
 
+        -- We first insert the direct children, then we call process. So direct children will be
+        -- inserted twice, which is totally fine and doesn't change correctness.
         let nameDirectChildrenAndProcess : NameContext -> Int -> [ObjectTree] -> Bool -> WorkRes =
             lam ctx. lam nextId. lam children. lam isNested.
-            let foldRes = foldl (
+            match foldl (
                 lam acc. lam child.
-                let indirectChildren = reverse (objTreeChildren child) in
-                let directChild = objTreeRemoveChildren child in
-                {
-                    directChildren = cons directChild acc.directChildren,
-                    indirectChildren = concat indirectChildren acc.indirectChildren
-                }
-            ) { directChildren = [], indirectChildren = [] } children
-            in
-            match foldRes with { directChildren = directChildren, indirectChildren = indirectChildren } in
-            match process ctx nextId directChildren isNested with { nextId = nextId, ctx = ctx } in
-            process ctx nextId indirectChildren true
+                let child = objTreeRemoveChildren child in
+                match work child acc.ctx acc.nextId isNested with
+                { ctx = ctx, nextId = nextId } in -- We throw away the resulting direct child, but keep it in the nameMap
+                { ctx = ctx, nextId = nextId }
+            ) { ctx = ctx, nextId = nextId } children 
+            with { ctx = ctx, nextId = nextId } in
+            process ctx nextId children isNested
         in
 
         switch kind
@@ -77,7 +72,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                          let url = buildUrl langNamespace.objIsStdlib namespace in
                          let entry = { entry = url, id = acc.nextId, namespace = namespace, isNested = false } in
                          let nameMap = nameMapInsert acc.nameMap name entry in
-                         { nameMap = nameMap, nextId = addi nextId 1 }
+                         { nameMap = nameMap, nextId = addi acc.nextId 1 }
                      ) { nameMap = nameMap, nextId = nextId } names
                  in
                  let nameMap = ctx.nameMap in
@@ -132,6 +127,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
            
            nameDirectChildrenAndProcess ctx nextId children false
 
+        case ObjInclude {} then
+            let nextId = subi nextId 1 in -- The include will have the same ID as it's program.
+            process ctx nextId children false
         case _ then
             match
                 if objKindHasUrl kind then
@@ -144,7 +142,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                     { nameMap = nameMapInsert ctx.nameMap name entry, nextId = nextId }
                 else { nameMap = ctx.nameMap, nextId = nextId }
             with { nameMap = nameMap, nextId = nextId } in
-            
+                        
             let ctx = { ctx with nameMap = nameMap } in
             process ctx nextId children true
         end

@@ -23,14 +23,17 @@ lang ObjectsRenderer = ObjectKinds + Formats
 
     sem objGetMyLink : Object -> RenderingOptions -> String
     sem objGetMyLink =
-    | obj -> lam opt. match nameContextFetchObjUrl opt.nameContext obj with Some res then res
-                      else renderingWarn (join ["Failed to fetch the url of ", objName obj]); ""
+    | obj -> lam opt.
+      if not (objKindHasLink (objKind obj)) then ""
+      else match nameContextFetchObjUrl opt.nameContext obj with Some res then res
+      else renderingWarn (join ["Failed to fetch my url ", objName obj]); ""
 
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
-                      match nameContextFetchUrl opt.nameContext obj name with Some res then res
-                      else renderingWarn (join ["Failed to fetch the url of ", name]); ""
+      if not (objKindHasLink (objKind obj)) then ""
+      else match nameContextFetchUrl opt.nameContext obj name with Some res then res
+      else renderingWarn (join ["Failed to fetch the url of ", name]); ""
             
     -- Human-friendly display title; special-cases include/utest.
     sem objTitle : Object -> String

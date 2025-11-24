@@ -65,10 +65,19 @@ lang ObjectKinds = MExprAst
     | ObjProgram {} -> ""
     | _ -> warn "All object kinds are not supported in getFirstWord sementic"; ""
 
+    -- True if the object has a page.
     sem objKindHasUrl : ObjectKind -> Bool
     sem objKindHasUrl =
-    | ObjRecursiveBloc {} | ObjMexpr {} | ObjInclude {} | ObjUtest {} | ObjUse {} -> false
+    | ObjRecursiveBloc {} | ObjInclude {} | ObjUse {} -> false
     | _ -> true  
+
+    -- True if the object can be casted into a link.
+    sem objKindHasLink : ObjectKind -> Bool
+    sem objKindHasLink =
+    | ObjRecursiveBloc {} -> false
+    | _ -> true  
+
+
 end
 
 -- The object type is designed to represent the documentation-side structure of the code.

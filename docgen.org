@@ -49,6 +49,10 @@ current use set.
 * TODO When rendering the page of non existing types, we should think about which documentation we want to use for it.
 * TODO Clean the use in process of the namer
 * TODO Use lower than instead of lower or equal
+* TODO Fix trimming but for bool.mc/someb tests.
+* TODO Merge in mdx namespace domain desc and children
+* TODO Do not put any new line in the doc if a component is missing.
+* TODO Render object hook better than just bold
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

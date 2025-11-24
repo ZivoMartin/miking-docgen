@@ -16,7 +16,8 @@ let nameContextEmpty : () -> NameContext = lam. {
 
 let nameContextFetchUrl : NameContext -> Object -> String -> Option String =
     lam ctx. lam obj. lam name.
-    nameMapFetch ctx.nameMap name (objId obj) (objNamespace obj)
+    let namespace = objNamespace obj in
+    nameMapFetch ctx.nameMap name (objId obj) namespace
 
 let nameContextFetchObjUrl : NameContext -> Object -> Option String =
     lam ctx. lam obj.
