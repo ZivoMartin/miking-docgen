@@ -1,4 +1,5 @@
 include "../global/util.mc"
+include "../global/logger.mc"
 
 type LangId = Int
 

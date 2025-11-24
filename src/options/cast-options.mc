@@ -12,7 +12,6 @@ include "./docgen-options.mc"
 include "../server/server-options.mc"
 include "../rendering/rendering-options.mc"
 include "../naming/naming-options.mc"
-include "hashmap.mc"
 
 -- Convert a global `DocGenOptions` record and a link string representing the URL of the opening file.
 -- into a `ServerOptions` record used by the server.
@@ -27,7 +26,7 @@ let getServeOption : DocGenOptions -> String -> ServerOptions  = lam opt. lam li
 
 -- Convert a global `DocGenOptions` record into a `RenderingOptions` record
 -- used by the rendering step.
-let getRenderingOption : DocGenOptions -> Logger -> RenderingOptions = use FormatLanguages in lam opt. lam log.
+let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderingOptions = use FormatLanguages in lam opt. lam log. lam nameContext.
     {
         fmt = opt.fmt,
         noStdlib = opt.noStdlib,
@@ -36,7 +35,7 @@ let getRenderingOption : DocGenOptions -> Logger -> RenderingOptions = use Forma
         urlPrefix = opt.urlPrefix,
         fmtLang = opt.fmtLang,
         letDepth = opt.letDepth,
-        nameContext = hashmapEmpty (),
+        nameContext = nameContext,
         log = log,
         noCode = opt.noCode
     }

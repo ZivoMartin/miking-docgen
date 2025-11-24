@@ -29,6 +29,8 @@
 
 include "./../global/format-language.mc"
 include "./../global/format.mc"
+include "../naming/name-context.mc"
+
 include "./rendering-types.mc"
 
 -- ## RenderingOptions
@@ -43,7 +45,7 @@ type RenderingOptions = use Formats in use FormatLanguages in
         urlPrefix: String, 
         fmtLang: FormatLanguage, 
         letDepth: Option Int, 
-        nameContext: HashMap String String,
+        nameContext: NameContext,
         noCode: Bool,
         log: Logger
     }

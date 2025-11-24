@@ -64,7 +64,7 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
           }
     else
         let log = buildLogger ctx "Rendering" in 
-        let ropt = getRenderingOption ctx.opt log in
+        let ropt = getRenderingOption ctx.opt log (nameContextEmpty ()) in
         let ropt = { ropt with outputFolder = ctx.userOutputFolder } in
         let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
                           (hashmap2seq ctx.searchDatas) in
@@ -129,13 +129,19 @@ let name : Step =  lam ctx.
     match ctx.object with Some object then
     let log = buildLogger ctx "Naming" in
     let opt = getNamingOption ctx.opt in
-    { ctx with nameContext = Some (name log opt object) }
+    match name log opt object with {
+        annotatedObjTree = annotatedObjTree,
+        nameContext = nameContext
+    } in
+    { ctx with nameContext = Some nameContext, object = Some annotatedObjTree }
     else crash "object" "name" "extract"
 
 let render : Step =  lam ctx.
     match ctx.object with Some obj then
+    match ctx.nameContext with Some nameContext then
+    
     let log = buildLogger ctx "Rendering" in 
-    let ropt = getRenderingOption ctx.opt log in
+    let ropt = getRenderingOption ctx.opt log nameContext in
     let renderingRes = render ropt obj in
 
     let searchDatas = foldl (lam acc. lam arg.
@@ -164,13 +170,14 @@ let render : Step =  lam ctx.
     else ());
 
     { ctx with searchDatas = searchDatas }
-    else crash "object" "render" "label (or extract)"
+    else crash "object" "render" "naming"
+    else crash "name context" "render" "naming"
 
 let serve : Step = use ObjectsRenderer in lam ctx.
     match ctx.object with Some obj then
     let log = buildLogger ctx "Serving" in
-    let opt = getRenderingOption ctx.opt log in
-    let link = objLink (objTreeObj obj) opt in
+    let opt = getRenderingOption ctx.opt log (nameContextEmpty ()) in
+    let link = objGetMyLink (objTreeObj obj) opt in
     let opt = getServeOption ctx.opt link in    
     startServer opt; ctx
     else crash "object" "serve" "render"

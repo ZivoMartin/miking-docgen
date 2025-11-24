@@ -117,12 +117,6 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 -- Recursive calls: render all children and transmit the name-context through the fold.
                 match foldl (lam arg. lam child.
                       let obj = objTreeObj child in
-                      let nameContext =
-                          match objNameIfHas obj with Some name then
-                           hmInsert name (objGetPureLink obj arg.opt) arg.opt.nameContext
-                          else arg.opt.nameContext
-                      in
-                      let opt = { arg.opt with nameContext = nameContext } in
                       match render opt child with (child, opt) in
                       { opt = opt, children = cons child arg.children }
                       ) { children = [], opt = oldOpt } children with { children = children, opt = opt }

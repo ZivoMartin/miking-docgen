@@ -163,7 +163,7 @@ lang MdxRenderer = RendererInterface
     -- Render a full documentation block (title, signature, desc, code, optional tests).
     sem renderDocBloc (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
-        let link = objLink data.obj opt in
+        let link = objGetMyLink data.obj opt in
         let link = concat opt.urlPrefix link in
         let linkLength = length link in
         let link = subsequence link 0 (subi linkLength 3) in -- remove extension for Docusaurus

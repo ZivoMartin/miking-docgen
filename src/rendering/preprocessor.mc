@@ -22,14 +22,8 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
     -- Recursively visit the ObjectTree and collect paths
     recursive let preprocessRec : PathMap -> ObjectTree -> PathMap = use ObjectKinds in
         lam pathMap. lam obj.
-        let inner = objTreeObj obj in
-        let nameContext =
-            match objNameIfHas inner with Some name then
-             hmInsert name (objGetPureLink inner opt) opt.nameContext
-            else opt.nameContext
-        in
-        
-        let opt = { opt with nameContext = nameContext } in
+        let inner = objTreeObj obj in        
+
         switch obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [ p ] } then
             if and (objIsStdlib obj) opt.noStdlib then pathMap else
@@ -37,7 +31,7 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
         case ObjectNode { obj = { kind = ObjRecursiveBloc {} }, children = children } then
             foldl preprocessRec pathMap children
         case ObjectNode { obj = obj, children = children } then
-            let path = dirname (join [opt.outputFolder, objLink obj opt]) in
+            let path = dirname (join [opt.outputFolder, objGetMyLink obj opt]) in
             let map = hmInsert path () pathMap in
             if objRenderIt obj then
                 foldl preprocessRec map children

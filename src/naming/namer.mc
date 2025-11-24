@@ -3,7 +3,12 @@ include "./name-map.mc"
 include "./name-context.mc"
 include "../extracting/objects.mc"
 
-let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
+type NamingRes = {
+     annotatedObjTree: ObjectTree,
+     nameContext: NameContext
+}
+
+let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
     lam log. lam opt. lam objTree.
 
     let buildUrl : Bool -> String -> String = lam isStdlib. lam namespace. use Formats in
@@ -14,21 +19,33 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
     in
 
 
-    type WorkRes = { ctx: NameContext, nextId: Int } in
+    type WorkRes = { ctx: NameContext, nextId: Int, objTree: ObjectTree } in
     recursive let work : ObjectTree -> NameContext -> Int -> Bool -> WorkRes = use ObjectKinds in
         lam objTree. lam ctx. lam nextId. lam isNested.
-        let default = { ctx = ctx, nextId = nextId} in
 
         let obj = objTreeObj objTree in
         let children = objTreeChildren objTree in
         let kind = objKind obj in
 
+        match if objKindHasUrl kind then 
+           let obj = objWithId obj nextId in
+           { objTree = ObjectNode { children = children, obj = obj }, obj = obj, nextId = addi 1 nextId }
+        else
+           { objTree = objTree, obj = obj, nextId = nextId }
+        with { objTree = objTree, obj = obj, nextId = nextId } in
+
+        let default = { ctx = ctx, nextId = nextId, objTree = objTree} in
+
         let process : NameContext -> Int -> [ObjectTree] -> Bool -> WorkRes =
             lam ctx. lam nextId. lam children. lam isNested.
-            foldl (
+            let res = foldl (
                 lam acc. lam child.
-                work child acc.ctx acc.nextId isNested
-            ) { nextId = nextId, ctx = ctx } children
+                let children = objTreeChildren acc.objTree in
+                let res = work child acc.ctx acc.nextId isNested in
+                { res with objTree = ObjectNode { obj = obj, children = cons res.objTree children }}
+            ) { nextId = nextId, ctx = ctx, objTree = ObjectNode { children = [], obj = obj } } children
+            in
+            { res with objTree = ObjectNode { obj = obj, children = reverse (objTreeChildren res.objTree) } }
         in
 
         let nameDirectChildrenAndProcess : NameContext -> Int -> [ObjectTree] -> Bool -> WorkRes =
@@ -52,14 +69,13 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
         case ObjUse {} then
              let used = objName obj in
              match langNamespaceGetByName ctx.langNamespaceSet used with Some langNamespace then
-                 let useThis : NameMap -> Int -> String -> [String] -> { nameMap: NameMap, nextId: Int} =
+                 let useThis : NameMap -> Int -> String -> [String] -> { nameMap: NameMap, nextId: Int } =
                      lam nameMap. lam nextId. lam kind. lam names.
                      foldl (
                          lam acc. lam name.
                          let namespace = join [langNamespace.objNamespace, "/", kind, "-", name] in
                          let url = buildUrl langNamespace.objIsStdlib namespace in
                          let entry = { entry = url, id = acc.nextId, namespace = namespace, isNested = false } in
-                         printLn url;
                          let nameMap = nameMapInsert acc.nameMap name entry in
                          { nameMap = nameMap, nextId = addi nextId 1 }
                      ) { nameMap = nameMap, nextId = nextId } names
@@ -69,7 +85,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
                  match useThis nameMap nextId "sem" langNamespace.sems with { nameMap = nameMap, nextId = nextId } in
                  match useThis nameMap nextId "con" langNamespace.cons with { nameMap = nameMap, nextId = nextId } in
                  match useThis nameMap nextId "type" langNamespace.types with { nameMap = nameMap, nextId = nextId } in
-                 { ctx = { ctx with nameMap = nameMap }, nextId = nextId }
+                 { ctx = { ctx with nameMap = nameMap }, nextId = nextId, objTree = objTree }
              else
                  namingWarn (join ["Failed to fetch the ", used, "lang."]);
                  default
@@ -109,11 +125,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
            let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet name langNamespace in
            
            let url = buildUrl isStdlib namespace in
-           let entry = { entry = url, id = nextId, namespace = namespace, isNested = false } in -- lang is never nested
-           printLn url;
+           let entry = { entry = url, id = objId obj, namespace = namespace, isNested = false } in -- lang is never nested
            let nameMap = nameMapInsert ctx.nameMap name entry in
            
-           let nextId = addi 1 nextId in
            let ctx = { ctx with nameMap = nameMap, langNamespaceSet = langNamespaceSet } in
            
            nameDirectChildrenAndProcess ctx nextId children false
@@ -124,10 +138,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
                     let name = objName obj in
                     let namespace = objNamespace obj in
                     let url = buildUrl (objIsStdlib obj) namespace in
-                    let entry = { entry = url, id = nextId, namespace = namespace, isNested = isNested } in
+                    let entry = { entry = url, id = objId obj, namespace = namespace, isNested = isNested } in
 
                     let nextId = addi nextId 1 in
-                    printLn url;                    
                     { nameMap = nameMapInsert ctx.nameMap name entry, nextId = nextId }
                 else { nameMap = ctx.nameMap, nextId = nextId }
             with { nameMap = nameMap, nextId = nextId } in
@@ -137,4 +150,5 @@ let name : Logger -> NamingOptions -> ObjectTree -> NameContext =
         end
     in 
 
-    (work objTree (nameContextEmpty ()) 1 false).ctx
+    match work objTree (nameContextEmpty ()) 1 false with { ctx = nameContext, objTree = annotatedObjTree } in
+    { annotatedObjTree = annotatedObjTree, nameContext = nameContext }

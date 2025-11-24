@@ -1,21 +1,19 @@
-* DONE Recovering
-CLOSED: [2025-11-21 Fri 19:27]
-** DONE Recover name-context
+* DONE Recover name-context
 CLOSED: [2025-11-19 Wed 15:42]
-** DONE Recover doc-renderer
+* DONE Recover doc-renderer
 CLOSED: [2025-11-19 Wed 15:43]
-** DONE Rewrite folder processing
+* DONE Rewrite folder processing
 CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non mc files at the root, keep track of each search datas.
-** DONE Refactorise mdx renderer
+* DONE Refactorise mdx renderer
 CLOSED: [2025-11-14 Fri 01:58]
-** DONE Rewrite doc-renderer output processing
+* DONE Rewrite doc-renderer output processing
 CLOSED: [2025-11-21 Fri 12:22]
-** DONE No code flag
+* DONE No code flag
 CLOSED: [2025-11-15 Sat 02:21]
-** DONE Add show/hide in html renderer
+* DONE Add show/hide in html renderer
 CLOSED: [2025-11-21 Fri 19:13]
-** DONE Fix test buttons design to make it like implementation
+* DONE Fix test buttons design to make it like implementation
 CLOSED: [2025-11-21 Fri 19:13]
 * TODO Fix folder input, when nested include outer files
 * TODO Allow providing multiple file/folders
@@ -29,31 +27,28 @@ CLOSED: [2025-11-21 Fri 19:13]
 * TODO On the documentation of a type, put all the constructors.
 * TODO On the documentation of a syntax extend the variant with what is actually used
 * TODO Support markdown formatting
-
-* TODO Name context
-** TODO Build a lang namespace map
+* TODO Add child to languages from the langNamespace probably during rendering
+* DONE Build a lang namespace map
+CLOSED: [2025-11-23 Sun 19:14]
 We will have a map which binds lang id with there own NameSpace, when we meet any top level
 element (a sem, a type, a con or a syn) we add it in the namespace.
 We also parse the parent of the lang, and fetch there own namespace to process the merge.
 So then, we have the complete view of the parent, BUT some of the element in the namespace
 will not have any pages, we should keep track of this, in this case, we should generate a new
 page for the type/sem in the lang page, allowing a better and complete documentation.
-** TODO Keep track of all the currently used Lang namespace
+* DONE Keep track of all the currently used Lang namespace
+CLOSED: [2025-11-23 Sun 19:14]
 We can push/pop a new use, when we push a use we try to fetch the lang (with the regular system),
 it will return something (since the code compiles), and we will add the ID of this lang into the
 current use set.
-** TODO Atach with the ID the current set of use
-When we fetch the name of something from a given position,
-we get back first the use set associated with this id.
-Before starting to fetch in the global namespace, we first check
-in each used languages from the last to the first.
-** TODO Mouse over on hooks
-** TODO Cick on hooks
-** TODO Integrate name-context api
-** TODO Being able to click on any subtypes
-** TODO Types annotation in the documentations
-** TODO When rendering the page of non existing types, we should think about which documentation we want to use for it.
-Probably the higher level (the one usually in the interface)
+* TODO Mouse over on hooks
+* TODO Cick on hooks
+* TODO Integrate name-context api
+* TODO Being able to click on any subtypes
+* TODO Types annotation in the documentations
+* TODO When rendering the page of non existing types, we should think about which documentation we want to use for it.
+* TODO Clean the use in process of the namer
+* TODO Use lower than instead of lower or equal
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

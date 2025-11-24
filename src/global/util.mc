@@ -208,7 +208,7 @@ let strTruncate : String -> String -> String = lam prefix. lam s.
 
 let strSplitOnce : all a. String -> Char -> Option { left: String, right: String } = lam s. lam mid.
     optionMap (lam i.
-       { left = subsequence s 0 i, right = subsequence (addi 1 i) (length s) }
+       { left = subsequence s 0 i, right = subsequence s (addi 1 i) (length s) }
        ) (findi (eqChar mid) s)
 
 let strCount : String -> Char -> Int = lam s. lam c. length (filter (eqChar c) s)

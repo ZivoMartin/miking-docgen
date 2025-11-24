@@ -40,13 +40,13 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
         let details = switch data
-        case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } } then
-            let parents = strJoin " + " (map (lam p. renderLink p (objLangLink p opt) opt) parents) in
+        case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj } then
+            let parents = strJoin " + " (map (lam p. renderLink p (objGetLink obj opt p) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
         case { obj = { kind = ( ObjSyn {} | ObjSem {} )} & obj } then
             let langName = objGetLangName obj in
-            let langLink = renderLink langName (objLangLink langName opt) opt in
+            let langLink = renderLink langName (objGetLink obj opt langName) opt in
             let sectionTitle = renderBold "From:" opt in
             strJoin nl [sectionTitle, langLink, ""]
         case { obj = obj } then
@@ -72,7 +72,7 @@ lang RawRenderer = RendererInterface
         match data with { obj = obj } in
         let link =
             if objRenderIt obj then
-                let link = objLink obj opt in
+                let link = objGetMyLink obj opt in
                 let link = concat (if strStartsWith "/" link then "" else "/") link in
                 renderGotoLink link opt
             else ""
@@ -127,7 +127,7 @@ lang RawRenderer = RendererInterface
     -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
     | opt -> let opt = fixOptFormat opt in
-        let doc = map (lam u. renderLink (objTitle u) (objLink u opt) opt) objects in
+        let doc = map (lam u. renderLink (objTitle u) (objGetMyLink u opt) opt) objects in
         let doc = strJoin ", " doc in
         match doc with "" then "" else
             concat (renderText doc opt) (renderNewLine opt)

@@ -1,3 +1,4 @@
+include "../global/logger.mc"
 include "../global/util.mc"
 
 type NameMapEntry a = { entry: a, id: Int, namespace: String, isNested: Bool }
@@ -14,14 +15,15 @@ let nameMapInsert : all a. NameMap a -> String -> NameMapEntry a -> NameMap a = 
 
 let nameMapFetch : all a. NameMap a -> String -> Int -> String -> Option a =
     lam nameMap. lam name. lam callerId. lam callerNamespace.
-    match strSplitOnce '/' callerNamespace with Some { right = noFile } then
-        optionMap (
+    match strSplitOnce callerNamespace '/' with Some { right = noFile } then
+        let res = optionMap (
             lam entries.
                 let predicate = if null noFile then
-                    lam entry. and (lti entry.id callerId) (not entry.isNested)
+                    lam entry. and (leqi entry.id callerId) (not entry.isNested)
                 else
-                    lam entry. and (lti entry.id callerId) (strStartsWith entry.namespace callerNamespace)
+                    lam entry. and (leqi entry.id callerId) (strStartsWith entry.namespace callerNamespace)
                 in
-                optionMap (lam entry. Some entry.entry) (find predicate entries)
-        ) hmLookup name nameMap 
+                optionMap (lam entry. entry.entry) (find predicate entries)
+        ) (hmLookup name nameMap) in
+        optionJoin res
     else namingWarn "name has no file part."; None {}
