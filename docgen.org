@@ -62,6 +62,9 @@ CLOSED: [2025-11-26 Wed 11:47]
 * TODO Add a button to access the parent on each page
 * TODO If there is only one element in a recursive bloc, the doc of the recursive bloc should be the doc of the element
 * TODO If a link is incorrect in one of the comments, display a proper warning or error message.
+* TODO Parse int.mc, bool.mc before starting anything so we can redirect correctly Int, Bool...
+
+
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

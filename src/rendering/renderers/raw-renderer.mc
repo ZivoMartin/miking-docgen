@@ -95,8 +95,9 @@ lang RawRenderer = RendererInterface
             let t = match ty with Some t then type2str t else "?" in
             join ["let ", name, " : ", t]
         case ObjType { t = t } then
-            join ["type ", name, match t with Some t then concat " : " t else ""]
+            join ["type ", name, match t with Some t then concat " : " (renderFormattedType obj t opt) else ""]
         case ObjCon { t = t } then
+            let t = renderFormattedType obj t opt in        
             join ["con ", name, " : ", t]
         case (ObjMexpr {} | ObjUtest {}) & kind then
             getFirstWord kind
@@ -126,7 +127,27 @@ lang RawRenderer = RendererInterface
     sem renderFormattedType (obj: Object) (t: String) =
     | opt -> let opt = fixOptFormat opt in
         let t = strReplace "[Char]" "String" t in
-        error "todo"
+        
+        recursive let format = 
+        lam seps. lam s.
+        switch seps
+        case [] then
+            match s with "Int" | "Bool" | "Char" | "Float" | "String" then
+                -- TODO: Redirect toward the generic stdlib file
+                s
+            else match s with [first] ++ _ then
+                if isUpperAlpha first then
+                    let link = objGetLink obj opt s in
+                    renderLink s link opt
+                else s
+            else s
+        case [sep] ++ seps then
+            let split = strSplit sep s in
+            let formatted = map (format seps) split in
+            strJoin sep formatted
+        end in
+        
+        format [" ", ",", "[", "]", "(", ")", "->", "{", "}", ":"] t
 
     -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
