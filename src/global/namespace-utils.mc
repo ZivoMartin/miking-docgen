@@ -52,3 +52,26 @@ let namespaceGetDomain : Namespace -> Namespace =
     let rev = reverse split in
     let split = cons "" (tail rev) in
     namespaceRebuild (reverse split)
+
+utest namespaceGetDomain "" with ""
+utest namespaceGetDomain "/a" with "/"
+utest namespaceGetDomain "/a/b" with "/a/"
+utest namespaceGetDomain "/a/b/c" with "/a/b/"
+
+utest namespaceGetDomain "/file.mc" with "/"
+utest namespaceGetDomain "/a/b/c.mc" with "/a/b/"
+utest namespaceGetDomain "/a/b/c.mc/d" with "/a/b/c.mc/"
+
+utest namespaceGetDomain "/home/user/.local/lib/mcore/stdlib/bool.mc"
+  with "/home/user/.local/lib/mcore/stdlib/"
+
+utest namespaceGetDomain "/leading/slash/test"
+  with "/leading/slash/"
+
+let namespaceIsNested : Namespace -> Bool =
+    lam namespace.
+    match namespaceSeparate namespace with Some { nesting = nesting } then
+        let split = namespaceSplit nesting in
+        match split with [_] | ["lang-" ++ _, _] then false else true
+    else false
+            

@@ -22,11 +22,11 @@ CLOSED: [2025-11-21 Fri 19:13]
 * TODO noStdlib flag
 * TODO Allow the user to declare where to put the stdlib files
 * TODO In case of actual error, report a precise messagee (at least the file in which error occured)
-* TODO Add tests in top page
-* TODO Add fields docs in syntaxes
+* TODO Add its tests in the top page of an object
+* TODO Add the documentation of each type of a record / syntax
 * TODO On the documentation of a type, put all the constructors.
 * TODO On the documentation of a syntax extend the variant with what is actually used
-* TODO Support markdown formatting
+* TODO Support markdown formatting with a flag
 * TODO Add child to languages from the langNamespace probably during rendering
 * DONE Build a lang namespace map
 CLOSED: [2025-11-23 Sun 19:14]
@@ -42,17 +42,26 @@ We can push/pop a new use, when we push a use we try to fetch the lang (with the
 it will return something (since the code compiles), and we will add the ID of this lang into the
 current use set.
 * TODO Mouse over on hooks
-* TODO Cick on hooks
-* TODO Integrate name-context api
+* DONE Cick on hooks
+CLOSED: [2025-11-24 Mon 20:58]
+* DONE Integrate name-context api
+CLOSED: [2025-11-25 Tue 23:55]
 * TODO Being able to click on any subtypes
 * TODO Types annotation in the documentations
 * TODO When rendering the page of non existing types, we should think about which documentation we want to use for it.
-* TODO Clean the use in process of the namer
-* TODO Use lower than instead of lower or equal
-* TODO Fix trimming but for bool.mc/someb tests.
-* TODO Merge in mdx namespace domain desc and children
-* TODO Do not put any new line in the doc if a component is missing.
-* TODO Render object hook better than just bold
+* DONE Clean the use in process of the namer (for correctness)
+CLOSED: [2025-11-26 Wed 11:18]
+* DONE Use lower than instead of lower or equal in the name map (for correctness)
+CLOSED: [2025-11-26 Wed 11:35]
+* TODO Fix trimming for bool.mc/someb tests (there is a comment at the end which is not trimmed).
+* TODO Merge in mdx namespace domain 
+* DONE Do not put any new line in the doc if a component is missing.
+CLOSED: [2025-11-26 Wed 11:47]
+* TODO Render object hook better than just regular link
+* TODO Add keyboard shortcut on the html renderer
+* TODO Add a button to access the parent on each page
+* TODO If there is only one element in a recursive bloc, the doc of the recursive bloc should be the doc of the element
+* TODO If a link is incorrect in one of the comments, display a proper warning or error message.
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

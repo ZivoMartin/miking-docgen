@@ -27,7 +27,7 @@ lang RawRenderer = RendererInterface
 
         let doc = objDoc data.obj in
         let doc = renderDocObjectParse doc opt in
-        let doc = renderFormattedDoc doc opt in
+        let doc = renderFormattedDoc data.obj doc opt in
         let doc = renderDocDescription doc opt in
 
         let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
@@ -87,13 +87,12 @@ lang RawRenderer = RendererInterface
     -- Renders the object signature as source code.
     sem renderDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
-        let type2str = lam t. strReplace "[Char]" "String" (type2str t) in
+        let type2str = lam t. renderFormattedType obj (type2str t) opt in
         let name = objName obj in
         let kind = objKind obj in
         let code = switch obj.kind
-        case ObjLet { args = args, ty = ty } then
+        case ObjLet { ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
-            let args = strJoin " " args in
             join ["let ", name, " : ", t]
         case ObjType { t = t } then
             join ["type ", name, match t with Some t then concat " : " t else ""]
@@ -123,7 +122,12 @@ lang RawRenderer = RendererInterface
     sem renderGotoLink (link: String) =
     | opt -> let opt = fixOptFormat opt in
         renderLink "[→]" link opt
-        
+
+    sem renderFormattedType (obj: Object) (t: String) =
+    | opt -> let opt = fixOptFormat opt in
+        let t = strReplace "[Char]" "String" t in
+        error "todo"
+
     -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
     | opt -> let opt = fixOptFormat opt in

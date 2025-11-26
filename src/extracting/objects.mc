@@ -164,6 +164,8 @@ let objHasId : Object -> Bool = lam obj. neqi obj.id 0
 let objAbsolutePath : Object -> String = lam obj.
     concat obj.prefix obj.namespace
 
+let objDefaultDoc : String = "No documentation available here."
+
 -- Empty default object (neutral values).
 let defaultObject : Object = use ObjectKinds in {
     name = "",
@@ -176,6 +178,10 @@ let defaultObject : Object = use ObjectKinds in {
     prefix = "",
     id = 0
 }
+
+let objTryGetDoc : Object -> String = lam obj.
+    let doc = objDoc obj in
+    if eqString doc objDefaultDoc then "" else doc
 
 -- Extracts the language name from a Sem/Syn object; else empty string.
 let objGetLangName : Object -> String = use ObjectKinds in lam obj.

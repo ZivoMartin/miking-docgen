@@ -21,19 +21,29 @@ lang ObjectsRenderer = ObjectKinds + Formats
     | { kind = ObjLang {} | ObjProgram {} } -> true
     | _ -> false
 
+    sem objUrlFetchFailed =
+    | obj -> lam name. lam my.
+      renderingWarn (join [
+          "Failed to fetch ", if my then "my" else "the", " url with the name ", name, ".\n",
+          "Here are the details of the fetcher object:\n",
+          "namespace=", objNamespace obj, "\n",
+          "name=", objName obj, "\n",
+          "id=", int2string (objId obj), "\n"
+      ])
+
     sem objGetMyLink : Object -> RenderingOptions -> String
     sem objGetMyLink =
     | obj -> lam opt.
       if not (objKindHasLink (objKind obj)) then ""
       else match nameContextFetchObjUrl opt.nameContext obj with Some res then res
-      else renderingWarn (join ["Failed to fetch my url ", objName obj]); ""
+      else objUrlFetchFailed obj (objName obj) true; ""
 
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
       if not (objKindHasLink (objKind obj)) then ""
       else match nameContextFetchUrl opt.nameContext obj name with Some res then res
-      else renderingWarn (join ["Failed to fetch the url of ", name]); ""
+      else objUrlFetchFailed obj name false; ""
             
     -- Human-friendly display title; special-cases include/utest.
     sem objTitle : Object -> String

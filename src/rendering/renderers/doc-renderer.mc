@@ -17,8 +17,8 @@ lang DocContentInterface = RendererInterface
     sem docContentIsHook =
     | _ -> false
 
-    sem renderDocContent : DocContent -> RenderingOptions -> String
-    sem renderDocContent =
+    sem renderDocContent : Object -> DocContent -> RenderingOptions -> String
+    sem renderDocContent (obj: Object) =
     | _ -> lam opt. renderingWarn "docContentStr is not fully implemented."; ""
 
 end
@@ -28,7 +28,7 @@ lang DocContentRawTextLang = DocContentInterface
     syn DocContent =
     | DocContentRawText String
 
-    sem renderDocContent =
+    sem renderDocContent (obj: Object) =
     | DocContentRawText s -> lam opt. renderRemoveDocForbidenChars s opt
 
     sem docContentNext =
@@ -50,7 +50,7 @@ lang DocContentArgHookLang = DocContentInterface
     syn DocContent =
     | DocContentArgHook String
 
-    sem renderDocContent =
+    sem renderDocContent (obj: Object) =
     | DocContentArgHook s -> lam opt. renderItalic (renderRemoveDocForbidenChars s opt) opt
 
     sem docContentIsHook =
@@ -69,10 +69,12 @@ lang DocContentObjHookLang = DocContentInterface
     syn DocContent =
     | DocContentObjHook String
 
-    sem renderDocContent =
+    sem renderDocContent (obj: Object) =
     | DocContentObjHook s -> lam opt.
-      let txt = txt in
-      renderBold txt opt
+      let doc = renderRemoveDocForbidenChars s opt in
+      let link = objGetLink obj opt s in
+      let link = renderLink doc link opt in
+      renderBold link opt
 
     sem docContentIsHook =
     | ['#'] ++ _ -> true
@@ -88,10 +90,10 @@ lang DocContentLang = DocContentArgHookLang + DocContentObjHookLang + DocContent
 
     type DocContentText = [DocContent]
 
-    sem renderDocContentText : DocContentText -> RenderingOptions -> String
-    sem renderDocContentText =
+    sem renderDocContentText : Object -> DocContentText -> RenderingOptions -> String
+    sem renderDocContentText (obj: Object) =
     | txt -> lam opt.
-          foldl (lam acc. lam content. concat (renderDocContent content opt) acc) "" (reverse txt)
+          foldl (lam acc. lam content. concat (renderDocContent obj content opt) acc) "" (reverse txt)
 
     sem docContentParse : String -> DocContentText
     sem docContentParse =
@@ -118,8 +120,8 @@ lang DocObjectInterface = DocContentLang
     sem docObjectNext =
     | _ -> { stream = [], obj = None {} }
 
-    sem renderDocObject : DocObject -> RenderingOptions -> String
-    sem renderDocObject =
+    sem renderDocObject : Object -> DocObject -> RenderingOptions -> String
+    sem renderDocObject (obj: Object) =
     | _ -> lam str. renderingWarn "One of the doc object does not implement docObjToStr."; ""
 
     sem docObjectFetchDocLines : [String] -> { doc: [String], rest: [String] }
@@ -146,10 +148,10 @@ lang DocObjectArgLang = DocObjectInterface
     syn DocObject =
     | DocObjectArg { arg: String, doc: DocContentText }
  
-    sem renderDocObject =
+    sem renderDocObject (obj: Object) =
     | DocObjectArg { arg = arg, doc = doc } -> lam opt.
       let arg = renderRemoveDocForbidenChars arg opt in
-      join [arg, ":", renderDocContentText doc opt]
+      join [arg, ":", renderDocContentText obj doc opt]
 
     sem docObjectIsDirective =
     | ".lam[" ++ _ -> true
@@ -171,8 +173,8 @@ lang DocObjectReturnLang = DocObjectInterface
     syn DocObject =
     | DocObjectReturn { doc: DocContentText }
 
-    sem renderDocObject =
-    | DocObjectReturn { doc = doc } -> lam opt. renderDocContentText doc opt
+    sem renderDocObject (obj: Object) =
+    | DocObjectReturn { doc = doc } -> lam opt. renderDocContentText obj doc opt
  
     sem docObjectIsDirective =
     | ".return " ++ _ -> true
@@ -190,8 +192,8 @@ lang DocObjectBriefLang = DocObjectInterface
     syn DocObject =
     | DocObjectBrief { doc: DocContentText }
 
-    sem renderDocObject =
-    | DocObjectBrief { doc = doc } -> lam opt. renderDocContentText doc opt
+    sem renderDocObject (obj: Object) =
+    | DocObjectBrief { doc = doc } -> lam opt. renderDocContentText obj doc opt
 
     sem docObjectIsDirective =
     | ".brief " ++ _ -> true
@@ -256,26 +258,32 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
         DocObjectRaw s
 
 
-    sem renderFormattedDoc (obj: DocObjectParsed) =
+    sem renderFormattedDoc (obj: Object) (objParsed: DocObjectParsed) =
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
-        switch obj
+        switch objParsed
         case DocObjectRaw s then renderRemoveDocForbidenChars s opt
         case DocObjectFormatted {
                brief = brief,
                args = args,
                return = return
              } then
-             let brief = optionMapOr "" (lam brief. renderDocObject brief opt) brief in
-             let briefTitle = if null brief then "" else renderBold "Description:" opt in
+             let brief = optionMapOr "" (lam brief. renderDocObject obj brief opt) brief in
+             let briefTitle = renderBold "Description:\n" opt in
+             let briefSection = if null brief then "" else
+                                join [briefTitle, brief] in
 
-             let args = strJoin "\n" (map (lam arg. renderDocObject arg opt) args) in
-             let argsTitle = if null args then "" else renderBold "Arguments:" opt in             
+             let args = strJoin "\n" (map (lam arg. renderDocObject obj arg opt) args) in
+             let argsTitle = renderBold "Arguments:\n" opt in             
+             let argSection = if null args then "" else
+                              join [if null briefSection then "" else nl, argsTitle, args] in
+
+             let return = optionMapOr "" (lam return. renderDocObject obj return opt) return in
+             let returnTitle = renderBold "Returns:\n" opt in
+             let returnSection = if null return then "" else
+                                 join [if and (null argSection) (null briefSection) then "" else nl, returnTitle, return] in
              
-             let return = optionMapOr "" (lam return. renderDocObject return opt) return in
-             let returnTitle = if null return then "" else renderBold "Returns:" opt in
-             
-             join [briefTitle, "\n", brief, nl, argsTitle, "\n", args, nl, returnTitle, "\n", return]
+             join [briefSection, argSection, returnSection]
         end 
 
 end

@@ -92,7 +92,7 @@ let extract : Logger -> DocTree -> Option Int -> ObjectTree =
             -- Builds doc string from comments
             let buildDoc : [String] -> String = lam commentBuffer.
                 let res = strJoin "  \n" (map (lam s. if strStartsWith " " s then s else cons ' ' s) commentBuffer) in
-                match res with "" then "No documentation available here." else res in
+                match res with "" then objDefaultDoc else res in
 
             let finish : Object -> SourceCodeBuilder -> { builder: SourceCodeBuilder, obj: Object } = lam obj. lam sourceCodeBuilder.
                 let sourceCode = finish sourceCodeBuilder in

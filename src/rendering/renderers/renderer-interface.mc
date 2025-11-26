@@ -77,7 +77,10 @@ lang RendererInterface =
     sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
 
     -- Render the output of renderDocObjectParse into a string well formatted.
-    sem renderFormattedDoc : DocObjectParsed -> RenderingOptions -> String
+    sem renderFormattedDoc : Object -> DocObjectParsed -> RenderingOptions -> String
+
+    -- Render a string representing a type.
+    sem renderFormattedType : Object -> String -> RenderingOptions -> String
 
     -- ## Navigation / Linking
 

@@ -34,7 +34,9 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         match arg with { doc = doc, prev = prev, children = children } in
         let namespace = objNamespace child.obj in
         if eqString namespace prev then
-           let doc = concat doc (objDoc child.obj) in
+           let doc = if eqString objDefaultDoc doc then "" else doc in
+           let newDoc = objTryGetDoc child.obj in
+           let doc = concat doc newDoc in
            let child = { child with obj = objWithDoc child.obj doc } in
            { arg with doc = doc, children = cons child children }
         else
