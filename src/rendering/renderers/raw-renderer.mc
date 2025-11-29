@@ -87,7 +87,7 @@ lang RawRenderer = RendererInterface
     -- Renders the object signature as source code.
     sem renderDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
-        let type2str = lam t. renderFormattedType obj (type2str t) opt in
+        let type2str = lam t. renderRemoveCodeForbidenChars (type2str t) opt in
         let name = objName obj in
         let kind = objKind obj in
         let code = switch obj.kind
@@ -95,9 +95,8 @@ lang RawRenderer = RendererInterface
             let t = match ty with Some t then type2str t else "?" in
             join ["let ", name, " : ", t]
         case ObjType { t = t } then
-            join ["type ", name, match t with Some t then concat " : " (renderFormattedType obj t opt) else ""]
+            join ["type ", name, match t with Some t then concat " : " t else ""]
         case ObjCon { t = t } then
-            let t = renderFormattedType obj t opt in        
             join ["con ", name, " : ", t]
         case (ObjMexpr {} | ObjUtest {}) & kind then
             getFirstWord kind
@@ -110,7 +109,7 @@ lang RawRenderer = RendererInterface
         case kind then
             join [getFirstWord kind, " ", name]
         end in
-        renderSourceCodeStr code opt
+        renderSourceCodeStr code (Some obj) opt
 
     -- Renders the unit tests section (hidden if empty).
     sem renderDocTests (data: RenderingData) =
@@ -124,30 +123,6 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         renderLink "[→]" link opt
 
-    sem renderFormattedType (obj: Object) (t: String) =
-    | opt -> let opt = fixOptFormat opt in
-        let t = strReplace "[Char]" "String" t in
-        
-        recursive let format = 
-        lam seps. lam s.
-        switch seps
-        case [] then
-            match s with "Int" | "Bool" | "Char" | "Float" | "String" then
-                -- TODO: Redirect toward the generic stdlib file
-                s
-            else match s with [first] ++ _ then
-                if isUpperAlpha first then
-                    let link = objGetLink obj opt s in
-                    renderLink s link opt
-                else s
-            else s
-        case [sep] ++ seps then
-            let split = strSplit sep s in
-            let formatted = map (format seps) split in
-            strJoin sep formatted
-        end in
-        
-        format [" ", ",", "[", "]", "(", ")", "->", "{", "}", ":"] t
 
     -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
@@ -179,26 +154,29 @@ lang RawRenderer = RendererInterface
     | _ -> ""
 
     -- String → tokenized/colored source code (delegates to renderSourceCode).
-    sem renderSourceCodeStr (code: String) =
+    sem renderSourceCodeStr (code: String) (obj: Option Object) =
     | opt -> let opt = fixOptFormat opt in
-         renderSourceCode (strToSourceCode code) opt
+         renderSourceCode (strToSourceCode code) obj opt
 
     -- SourceCode → rendered string (maps each word with renderWord).
-    sem renderSourceCode (code: SourceCode) =
+    sem renderSourceCode (code: SourceCode) (obj: Option Object) =
     | opt -> let opt = fixOptFormat opt in
-        join (map (lam code. match code with Some code then renderWord code opt else "") code)
+        join (map (lam code. match code with Some code then renderWord code obj opt else "") code)
     
     -- Renders a single token/word according to its kind (with escaping).
-    sem renderWord (word: SourceCodeWord) = 
+    sem renderWord (word: SourceCodeWord) (obj: Option Object) =
     | opt -> let opt = fixOptFormat opt in
         let renderSkiped: [Token] -> String = lam skiped.
-            join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } ) opt) skiped) in
+            join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } ) obj opt) skiped)
+        in
 
         switch word
         case { word = TokenInclude { content = content, skiped = skiped } } then
             join [renderKeyword "include" opt, renderSkiped skiped, renderString (join ["\"", (renderRemoveCodeForbidenChars content opt), "\""]) opt]    
         case { word = word, kind = kind } then
-            let renderer = (switch word
+            let renderer = (
+            let lit = lit word in
+            switch word
             case TokenStr {} then renderString
             case TokenMultiLineComment {} then renderMultiLineComment
             case TokenComment {} then renderComment
@@ -206,12 +184,25 @@ lang RawRenderer = RendererInterface
                 switch kind
                 case CodeKeyword {} then renderKeyword
                 case CodeName {} then renderVar
-                case CodeType {} then renderType
+                case CodeType {} then (lam word.
+                                      let word =
+                                          match obj with Some obj then
+                                              match word with "Int" | "Bool" | "String" | "Char" then
+                                                  word -- TODO: Redirect to the actual page of the primitive type
+                                              else match objTryGetLink obj opt word with Some link then
+                                                  renderLink word link opt
+                                              else  -- We can safely assume we refer to ourself.
+                                                  let link = objGetMyLink obj opt in
+                                                  renderLink word link opt
+                                          else word
+                                      in
+                                      renderType word)
                 case CodeNumber {} then renderNumber
                 case CodeDefault {} then renderDefault
                 end       
             end) in
-            let word = renderRemoveCodeForbidenChars (lit word) opt in
+            let word = lit word in
+            let word = renderRemoveCodeForbidenChars word opt in
             renderer word opt
         end
 
@@ -220,8 +211,8 @@ lang RawRenderer = RendererInterface
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
-        let renderSourceCode = lam b. renderSourceCode (wordBufferToSourceCode b) opt in
-    
+        let renderSourceCode = lam b. renderSourceCode (wordBufferToSourceCode b) (None {}) opt in
+
         let getFormatedString : [TreeSourceCode] -> String = lam code.
             foldl (lam s. lam node.
                 concat (switch node 

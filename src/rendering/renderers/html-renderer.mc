@@ -144,7 +144,7 @@ lang HtmlRenderer = RendererInterface
     -- Toggleable hidden code block; uses a button and a collapsible div
     sem renderHidenCode (hidden: String) (shown: String) (code: String) (jumpLine: Bool) =
     | { fmt = Html {} } & opt ->
-        let jsDisplay = join ["<button class=\"toggle-btn\" data-hidden=\"", hidden, "\", data-shown=\"", shown, "\" onclick=\"toggle(this)\">",
+        let jsDisplay = join ["<button class=\"toggle-btn\" data-hidden=\"", hidden, "\" data-shown=\"", shown, "\" onclick=\"toggle(this)\">",
                       hidden, "</button><div class=\"hiden-code\" style=\"display: none;\">"] in
         join [jsDisplay, if jumpLine then "\n" else "", code, "</div>"]
     

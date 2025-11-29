@@ -79,9 +79,6 @@ lang RendererInterface =
     -- Render the output of renderDocObjectParse into a string well formatted.
     sem renderFormattedDoc : Object -> DocObjectParsed -> RenderingOptions -> String
 
-    -- Render a string representing a type.
-    sem renderFormattedType : Object -> String -> RenderingOptions -> String
-
     -- ## Navigation / Linking
 
     -- Renders a list of links for a list of objects.
@@ -112,13 +109,16 @@ lang RendererInterface =
     sem renderCodeWithoutPreview : RenderingData -> RenderingOptions -> String
 
     -- Renders a source code string with syntax highlighting.
-    sem renderSourceCodeStr : String -> RenderingOptions -> String
+    -- If an object is provided, the types will be clickable
+    sem renderSourceCodeStr : String -> Option Object -> RenderingOptions -> String
 
     -- Renders structured source code (tokenized/colored).
-    sem renderSourceCode : SourceCode -> RenderingOptions -> String
+    -- If an object is provided, the types will be clickable    
+    sem renderSourceCode : SourceCode -> Option Object -> RenderingOptions -> String
 
     -- Renders a single token word.
-    sem renderWord : SourceCodeWord -> RenderingOptions -> String
+    -- If an object is provided, the types will be clickable
+    sem renderWord : SourceCodeWord -> Option Object -> RenderingOptions -> String
 
     -- Renders top-level source code for an object.
     -- Takes children TreeSourceCode and produces RenderingData.

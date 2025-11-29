@@ -44,6 +44,13 @@ lang ObjectsRenderer = ObjectKinds + Formats
       if not (objKindHasLink (objKind obj)) then ""
       else match nameContextFetchUrl opt.nameContext obj name with Some res then res
       else objUrlFetchFailed obj name false; ""
+
+
+    sem objTryGetLink : Object -> RenderingOptions -> String -> Option String
+    sem objTryGetLink =
+    | obj -> lam opt. lam name.
+      if not (objKindHasLink (objKind obj)) then Some ""
+      else nameContextFetchUrl opt.nameContext obj name
             
     -- Human-friendly display title; special-cases include/utest.
     sem objTitle : Object -> String
