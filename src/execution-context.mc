@@ -35,16 +35,19 @@ include "./naming/namer.mc"
 include "./rendering/renderer.mc"
 include "./server/server.mc"
 
+type FileToProcess = { path: String, outputFolder: String }
+
 type ExecutionContext =  use TokenReader in {    
     opt: DocGenOptions,
     userOutputFolder: String,
     currentFile: String,
-    files: [{ path: String, outputFolder: String }],
+    files: [FileToProcess],
     tokens: [Token],
     docTree : Option DocTree,
     ast: Option MAst,
     searchDatas: HashMap String String,
     object: Option ObjectTree,
+    isRootStdlib: Bool,
     nameContext: Option NameContext
 }
 
@@ -52,41 +55,62 @@ let buildLogger : ExecutionContext -> String -> Logger = lam ctx. lam step. if c
 
 let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in lam ctx.
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
+          let isRootStdlib = pathIsInStdlib path in
           Some { ctx with
               opt = { ctx.opt with outputFolder = outputFolder },
               currentFile = path,
               files = files,
               tokens = [],
               docTree = None {},
+              isRootStdlib = isRootStdlib,
               ast = None {},
               object = None {},
               nameContext = None {}
           }
     else
+        -- Creating search engine
         let log = buildLogger ctx "Rendering" in 
         let ropt = getRenderingOption ctx.opt log (nameContextEmpty ()) in
         let ropt = { ropt with outputFolder = ctx.userOutputFolder } in
         let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
                           (hashmap2seq ctx.searchDatas) in
+
+       -- Eventually moving Stdlib location.
+
+
         renderSearchFile searchDatas ropt;
         None {}
 
-let execContextNew : DocGenOptions -> ExecutionContext = lam opt.
-    let files = if isFolder opt.file then
-       let files = folderFetchMcFiles opt.file in
-       map (lam path.
-           let t = tail (strSplit opt.file path) in
-           let f = strJoin opt.file t in
-           let outputFolder = normalizePath (join [opt.outputFolder, "/", f]) in
-           { path = path, outputFolder = dirname outputFolder }) files
-    else if sysFileExists opt.file then
-       [{ path = opt.file, outputFolder = opt.outputFolder }]
-    else error (join ["The file ", opt.file, "doesn't exist."]) in
+let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
+    let files =
+        foldl (lam files: [FileToProcess]. lam file: String.
+            if isFolder file then
+               let newFiles = folderFetchMcFiles file in
+               let newFiles = map (lam path.
+                   let t = tail (strSplit file path) in
+                   let f = strJoin file t in
+                   let outputFolder = normalizePath (join [opt.outputFolder, "/", f]) in
+                   { path = path, outputFolder = dirname outputFolder }) newFiles
+               in
+               concat newFiles files
+            else if sysFileExists file then
+               cons { path = file, outputFolder = opt.outputFolder } files
+            else error (join ["The file ", file, "doesn't exist."])
+        ) [] opt.files
+    in
+    
+    if null files then None {} else
+
+    let stdlibOutput = normalizePath (join [opt.outputFolder, "/", "Stdlib"]) in
+    let stringPath = normalizePath (join [stdlibLoc, "/", "string.mc"]) in
+    let files = cons { path = stringPath, outputFolder = stdlibOutput } files in
+    
     let ctx = {
         opt = opt,
         currentFile = "",
         userOutputFolder = opt.outputFolder,
         files = files,
+        isRootStdlib = false,
         tokens = [],
         docTree = None {},
         object = None {},
@@ -94,9 +118,7 @@ let execContextNew : DocGenOptions -> ExecutionContext = lam opt.
         nameContext = None {},
         searchDatas = hashmapEmpty ()
     } in
-    match execCtxNext ctx with Some ctx then ctx else
-    error "Please provide a file to process."
-
+    execCtxNext ctx
 
 let crash = lam miss. lam func. lam should.
     error (join ["Execution context: ", miss, " is missing in the exection context, ", func, " function should be called after having call the ", should, " function."])
@@ -116,7 +138,8 @@ let parse : Step =  lam ctx.
 let extract : Step =  lam ctx.
     match ctx.docTree with Some docTree then
     let log = buildLogger ctx "Extracting" in 
-    { ctx with object = Some (extract log docTree ctx.opt.letDepth ) }
+    let opt = getExtractingOption ctx.opt ctx.isRootStdlib log in
+    { ctx with object = Some (extract opt docTree ) }
     else crash "doc tree" "extract" "parse"
 
 let label : Step =  lam ctx.

@@ -113,7 +113,6 @@ lang MdxRenderer = RendererInterface
     -- Render a single link, removing the trailing ".md" for Docusaurus routes.
     sem renderLink (title : String) (link : String) =
     | { fmt = Mdx {} } & opt ->
-          let link = concat opt.urlPrefix link in
           let linkLength = length link in
           let link = subsequence link 0 (subi linkLength 3) in -- remove extension for Docusaurus
           join ["<a href={\"", link, "\"} style={S.link}>", title, "</a>"]
@@ -164,7 +163,6 @@ lang MdxRenderer = RendererInterface
     sem renderDocBloc (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
         let link = objGetMyLink data.obj opt in
-        let link = concat opt.urlPrefix link in
         let linkLength = length link in
         let link = subsequence link 0 (subi linkLength 3) in -- remove extension for Docusaurus
         let link = if objRenderIt data.obj then join [" link=\"", link, "\""] else "" in 

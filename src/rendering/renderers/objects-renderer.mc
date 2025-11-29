@@ -45,12 +45,21 @@ lang ObjectsRenderer = ObjectKinds + Formats
       else match nameContextFetchUrl opt.nameContext obj name with Some res then res
       else objUrlFetchFailed obj name false; ""
 
-
     sem objTryGetLink : Object -> RenderingOptions -> String -> Option String
     sem objTryGetLink =
     | obj -> lam opt. lam name.
       if not (objKindHasLink (objKind obj)) then Some ""
       else nameContextFetchUrl opt.nameContext obj name
+
+    sem objGetMyLocation : Object -> RenderingOptions -> String
+    sem objGetMyLocation =
+    | obj -> lam opt.
+      let name = objName obj in
+      match nameContextFetchObjUrl opt.nameContext obj with Some res then
+          let prefixLength = length opt.urlPrefix in
+          subsequence res prefixLength (length res)
+      else objUrlFetchFailed obj name false; ""
+
             
     -- Human-friendly display title; special-cases include/utest.
     sem objTitle : Object -> String
@@ -89,7 +98,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
               { opt = opt, dicts = concat dicts arg.dicts }
               ) { dicts = [], opt = opt } (objTreeChildren tree)
           in
-          let link = concat opt.urlPrefix (objGetMyLink obj opt) in
+          let link = objGetMyLink obj opt in
           let link = if strEndsWith ".md" link then subsequence link 0 (subi (length link) 3) else link in 
           {
              opt = if objPreserveNameCtx obj then res.opt else opt,

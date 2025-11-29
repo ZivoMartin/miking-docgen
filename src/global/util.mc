@@ -108,7 +108,6 @@ utest normalizePath "../../repo2" with "../../repo2"
 utest normalizePath "./a/./b/../c" with "a/c"
 utest normalizePath "/a/b/../../c" with "/c"
 
-
 -- Resolves a path based on current location and target.
 -- If the target is absolute, it is returned normalized.
 -- If the file exists at the concatenated location, it's returned.
@@ -212,3 +211,13 @@ let strSplitOnce : all a. String -> Char -> Option { left: String, right: String
        ) (findi (eqChar mid) s)
 
 let strCount : String -> Char -> Int = lam s. lam c. length (filter (eqChar c) s)
+
+let pathIsInStdlib : String -> Bool =
+    lam path.
+    switch path
+    case [] then false
+    case "/" ++ _ then strStartsWith stdlibLoc path
+    case _ then
+         let abs = normalizePath (join [pwd, "/", path]) in
+         strStartsWith stdlibLoc abs
+    end

@@ -92,7 +92,6 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, children = children } then (emptyPreview obj, oldOpt)
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [ p ] } then
-            if and (objIsStdlib obj) oldOpt.noStdlib then (emptyPreview obj, oldOpt) else
             let res = render oldOpt p in
             (emptyPreview obj, res.1)
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [] } then (emptyPreview obj, oldOpt)
@@ -156,7 +155,7 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                     iter (lam u. write (renderDocBloc u opt)) arr
                 in
     
-                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.sUse), ("Includes", set.sInclude), ("Stdlib Includes", if opt.noStdlib then [] else set.sLibInclude)];
+                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.sUse), ("Includes", set.sInclude), ("Stdlib Includes", set.sLibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
                     [("Types", set.sType), ("Constructors", set.sCon), ("Languages", set.sLang),
                     ("Syntaxes", set.sSyn), ("Variables", set.sLet), ("Semantics", set.sSem), ("Mexpr", set.sMexpr)];

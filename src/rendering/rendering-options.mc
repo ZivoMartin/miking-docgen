@@ -39,7 +39,6 @@ include "./rendering-types.mc"
 type RenderingOptions = use Formats in use FormatLanguages in
     {
         fmt: Format, 
-        noStdlib: Bool, 
         outputFolder: String,
         srcFolder: String,
         urlPrefix: String, 

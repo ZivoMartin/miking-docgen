@@ -46,12 +46,11 @@ type DocGenOptions = use Formats in use FormatLanguages in {
     noOpen: Bool,              -- Whether to skip opening the result in a web browser.
     fmt: Format,               -- Output format (HTML, Markdown, MDX).
     fmtLang: FormatLanguage,   -- Output language for generated React components (JS/TS).
-    file: String,              -- Path to the input file.
+    files: [String],             -- Path to the input files.
     debug: Bool,               -- Enable debug mode.
     noWarn: Bool,              -- Suppress warnings.
     outputFolder: String,      -- Destination folder for generated output.
     srcFolder: String,         -- Destination folder for src files relative to outputFolder
-    noStdlib: Bool,            -- Whether to exclude the standard library.
     urlPrefix: String,         -- Prefix for generated URLs.
     letDepth: Option Int,      -- Maximum nesting depth of let-bindings.
     noCode: Bool               -- If true, implementations will not appears on the output.
@@ -63,12 +62,11 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     noOpen = false,
     fmt = defaultFormat (),
     fmtLang = defaultFormatLanguage (),
-    file = "",
+    files = [],
     debug = false,
     outputFolder = "doc-gen-output",
     srcFolder = "/",
     noWarn = false,
-    noStdlib = false,
     urlPrefix = "",
     letDepth = None {},
     noCode = false
@@ -82,7 +80,7 @@ let usage = lam.
     "  my-doc-gen [options] <file>\n\n",
 
     "Required:\n",
-    "  <file>                                 Path to the Miking source file to document.\n\n",
+    "  [<file>|<folder>]                      List of files/folders to document.\n\n",
 
     "General DocGenOptions:\n",
     "  --no-open                              Do not open the result in a web browser.\n",
@@ -91,7 +89,6 @@ let usage = lam.
     "  --format <html|md|mdx>                 Choose output format (default: html).\n",
     "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
     "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
-    "  --no-stdlib                            Do not include the standard library in output.\n",
     "  --no-code                              If true, implementations will not appears on the output",
 
     "Language Formatting:\n",

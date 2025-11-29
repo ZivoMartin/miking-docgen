@@ -21,7 +21,7 @@ let fileOpenerOpen : ObjectTree -> RenderingOptions -> Option FileOpenerResult =
     let obj = objTreeObj tree in
     
     if objRenderIt obj then
-        let path = concat opt.outputFolder (objGetMyLink obj opt) in
+        let path = concat opt.outputFolder (objGetMyLocation obj opt) in
          match fileWriteOpen path with Some wc then
              Some {
                  wc = Some wc,

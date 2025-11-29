@@ -10,6 +10,7 @@
 
 include "./docgen-options.mc"
 include "../server/server-options.mc"
+include "../extracting/extracting-options.mc"
 include "../rendering/rendering-options.mc"
 include "../naming/naming-options.mc"
 
@@ -19,17 +20,23 @@ let getServeOption : DocGenOptions -> String -> ServerOptions  = lam opt. lam li
     {
         fmt = opt.fmt,
         folder = opt.outputFolder,
-        firstFile = opt.file,
         noOpen = opt.noOpen,
         link = link
     }
 
--- Convert a global `DocGenOptions` record into a `RenderingOptions` record
+let getExtractingOption : DocGenOptions -> Bool -> Logger -> ExtractingOptions  = lam opt. lam rootIsStdlib. lam log.
+    {
+        depth = opt.letDepth,
+        rootIsStdlib = rootIsStdlib,
+        log = log
+    }
+
+
+-- convert a global `DocGenOptions` record into a `RenderingOptions` record
 -- used by the rendering step.
 let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderingOptions = use FormatLanguages in lam opt. lam log. lam nameContext.
     {
         fmt = opt.fmt,
-        noStdlib = opt.noStdlib,
         outputFolder = opt.outputFolder,
         srcFolder = opt.srcFolder,
         urlPrefix = opt.urlPrefix,

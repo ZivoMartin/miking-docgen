@@ -87,7 +87,7 @@ lang RawRenderer = RendererInterface
     -- Renders the object signature as source code.
     sem renderDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
-        let type2str = lam t. renderRemoveCodeForbidenChars (type2str t) opt in
+        let type2str = lam t. type2str t in
         let name = objName obj in
         let kind = objKind obj in
         let code = switch obj.kind
@@ -122,7 +122,6 @@ lang RawRenderer = RendererInterface
     sem renderGotoLink (link: String) =
     | opt -> let opt = fixOptFormat opt in
         renderLink "[→]" link opt
-
 
     -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
@@ -185,15 +184,25 @@ lang RawRenderer = RendererInterface
                 case CodeKeyword {} then renderKeyword
                 case CodeName {} then renderVar
                 case CodeType {} then (lam word.
+                                      let word = match strSplitOnce word '_' with Some { left = left, right = word } then word else word in
                                       let word =
                                           match obj with Some obj then
-                                              match word with "Int" | "Bool" | "String" | "Char" then
-                                                  word -- TODO: Redirect to the actual page of the primitive type
-                                              else match objTryGetLink obj opt word with Some link then
-                                                  renderLink word link opt
-                                              else  -- We can safely assume we refer to ourself.
-                                                  let link = objGetMyLink obj opt in
-                                                  renderLink word link opt
+                                              let getStdlibFile = lam s.
+                                                  let ext = formatGetExtension opt.fmt in
+                                                  join ["/Stdlib/", s, ".", ext]
+                                              in
+                                              let link =
+                                                  switch word
+                                                  case "Int" then getStdlibFile "int.mc"
+                                                  case "Bool" then getStdlibFile "bool.mc"
+                                                  case "String" then getStdlibFile "string.mc"
+                                                  case "Char" then getStdlibFile "char.mc"
+                                                  case _ then
+                                                      match objTryGetLink obj opt word with Some link then link
+                                                      else objGetMyLink obj opt
+                                                  end
+                                              in
+                                              renderLink word link opt
                                           else word
                                       in
                                       renderType word)

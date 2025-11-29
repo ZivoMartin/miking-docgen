@@ -1,70 +1,103 @@
-* DONE Recover name-context
-CLOSED: [2025-11-19 Wed 15:42]
-* DONE Recover doc-renderer
-CLOSED: [2025-11-19 Wed 15:43]
-* DONE Rewrite folder processing
+* TODO Folder & Input Handling
+** TODO Fix folder input when nested files include outer files
+** DONE Allow providing multiple files/folders
+CLOSED: [2025-11-29 Sat 12:43]
+** TODO Allow the user to specify where to put the stdlib files
+** DONE Refuse Miking Docgen without any files in the arguments
+CLOSED: [2025-11-29 Sat 12:44]
+** TODO If the first given file is part of the stdlib, do not consider any files as stdlib
+To complete the mechanisme, if the path of the root file is absolute, normalise it and
+check if it starts with stdlibLoc, otherwise, recreate the absolute path with the baseLoc
+and see if is stdlib.
+
+To do so, we can at the very end of the process, see if there is mc files before the Stdlib
+folder, as stdlib only includes stdlib, if there is no such files it means all the root files
+where stdlib, and so we can put them at the root of the output folder.
+** DONE Rewrite folder processing
 CLOSED: [2025-11-16 Sun 02:17]
-Move stdlib and non mc files at the root, keep track of each search datas.
-* DONE Refactorise mdx renderer
-CLOSED: [2025-11-14 Fri 01:58]
-* DONE Rewrite doc-renderer output processing
-CLOSED: [2025-11-21 Fri 12:22]
-* DONE No code flag
-CLOSED: [2025-11-15 Sat 02:21]
-* DONE Add show/hide in html renderer
-CLOSED: [2025-11-21 Fri 19:13]
-* DONE Fix test buttons design to make it like implementation
-CLOSED: [2025-11-21 Fri 19:13]
-* TODO Fix folder input, when nested include outer files
-* TODO Allow providing multiple file/folders
-* TODO Check that the js version is still working
-* TODO Clean all error/warnings messages
-* TODO noStdlib flag
-* TODO Allow the user to declare where to put the stdlib files
-* TODO In case of actual error, report a precise messagee (at least the file in which error occured)
-* TODO Add its tests in the top page of an object
-* TODO Add the documentation of each type of a record / syntax
-* TODO On the documentation of a type, put all the constructors.
-* TODO On the documentation of a syntax extend the variant with what is actually used
-* TODO Support markdown formatting with a flag
-* TODO Add child to languages from the langNamespace probably during rendering
-* DONE Build a lang namespace map
-CLOSED: [2025-11-23 Sun 19:14]
-We will have a map which binds lang id with there own NameSpace, when we meet any top level
-element (a sem, a type, a con or a syn) we add it in the namespace.
-We also parse the parent of the lang, and fetch there own namespace to process the merge.
-So then, we have the complete view of the parent, BUT some of the element in the namespace
-will not have any pages, we should keep track of this, in this case, we should generate a new
-page for the type/sem in the lang page, allowing a better and complete documentation.
-* DONE Keep track of all the currently used Lang namespace
-CLOSED: [2025-11-23 Sun 19:14]
-We can push/pop a new use, when we push a use we try to fetch the lang (with the regular system),
-it will return something (since the code compiles), and we will add the ID of this lang into the
-current use set.
-* TODO Mouse over on hooks
-* DONE Cick on hooks
-CLOSED: [2025-11-24 Mon 20:58]
-* DONE Integrate name-context api
-CLOSED: [2025-11-25 Tue 23:55]
-* TODO Being able to click on any subtypes
-* TODO Types annotation in the documentations
-* TODO When rendering the page of non existing types, we should think about which documentation we want to use for it.
-* DONE Clean the use in process of the namer (for correctness)
-CLOSED: [2025-11-26 Wed 11:18]
-* DONE Use lower than instead of lower or equal in the name map (for correctness)
+Move stdlib and non-MC files at the root, keep track of each search dataset.
+
+* TODO Error Handling & Messages
+** TODO Clean all error/warning messages
+** TODO In case of an actual error, report a precise message (at least the file in which it occurred)
+** TODO If a link is incorrect in a comment, display a proper warning or error message
+** DONE Use strictly-lower instead of lower-or-equal in the name map (for correctness)
 CLOSED: [2025-11-26 Wed 11:35]
-* TODO Fix trimming for bool.mc/someb tests (there is a comment at the end which is not trimmed).
-* TODO Merge in mdx namespace domain 
-* DONE Do not put any new line in the doc if a component is missing.
+** DONE Clean “use in process” of the namer (for correctness)
+CLOSED: [2025-11-26 Wed 11:18]
+** DONE Do not insert new lines in the documentation if a component is missing
 CLOSED: [2025-11-26 Wed 11:47]
-* TODO Render object hook better than just regular link
-* TODO Add keyboard shortcut on the html renderer
-* TODO Add a button to access the parent on each page
-* TODO If there is only one element in a recursive bloc, the doc of the recursive bloc should be the doc of the element
-* TODO If a link is incorrect in one of the comments, display a proper warning or error message.
-* TODO Parse int.mc, bool.mc before starting anything so we can redirect correctly Int, Bool...
 
+* TODO Renderer & UI Features
+** TODO Support Markdown formatting with a flag
+** TODO Mouse-over on hooks
+** TODO Render object hooks better than regular links
+** TODO Add keyboard shortcuts in the HTML renderer
+** TODO Add a button to access the parent page
+** TODO Make a great design for the links
+** TODO Fix minor ui bug
+When we click on the page make sure to close the search bar even if the focus is not on it
+** DONE Add show/hide in HTML renderer
+CLOSED: [2025-11-21 Fri 19:13]
+** DONE Fix test button design to match implementation
+CLOSED: [2025-11-21 Fri 19:13]
+** DONE Refactor MDX renderer
+CLOSED: [2025-11-14 Fri 01:58]
+** DONE Rewrite doc-renderer output processing
+CLOSED: [2025-11-21 Fri 12:22]
+** DONE No-code flag
+CLOSED: [2025-11-15 Sat 02:21]
 
+* TODO Documentation Content & Structure
+** TODO Add tests of each object on its top-level page
+** TODO Add documentation for each type of a record/syntax
+** TODO On type documentation, list all constructors
+** TODO On syntax documentation, extend the variant with what is actually used
+** TODO Types annotation in documentation
+** TODO Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
+** TODO the documentation of a recursive block should be given to the first element of the bloc
+** TODO When rendering the page of non-existing types, decide which documentation to use
+** DONE Rewrite doc-renderer
+CLOSED: [2025-11-19 Wed 15:43]
+** DONE Recover name-context
+CLOSED: [2025-11-19 Wed 15:42]
+** DONE Cick on hooks
+CLOSED: [2025-11-24 Mon 20:58]
+** DONE Being able to click on any subtypes
+CLOSED: [2025-11-29 Sat 12:11]
+** DONE Being able to click on primitive subtypes
+CLOSED: [2025-11-29 Sat 12:11]   ; (merged conceptually but kept explicitly)
+
+* TODO Namespace, Language, and Type System
+** TODO Add children to languages based on the langNamespace, probably during rendering
+** TODO Merge into MDX namespace domain
+** DONE Parse int.mc and bool.mc before starting, so we can correctly redirect Int, Bool, etc.
+CLOSED: [2025-11-29 Sat 16:54]
+** DONE Build a language namespace map
+CLOSED: [2025-11-23 Sun 19:14]
+We create a map binding each language ID to its own namespace.  
+When encountering a top-level element (sem, type, con, or syn) we add it to the namespace.  
+We also parse the parent language and merge namespaces.  
+Some elements may have no associated pages — we track them and generate a new page for completeness.
+
+** DONE Keep track of all currently used language namespaces
+CLOSED: [2025-11-23 Sun 19:14]
+Push/pop the current language usage. When pushing, fetch the language (guaranteed to exist if compilation succeeded) and add its ID to the active set.
+
+** DONE Integrate name-context API
+CLOSED: [2025-11-25 Tue 23:55]
+
+* TODO CLI / System / Misc
+** TODO Check that the JS version is still working
+
+** DONE Recover doc-renderer
+CLOSED: [2025-11-19 Wed 15:43]
+** DONE Fix folder input of outer files (covered by rewrite)
+CLOSED: [2025-11-16 Sun 02:17]
+* TODO MDX rendering
+** TODO Render doc signatures without pure code to be able to put link.
+** DONE Fix the urlPrefix issue 
+CLOSED: [2025-11-29 Sat 20:57]
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

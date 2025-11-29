@@ -54,13 +54,17 @@ include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
 include "./depth.mc"
+include "./extracting-options.mc"
 
 -- Takes a tree and builds the objects
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
-let extract : Logger -> DocTree -> Option Int -> ObjectTree =
+let extract : ExtractingOptions -> DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
-    lam log. lam tree. lam depth.
+    lam opt. lam tree.
+
+    match opt with { log = log, rootIsStdlib = rootIsStdlib, depth = depth } in
+
     log "Beggining of extraction...";
 
      -- Entry point: tree must be Program node
@@ -237,7 +241,7 @@ let extract : Logger -> DocTree -> Option Int -> ObjectTree =
         end
     in
 
-    let obj = match (extractRec tree content [] (newSourceCodeBuilder ()) false 0 (depthCreate depth)).obj with Some obj then
+    let obj = match (extractRec tree content [] (newSourceCodeBuilder ()) rootIsStdlib 0 (depthCreate depth)).obj with Some obj then
         obj
     else
         error "Extraction failed: extractRec returned None" in

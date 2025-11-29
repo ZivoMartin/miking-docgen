@@ -33,13 +33,10 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
             else usage ()
 
         case [s] ++ rest then
-            if eqString opts.file "" then
-               if sysFileExists s then
-                  parse rest { opts with file = s }
-               else
-                  error (join ["While parsing options: file", s, " does not exist."])
-            else usage ()
-
+           if sysFileExists s then
+              parse rest { opts with files = cons s opts.files }
+           else
+              error (join ["While parsing options: file", s, " does not exist."])
         case [] then opts
         end
     in

@@ -26,12 +26,11 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
 
         switch obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [ p ] } then
-            if and (objIsStdlib obj) opt.noStdlib then pathMap else
-                preprocessRec pathMap p
+            preprocessRec pathMap p
         case ObjectNode { obj = { kind = ObjRecursiveBloc {} }, children = children } then
             foldl preprocessRec pathMap children
         case ObjectNode { obj = obj, children = children } then
-            let path = dirname (join [opt.outputFolder, objGetMyLink obj opt]) in
+            let path = dirname (join [opt.outputFolder, objGetMyLocation obj opt]) in
             let map = hmInsert path () pathMap in
             if objRenderIt obj then
                 foldl preprocessRec map children

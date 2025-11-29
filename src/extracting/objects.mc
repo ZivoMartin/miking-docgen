@@ -134,7 +134,12 @@ let objWithId : Object -> Int -> Object = lam obj. lam id. { obj with id = id }
 -- Warns if the namespace does not start with the given prefix.
 let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
     let process = lam.
-        let basePrefix: String = normalizePath (concat basePosition obj.namespace) in
+        let basePrefix: String =
+            if strStartsWith stdlibLoc prefix then
+                normalizePath (concat stdlibLoc obj.namespace)
+            else
+                normalizePath (concat basePosition obj.namespace)
+        in
         let lengthBasePrefix = length basePrefix in
         let lengthPrefix = length prefix in
         if strStartsWith prefix basePrefix then subsequence basePrefix lengthPrefix lengthBasePrefix

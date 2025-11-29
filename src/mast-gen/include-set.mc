@@ -38,7 +38,7 @@ let includeSetInsert : all a. IncludeSet a -> String -> String -> a -> IncludeSe
     match goHere set.programStartPos path with { path = absPath, isStdlib = isStdlib } in
 
     let set = if isStdlib then set else  { set with prefix = strLongestCommonPrefix (dirname absPath) set.prefix } in
-    
+
     let res = { inserted = false, includeSet = set, isStdlib = isStdlib, path = path } in
     if hmMem path set.set then res
     else { res with includeSet = { set with set = hmInsert path mapValue set.set }, inserted = true }
