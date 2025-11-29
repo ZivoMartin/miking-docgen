@@ -101,7 +101,7 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     
     if null files then None {} else
 
-    let stdlibOutput = normalizePath (join [opt.outputFolder, "/", "Stdlib"]) in
+    let stdlibOutput = normalizePath (join [opt.outputFolder, "/", opt.stdlibFolder]) in
     let stringPath = normalizePath (join [stdlibLoc, "/", "string.mc"]) in
     let files = cons { path = stringPath, outputFolder = stdlibOutput } files in
     
@@ -168,7 +168,7 @@ let render : Step =  lam ctx.
     let renderingRes = render ropt obj in
 
     let searchDatas = foldl (lam acc. lam arg.
-        let prefix = normalizePath (join [ctx.opt.urlPrefix, "/", "Stdlib"]) in
+        let prefix = normalizePath (join [ctx.opt.urlPrefix, "/", ctx.opt.stdlibFolder]) in
         let isStdlib = strStartsWith prefix arg.link in
 
         let prefix = tail (strSplit ctx.userOutputFolder ctx.opt.outputFolder) in
@@ -180,8 +180,8 @@ let render : Step =  lam ctx.
     ) ctx.searchDatas renderingRes.searchDatas in
     
     (if neqString ctx.opt.outputFolder ctx.userOutputFolder then    
-        let newStdlibPath = normalizePath (join [ctx.opt.outputFolder, "/", "Stdlib"]) in
-        let actualStdlibPath = normalizePath (join [ctx.userOutputFolder, "/", "Stdlib"]) in
+        let newStdlibPath = normalizePath (join [ctx.opt.outputFolder, "/", ctx.opt.stdlibFolder]) in
+        let actualStdlibPath = normalizePath (join [ctx.userOutputFolder, "/", ctx.opt.stdlibFolder]) in
 
         let code = sysRemoveSrcFiles ctx.opt.outputFolder in
         (if neqi code 0 then renderingWarn "Failed to clean source files." else ());

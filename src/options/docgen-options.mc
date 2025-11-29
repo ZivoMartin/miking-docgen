@@ -18,11 +18,9 @@
 --   --format <html|md|mdx>                 Choose output format (default: html).
 --   --url-prefix <prefix>                  Prefix for all generated URLs.
 --   --depth <n|none>                       Limit nesting depth of `let` bindings.
---   --no-stdlib                            Do not include the standard library in the output.
 --   --md-doc                               Generate Markdown documentation from inline comments.
---   --keep-tests-doc                       Keep inline documentation of tests.
 --
--- Language Formatting:
+-- language Formatting:
 --   --javascript                           Use JavaScript for the React components.
 --   --typescript                           Use TypeScript for the React components.
 --
@@ -50,9 +48,10 @@ type DocGenOptions = use Formats in use FormatLanguages in {
     debug: Bool,               -- Enable debug mode.
     noWarn: Bool,              -- Suppress warnings.
     outputFolder: String,      -- Destination folder for generated output.
-    srcFolder: String,         -- Destination folder for src files relative to outputFolder
+    srcFolder: String,         -- Destination folder for src files relative to outputFolder.
     urlPrefix: String,         -- Prefix for generated URLs.
     letDepth: Option Int,      -- Maximum nesting depth of let-bindings.
+    stdlibFolder: String,      -- Name of the folder in which we should store stdlib files.
     noCode: Bool               -- If true, implementations will not appears on the output.
 }
 
@@ -69,6 +68,7 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     noWarn = false,
     urlPrefix = "",
     letDepth = None {},
+    stdlibFolder = "Stdlib",
     noCode = false
 }
 
@@ -90,6 +90,7 @@ let usage = lam.
     "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
     "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
     "  --no-code                              If true, implementations will not appears on the output",
+    "  --stdlib-loc <loc>                     Name of the folder in which we should store stdlib files.",
 
     "Language Formatting:\n",
     "  --javascript                           Use JavaScript for the React components\n",

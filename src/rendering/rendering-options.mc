@@ -38,7 +38,8 @@ include "./rendering-types.mc"
 -- The configuration object passed around during rendering.
 type RenderingOptions = use Formats in use FormatLanguages in
     {
-        fmt: Format, 
+        fmt: Format,
+        stdlibFolder: String,
         outputFolder: String,
         srcFolder: String,
         urlPrefix: String, 

@@ -37,6 +37,7 @@ let getExtractingOption : DocGenOptions -> Bool -> Logger -> ExtractingOptions  
 let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderingOptions = use FormatLanguages in lam opt. lam log. lam nameContext.
     {
         fmt = opt.fmt,
+        stdlibFolder = opt.stdlibFolder,
         outputFolder = opt.outputFolder,
         srcFolder = opt.srcFolder,
         urlPrefix = opt.urlPrefix,
@@ -50,5 +51,6 @@ let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderingOpti
 let getNamingOption : DocGenOptions -> NamingOptions = lam opt.
     {
         fmt = opt.fmt,
-        urlPrefix = opt.urlPrefix
+        urlPrefix = opt.urlPrefix,
+        stdlibFolder = opt.stdlibFolder
     }

@@ -19,6 +19,7 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
         case ["--url-prefix", urlPrefix] ++ rest then parse rest { opts with urlPrefix = urlPrefix }
         case ["--no-open"] ++ rest then parse rest { opts with noOpen = true }
         case ["--no-code"] ++ rest then parse rest { opts with noCode = true }
+        case ["--stdlib-loc", loc] ++ rest then parse rest { opts with stdlibFolder = loc }
  
         case ["--depth", letDepth] ++ rest then
             match letDepth with "none" then

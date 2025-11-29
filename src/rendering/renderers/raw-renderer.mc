@@ -189,7 +189,7 @@ lang RawRenderer = RendererInterface
                                           match obj with Some obj then
                                               let getStdlibFile = lam s.
                                                   let ext = formatGetExtension opt.fmt in
-                                                  join ["/Stdlib/", s, ".", ext]
+                                                  join ["/", opt.stdlibFolder, "/", s, ".", ext]
                                               in
                                               let link =
                                                   switch word

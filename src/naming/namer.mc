@@ -13,7 +13,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
 
     let buildUrl : Bool -> String -> String = lam isStdlib. lam namespace. use Formats in
         let ext = concat "." (formatGetExtension opt.fmt) in
-        let prefix = if isStdlib then "Stdlib" else "" in
+        let prefix = if isStdlib then opt.stdlibFolder  else "" in
         let link =  strJoin "/" [opt.urlPrefix, prefix, concat namespace ext] in
         normalizePath link
     in

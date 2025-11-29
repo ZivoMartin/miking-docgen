@@ -150,7 +150,7 @@ lang HtmlRenderer = RendererInterface
     
     -- Generic link with optional URL prefix
     sem renderLink (title : String) (link : String) =
-    | { fmt = Html {}, urlPrefix = urlPrefix } & opt -> join ["<a href=\"", concat urlPrefix link, "\">", title, "</a>"]
+    | { fmt = Html {}, urlPrefix = urlPrefix } & opt -> join ["<a href=\"", link, "\">", title, "</a>"]
 
     
 end

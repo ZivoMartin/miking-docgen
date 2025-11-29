@@ -80,7 +80,7 @@ lang MarkdownRenderer = RendererInterface
     
     -- Render a single link
     sem renderLink (title : String) (link : String) =
-    | { fmt = Md {}, urlPrefix = urlPrefix } & opt -> join ["[", title, "](", concat urlPrefix link, ")"]
+    | { fmt = Md {}, urlPrefix = urlPrefix } & opt -> join ["[", title, "](", link, ")"]
 
     -- Render list of links (comma separated)
     sem renderLinkList (objects: [Object]) =
