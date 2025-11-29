@@ -169,7 +169,7 @@ let isFolder : String -> Bool = lam path.
   if eqi (_commandList ["test", "-d", path]) 0 then true else false
 
 let folderFetchMcFiles : String -> [String] = lam dir.
-  let res = sysRunCommand ["find", dir, "-type", "f", "-name", "*.mc"] "" "." in
+  let res = sysRunCommand ["find", dir, "-type", "f", "-name", "*.mc*"] "" "." in
   let out = strTrim res.stdout in
   if null out then []
   else strSplit "\n" out

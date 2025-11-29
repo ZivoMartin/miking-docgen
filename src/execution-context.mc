@@ -75,9 +75,6 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
         let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
                           (hashmap2seq ctx.searchDatas) in
 
-       -- Eventually moving Stdlib location.
-
-
         renderSearchFile searchDatas ropt;
         None {}
 
@@ -101,10 +98,12 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     
     if null files then None {} else
 
+    let opt = if any (lam f. not (pathIsInStdlib f.path)) files then opt else { opt with stdlibFolder = "" } in
+
     let stdlibOutput = normalizePath (join [opt.outputFolder, "/", opt.stdlibFolder]) in
     let stringPath = normalizePath (join [stdlibLoc, "/", "string.mc"]) in
-    let files = cons { path = stringPath, outputFolder = stdlibOutput } files in
-    
+    let files = cons { path = stringPath, outputFolder = stdlibOutput } files in    
+
     let ctx = {
         opt = opt,
         currentFile = "",

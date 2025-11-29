@@ -2,17 +2,15 @@
 ** TODO Fix folder input when nested files include outer files
 ** DONE Allow providing multiple files/folders
 CLOSED: [2025-11-29 Sat 12:43]
-** TODO Allow the user to specify where to put the stdlib files
+** DONE Allow the user to specify where to put the stdlib files
+CLOSED: [2025-11-29 Sat 23:55]
 ** DONE Refuse Miking Docgen without any files in the arguments
 CLOSED: [2025-11-29 Sat 12:44]
-** TODO If the first given file is part of the stdlib, do not consider any files as stdlib
+** DONE If the first given file is part of the stdlib, do not consider any files as stdlib
+CLOSED: [2025-11-29 Sat 23:55]
 To complete the mechanisme, if the path of the root file is absolute, normalise it and
 check if it starts with stdlibLoc, otherwise, recreate the absolute path with the baseLoc
 and see if is stdlib.
-
-To do so, we can at the very end of the process, see if there is mc files before the Stdlib
-folder, as stdlib only includes stdlib, if there is no such files it means all the root files
-where stdlib, and so we can put them at the root of the output folder.
 ** DONE Rewrite folder processing
 CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non-MC files at the root, keep track of each search dataset.
