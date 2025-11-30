@@ -217,10 +217,16 @@ con ObjectNode : { obj: Object, children: [ObjectTree] } -> ObjectTree
 
 -- Convenience helpers for ObjectTree.
 let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.kind obj.name
+
 let objTreeObj : ObjectTree -> Object = lam tree. match tree with ObjectNode { obj = obj } in obj
 let objTreeChildren : ObjectTree -> [ObjectTree] = lam tree. match tree with ObjectNode { children = children } in children
+
+let objTreeWithObj : ObjectTree -> Object -> ObjectTree = lam tree. lam obj. match tree with ObjectNode d in ObjectNode { d with obj = obj }
+let objTreeWithChildren : ObjectTree -> [ObjectTree] -> ObjectTree = lam tree. lam children. match tree with ObjectNode d in ObjectNode { d with children = children }
+
 let objTreeDoc : ObjectTree -> String = lam tree. objDoc (objTreeObj tree)
 let objTreeSourceCode : ObjectTree -> SourceCode = lam tree. objSourceCode (objTreeObj tree)
+
 let objTreeWithDoc : ObjectTree -> String -> ObjectTree = lam tree. lam doc.
     match tree with ObjectNode { obj = obj, children = children } in ObjectNode { obj = { obj with doc = doc}, children = children }
 let objTreeWithSourceCode : ObjectTree -> SourceCode -> ObjectTree = lam tree. lam code.

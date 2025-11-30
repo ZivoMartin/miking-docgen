@@ -26,6 +26,8 @@ include "../global/util.mc"
 --
 -- Since only the last sem remains, the previous documentation would be lost.
 let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
+    use ObjectsRenderer in
+
     type MergeFoldArg = { doc: String, prev: String, children: [RenderingData] } in
     -- Merging the documentations of consecutive same elements.
     let merged = foldl
@@ -33,7 +35,7 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         lam arg. lam child.
         match arg with { doc = doc, prev = prev, children = children } in
         let namespace = objNamespace child.obj in
-        if eqString namespace prev then
+        if and (objHasName child) (eqString namespace prev) then
            let doc = if eqString objDefaultDoc doc then "" else doc in
            let newDoc = objTryGetDoc child.obj in
            let doc = concat doc newDoc in
@@ -144,11 +146,13 @@ type RenderingDataSet = {
     sType: [RenderingData],
     sUtest: [RenderingData]
 }
-
+    
 -- Constructs a `RenderingDataSet` from:
 -- - A list of rendered children (`children`).
 -- - Recursive block data (`recDatas`), extracted earlier.
-let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet = use ObjectKinds in lam children. lam recDatas.
+let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet =
+    use ObjectKinds in
+    lam children. lam recDatas.
     recursive
     let buildSet = lam set. lam children. lam recDatas.
         switch children
@@ -164,7 +168,12 @@ let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet = use Obj
             case ObjType {} then ({ set with sType = cons child set.sType }, recDatas)
             case ObjUtest {} then ({ set with sUtest = cons child set.sUtest }, recDatas)
             case ObjInclude {} then
-                (if objIsStdlib child.obj then { set with sLibInclude = cons child.obj set.sLibInclude } else { set with sInclude = cons child.obj set.sInclude }, recDatas)
+                let set = if objIsStdlib child.obj then
+                    { set with sLibInclude = cons child.obj set.sLibInclude }
+                  else
+                    { set with sInclude = cons child.obj set.sInclude }
+                in
+                (set, recDatas)
             case ObjRecursiveBloc {} then
                 match recDatas with [children] ++ recDatas then
                     ({ set with sLet = concat children set.sLet }, recDatas)
@@ -179,6 +188,22 @@ let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet = use Obj
     in buildSet { sUse = [], sLet = [], sLang = [],  sSem = [], sSyn = [], sCon = [], sMexpr = [], sInclude = [], sLibInclude = [], sType = [], sUtest = [] } (reverse children) (reverse recDatas)
 
 
+let unwrapRecursives : RenderingOptions -> [ObjectTree] -> [[ObjectTree]] =
+    use ObjectKinds in
+    lam opt. lam children.
+    foldl (lam buffer. lam tree.
+        let obj = objTreeObj tree in
+        match obj.kind with ObjRecursiveBloc {} then
+            let children = objTreeChildren tree in
+            match children with [first] ++ rest then
+                let firstObj = objTreeObj first in
+                let firstDoc = objTryGetDoc firstObj in
+                let firstObj = if null firstDoc then objWithDoc firstObj (objDoc obj) else firstObj in
+                let first = objTreeWithObj first firstObj in
+                let children = cons first rest in
+                cons children buffer
+            else buffer
+        else buffer) [] children
 
 let renderFileOrWarn : String -> String -> () = lam path. lam content.
     match fileWriteOpen path with Some wc then

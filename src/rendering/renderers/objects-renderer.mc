@@ -15,11 +15,10 @@ lang ObjectsRenderer = ObjectKinds + Formats
     | { kind = ObjLet {} | ObjType {} | ObjSem {} | ObjSyn {} | ObjLang {} | ObjCon {} } & obj -> Some (objName obj)
     | _ -> None {}
 
-    -- Preserve the current name context only for Lang and Program roots.
-    sem objPreserveNameCtx : Object -> Bool
-    sem objPreserveNameCtx =
-    | { kind = ObjLang {} | ObjProgram {} } -> true
-    | _ -> false
+    sem objHasName : Object -> Option String
+    sem objHasName =
+    | obj -> optionIsSome (objNameIfHas obj)
+
 
     sem objUrlFetchFailed =
     | obj -> lam name. lam my.
@@ -88,22 +87,20 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objToJsDict : RenderingOptions -> ObjectTree -> [SearchDictObj]
     sem objToJsDict opt = 
     | tree ->
-      recursive let objToJsDict = lam opt. lam tree. 
+      recursive let objToJsDict = lam tree. 
           let obj = objTreeObj tree in
           -- Recursive calls: render all children and transmit the name-context through the fold.
-          let res =  foldl (lam arg. lam child.
+          let dicts =  foldl (lam dicts. lam child.
               let obj = objTreeObj child in
-              match (objTreeChildren child, obj.kind) with ([], ObjInclude {}) then arg else
-              match objToJsDict opt child with { dicts = dicts, opt = opt } in
-              { opt = opt, dicts = concat dicts arg.dicts }
-              ) { dicts = [], opt = opt } (objTreeChildren tree)
+              match (objTreeChildren child, obj.kind) with ([], ObjInclude {}) then dicts else
+              let newDicts = objToJsDict child in
+              concat newDicts dicts
+              ) [] (objTreeChildren tree)
           in
           let link = objGetMyLink obj opt in
           let link = if strEndsWith ".md" link then subsequence link 0 (subi (length link) 3) else link in 
-          {
-             opt = if objPreserveNameCtx obj then res.opt else opt,
-             dicts = if objRenderIt obj then cons { name = objNamespace obj, link = link } res.dicts else res.dicts
-          }
-      in (objToJsDict opt tree).dicts 
-
+          if objRenderIt obj then
+             cons { name = objNamespace obj, link = link } dicts
+          else dicts
+      in objToJsDict tree
 end

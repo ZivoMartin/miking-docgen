@@ -36,7 +36,8 @@
 -- Here we want `y` to be considered a direct child of `x`, not the child of a recursive block. But we still need to compute
 -- the RenderingData of the recursive block to be able to build the source code correctly. By rendering the recursive block we
 -- lose information about children, as we do not keep grandchild information, so the only solution that preserves the architecture
--- is to unwrap all the recursive blocks and render them a second time. As Recursive is considered as a never object by the file-opener, meaning all its children will not have documentation page, the writing part only occurs once.
+-- is to unwrap all the recursive blocks and render them a second time. As Recursive is considered as a never object by the file-opener,
+-- meaning all its children will not have documentation page, the writing part only occurs once.
             
 
 include "./preprocessor.mc"
@@ -78,7 +79,7 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
 
     log "Beginning of rendering stage.";
     recursive
-    let render: RenderingOptions -> ObjectTree -> (RenderingData, RenderingOptions) = lam oldOpt. lam objTree.  -- # Global Rendering Pipeline
+    let render: ObjectTree -> RenderingData = lam objTree.  -- # Global Rendering Pipeline
 
         -- Base case for objects that do not require a documentation page.
         -- For objects such as Use or Include we just want to return source code data.
@@ -87,40 +88,32 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
             renderTreeSourceCode trees obj opt
         in
 
-        objLog (objTreeObj objTree) oldOpt;
+        objLog (objTreeObj objTree) opt;
 
         switch objTree
-        case ObjectNode { obj = { kind = ObjUse {}} & obj, children = children } then (emptyPreview obj, oldOpt)
+        case ObjectNode { obj = { kind = ObjUse {}} & obj, children = children } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [ p ] } then
-            let res = render oldOpt p in
-            (emptyPreview obj, res.1)
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [] } then (emptyPreview obj, oldOpt)
+            let res = render p in
+            emptyPreview obj
+        case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then
-             renderingWarn "Include with more than one child detected"; (emptyPreview obj, oldOpt)
+             renderingWarn "Include with more than one child detected"; emptyPreview obj
         case ObjectNode { obj = obj, children = children } then
 
-            match fileOpenerOpen objTree oldOpt with Some { wc = wc, write = write, path = path } then
+            match fileOpenerOpen objTree opt with Some { wc = wc, write = write, path = path } then
                 (match path with "" then () else log (concat "Rendering file " path));
                 -- Push header of the output file
-                write (renderHeader obj oldOpt);
+                write (renderHeader obj opt);
 
                 -- Unwrapping the recursive blocks and rendering all the children.
-                let recDatas: [[RenderingData]] = foldl (lam buffer. lam tree.
-                    let obj = objTreeObj tree in
-                    match obj.kind with ObjRecursiveBloc {} then
-                        let datas = map (lam child. (render opt child).0) (objTreeChildren tree) in
-                        cons datas buffer
-                    else buffer) [] children
-                in
+                -- If the first children doesn't have any doc, we give it the doc of
+                -- the bloc, which is what the user wants in 99% of the cases.
+                let recChildren: [[ObjectTree]] = unwrapRecursives opt children in
+                let recDatas = map (lam children. map render children) recChildren in
+                let recDatas = reverse recDatas in
 
-                -- Recursive calls: render all children and transmit the name-context through the fold.
-                match foldl (lam arg. lam child.
-                      let obj = objTreeObj child in
-                      match render opt child with (child, opt) in
-                      { opt = opt, children = cons child arg.children }
-                      ) { children = [], opt = oldOpt } children with { children = children, opt = opt }
-                in
-                let children = reverse children in
+                -- Recursive calls: render all children
+                let children = map render children in
 
                 -- Inject test data into children
                 let children = injectTests children in
@@ -134,7 +127,7 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 write (renderObjTitle 1 data.obj opt);
                 write (renderTopPageDoc data opt);
 
-                let children = removeDoubleNames children in
+                -- let children = removeDoubleNames children in
 
                 -- Order objects into a set
                 let set = buildSet children recDatas in
@@ -155,10 +148,18 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                     iter (lam u. write (renderDocBloc u opt)) arr
                 in
     
-                iter (lam a. displayUseInclude a.0 a.1) [("Using", set.sUse), ("Includes", set.sInclude), ("Stdlib Includes", set.sLibInclude)];
+                iter (lam a. displayUseInclude a.0 a.1)
+                     [("Using", set.sUse),
+                     ("Includes", set.sInclude),
+                     ("Stdlib Includes", set.sLibInclude)];
                 iter (lam a. displayDefault a.0 a.1)
-                    [("Types", set.sType), ("Constructors", set.sCon), ("Languages", set.sLang),
-                    ("Syntaxes", set.sSyn), ("Variables", set.sLet), ("Semantics", set.sSem), ("Mexpr", set.sMexpr)];
+                    [("Types", set.sType),
+                    ("Constructors", set.sCon),
+                    ("Languages", set.sLang),
+                    ("Syntaxes", set.sSyn),
+                    ("Variables", set.sLet),
+                    ("Semantics", set.sSem),
+                    ("Mexpr", set.sMexpr)];
 
                 -- Push the footer of the page
                 write (renderFooter obj opt);
@@ -166,8 +167,8 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 (match wc with Some wc then fileWriteClose wc else ());
 
                 -- Only preserving name-context embedded in options if accepted in the node.
-                (data, if objPreserveNameCtx obj then opt else oldOpt)
-            else (emptyPreview obj, oldOpt)
+                data
+            else emptyPreview obj
         end
     in
-    let output = render opt obj in res
+    let output = render obj in res
