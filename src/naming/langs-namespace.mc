@@ -29,9 +29,17 @@ let langNamespaceDefault : LangNamespace = {
     cons = []
 }
 
+type LangNamespaceDatas = {
+    -- The full rebuilt namespace
+    full: LangNamespace,
+    -- Only what was already in the namespace
+    explicit: LangNamespace,
+    -- Only what have been added
+    implicit: LangNamespace
+}
 
 type LangNamespaceSet = {
-     idMap: HashMap Int LangNamespace,
+     idMap: HashMap Int LangNamespaceDatas,
      nameMap: HashMap String [Int],
      nextId: Int
 }
@@ -55,7 +63,7 @@ let langNamespaceSetBuildNamespace : LangNamespaceSet -> LangNamespace -> [Strin
 
 let langNamespaceGetById : LangNamespaceSet -> LangId -> Option LangNamespace =
     lam set. lam id.
-    hmIntLookup id set.idMap
+    optionMap (lam d. d.full) (hmIntLookup id set.idMap)
 
 let langNamespaceGetByName : LangNamespaceSet -> String -> Option LangNamespace =
     lam set. lam name.
@@ -70,7 +78,7 @@ let langNamespaceGetByName : LangNamespaceSet -> String -> Option LangNamespace 
 
 
 let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> LangNamespaceSet =
-    lam set. lam name. lam namespace.
+    lam set. lam name. lam explicit.
 
     let parents = map
         (lam parent.
@@ -79,21 +87,42 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
              else
                  namingWarn "Failed to fetch the parent lang.";
                  langNamespaceDefault
-        ) namespace.parents in
+        ) explicit.parents in
 
     let unite : (LangNamespace -> [String]) -> [String] = lam getter.
         let union = foldl (lam acc. lam from.
                 let field = getter from in
                 foldl (lam acc. lam arg. hmInsert arg () acc) acc field
-            ) (hashmapEmpty ()) (cons namespace parents) in
+            ) (hashmapEmpty ()) (cons explicit parents) in
         hmKeys union
     in
+
+    let diff : (LangNamespace -> [String]) -> [String] = lam getter.
+        let explicit = foldl (lam acc. lam arg. hmInsert arg () acc) (hashmapEmpty ()) (getter explicit) in
+        
+        let diff = foldl (lam acc. lam from.
+                let field = getter from in
+                foldl (lam acc. lam arg.
+                    match hmLookup arg explicit with None {} then
+                        hmInsert arg () acc
+                    else acc
+                ) acc field
+            ) (hashmapEmpty ()) parents in
+        hmKeys diff
+    in
     
-    let namespace = { namespace with 
+    let full = { explicit with 
          syns = unite (lam namespace. namespace.syns),
          sems = unite (lam namespace. namespace.sems),
          types = unite (lam namespace. namespace.types),
          cons = unite (lam namespace. namespace.cons)
+    } in
+
+    let implicit = { explicit with 
+         syns = diff (lam namespace. namespace.syns),
+         sems = diff (lam namespace. namespace.sems),
+         types = diff (lam namespace. namespace.types),
+         cons = diff (lam namespace. namespace.cons)
     } in
 
     let id = set.nextId in
@@ -103,8 +132,22 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
         else [id] 
     in
 
+    let datas = {
+        explicit = explicit,
+        full = full,
+        implicit = implicit
+    } in
+
     { set with
       nextId = addi 1 id,
-      idMap = hmIntInsert id namespace set.idMap,
+      idMap = hmIntInsert id datas set.idMap,
       nameMap = hmInsert name idSet set.nameMap
     }
+
+let langNamespaceGetAddedChildren : LangNamespaceSet -> String -> Option LangNamespace =
+    lam set. lam name.
+    optionJoin
+        (optionMap
+        (lam id. optionMap (lam d. d.implicit) (hmIntLookup id set.idMap))
+        (langNamespaceNameToId set name))
+        

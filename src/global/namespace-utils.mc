@@ -45,6 +45,10 @@ utest namespaceSeparate "a/b/c" with
   None {}
 
 
+let namespaceAdd : Namespace -> String -> Namespace =
+    lam namespace. lam last.
+    join [namespace, "/", last]
+
 let namespaceGetDomain : Namespace -> Namespace =
     lam namespace.
     let split = namespaceSplit namespace in

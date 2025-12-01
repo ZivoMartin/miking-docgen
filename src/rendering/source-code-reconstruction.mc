@@ -32,6 +32,8 @@ let reconstructSourceCode : SourceCode -> [RenderingData] -> [TreeSourceCode] =
                 renderingWarn "Child array should not be empty at this point";
                 a
         end) { tree = [], children = children, buffer = [] } code in
-    (match tree.children with [] then () else renderingWarn "Not all children have been processed.");
+    (match tree.children with [] then () else
+         if any objHasSourceCode (map (lam d. d.obj) tree.children) then
+         renderingWarn "Not all children have been processed." else ());
     reverse (match tree.buffer with [] then tree.tree else cons (TreeSourceCodeSnippet (reverse tree.buffer)) tree.tree)
    

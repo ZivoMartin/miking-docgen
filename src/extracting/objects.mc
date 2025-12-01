@@ -165,6 +165,9 @@ let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
 -- Returns true if the object has a meaningful id.
 let objHasId : Object -> Bool = lam obj. neqi obj.id 0
 
+-- Returns true if the object has a code source (otherwise it has probably been added during naming)
+let objHasSourceCode : Object -> Bool = lam obj. not (null obj.sourceCode)
+
 -- Returns absolute path = prefix + namespace.
 let objAbsolutePath : Object -> String = lam obj.
     concat obj.prefix obj.namespace

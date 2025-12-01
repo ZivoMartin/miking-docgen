@@ -90,7 +90,6 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             annotate ctx objTree nextId children
         in
 
-
         -- We first insert the direct children, then we call process. So direct children will be
         -- inserted twice, which is absolutly fine and doesn't change correctness.
         let nameDirectChildrenAndProcess : NameContext -> Int -> [ObjectTree] -> WorkRes =
@@ -166,11 +165,43 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                 cons = filterIt (lam k. match k with ObjCon {} then true else false)
            } in
 
+           let name = objName obj in
+           let namespace = objNamespace obj in
+           let isStdlib = objIsStdlib obj in
+
            let langNamespace = langNamespaceSetBuildNamespace ctx.langNamespaceSet langNamespace parents in
-           let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet (objName obj) langNamespace in
-           
+           let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet name langNamespace in
            let ctx = { ctx with langNamespaceSet = langNamespaceSet } in
-          
+           
+           let added = match langNamespaceGetAddedChildren langNamespaceSet name with Some added then added else
+                       namingWarn (join ["Failed to fetch the implicit lang namespace of ", name, "."]); langNamespaceDefault
+           in
+           
+           let createChildren : (String -> ObjectKind) -> String -> [String] -> [ObjectTree] =
+               lam cast. lam kind. lam children.
+               map (lam child.
+                   let obj = {
+                       name = child,
+                       doc = objDefaultDoc,
+                       namespace = namespaceAdd namespace (join [kind, "-", child]),
+                       renderIt = true,
+                       isStdlib = isStdlib,
+                       kind = cast child,
+                       sourceCode = sourceCodeEmpty (),
+                       prefix = objPrefix obj,
+                       id = 0
+                   } in
+                   ObjectNode { children = [], obj = obj }
+               ) children
+           in
+
+           let syns = createChildren (lam. ObjSyn { langName = name, variants = [] }) "syn" added.syns in
+           let sems = createChildren (lam. ObjSem { langName = name, variants = [], ty = None {} }) "sem" added.sems in
+           let cons = createChildren (lam. ObjCon { t = "" }) "con" added.cons in
+           let types = createChildren (lam. ObjType { t = Some "" }) "type" added.types in
+
+           let children = join [children, syns, sems, cons, types] in
+
            nameDirectChildrenAndProcess ctx nextId children
            
         case ObjRecursiveBloc {} then nameDirectChildrenAndProcess ctx nextId children
