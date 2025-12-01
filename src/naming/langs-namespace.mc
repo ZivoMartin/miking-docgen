@@ -1,5 +1,6 @@
 include "../global/util.mc"
 include "../global/logger.mc"
+include "../extracting/objects.mc"
 
 type LangId = Int
 
@@ -10,10 +11,10 @@ type LangNamespace = {
      
      parents: [LangId],
 
-     syns: [String],
-     sems: [String],
-     types: [String],
-     cons: [String]
+     syns: [Object],
+     sems: [Object],
+     types: [Object],
+     cons: [Object]
 }
 
 
@@ -43,7 +44,7 @@ type LangNamespaceSet = {
      nameMap: HashMap String [Int],
      nextId: Int
 }
-
+ 
 let langNamespaceSetEmpty : () -> LangNamespaceSet = lam. {
     idMap = hashmapEmpty (),
     nameMap = hashmapEmpty (),
@@ -89,26 +90,27 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
                  langNamespaceDefault
         ) explicit.parents in
 
-    let unite : (LangNamespace -> [String]) -> [String] = lam getter.
+    let unite : (LangNamespace -> [Object]) -> [Object] = lam getter.
         let union = foldl (lam acc. lam from.
                 let field = getter from in
-                foldl (lam acc. lam arg. hmInsert arg () acc) acc field
+                foldl (lam acc. lam arg. hmInsert (objName arg) arg acc) acc field
             ) (hashmapEmpty ()) (cons explicit parents) in
-        hmKeys union
+        hmValues union
     in
 
-    let diff : (LangNamespace -> [String]) -> [String] = lam getter.
-        let explicit = foldl (lam acc. lam arg. hmInsert arg () acc) (hashmapEmpty ()) (getter explicit) in
+    let diff : (LangNamespace -> [Object]) -> [Object] = lam getter.
+        let explicit = foldl (lam acc. lam arg. hmInsert (objName arg) () acc) (hashmapEmpty ()) (getter explicit) in
         
         let diff = foldl (lam acc. lam from.
                 let field = getter from in
-                foldl (lam acc. lam arg.
-                    match hmLookup arg explicit with None {} then
-                        hmInsert arg () acc
+                foldl (lam acc. lam obj.
+                    let name = objName obj in
+                    match hmLookup name explicit with None {} then
+                        hmInsert name obj acc
                     else acc
                 ) acc field
             ) (hashmapEmpty ()) parents in
-        hmKeys diff
+        hmValues diff
     in
     
     let full = { explicit with 
@@ -151,3 +153,6 @@ let langNamespaceGetAddedChildren : LangNamespaceSet -> String -> Option LangNam
         (lam id. optionMap (lam d. d.implicit) (hmIntLookup id set.idMap))
         (langNamespaceNameToId set name))
         
+
+let langNamespaceCleanObj : Object -> Object =
+    lam obj. { obj with sourceCode = sourceCodeEmpty () }

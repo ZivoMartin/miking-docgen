@@ -109,10 +109,12 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
         case ObjUse {} then
              let used = objName obj in
              match langNamespaceGetByName ctx.langNamespaceSet used with Some langNamespace then
-                 let useThis : NameMap -> Int -> String -> [String] -> { nameMap: NameMap, nextId: Int } =
-                     lam nameMap. lam nextId. lam kind. lam names.
+                 let useThis : NameMap -> Int -> String -> [Object] -> { nameMap: NameMap, nextId: Int } =
+                     lam nameMap. lam nextId. lam kind. lam objects.
                      foldl (
-                         lam acc. lam name.
+                         lam acc. lam obj.
+
+                         let name = objName obj in
                          let namespace = join [objNamespace obj, "/", kind, "-", name] in
                          let url = buildUrl langNamespace.objIsStdlib namespace in
                          let entry = { entry = url, id = acc.nextId, namespace = namespace, isNested = true } in
@@ -124,10 +126,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                              "id=", int2string entry.id, "\n",
                              "isNested=", bool2string entry.isNested, "\n"]);
 
-                         
                          let nameMap = nameMapInsert acc.nameMap name entry in
                          { nameMap = nameMap, nextId = addi acc.nextId 1 }
-                     ) { nameMap = nameMap, nextId = nextId } names
+                     ) { nameMap = nameMap, nextId = nextId } objects
                  in
                  let nameMap = ctx.nameMap in
                  match useThis nameMap nextId "syn" langNamespace.syns with { nameMap = nameMap, nextId = nextId } in
@@ -141,13 +142,13 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                  namingWarn (join ["Failed to fetch the ", used, "lang."]);
                  { ctx = ctx, nextId = nextId, objTree = objTree}
         case ObjLang { parents = parents} then
-            let filterIt : (ObjectKind -> Bool) -> [String] =
+            let filterIt : (ObjectKind -> Bool) -> [Object] =
                 lam keepIt.
                 mapOption (
                     lam child.
                     let obj = objTreeObj child in
                     if keepIt (objKind obj) then
-                       Some (objName obj)
+                       Some (langNamespaceCleanObj obj)
                     else
                        None {}
                 ) children
@@ -177,28 +178,17 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                        namingWarn (join ["Failed to fetch the implicit lang namespace of ", name, "."]); langNamespaceDefault
            in
            
-           let createChildren : (String -> ObjectKind) -> String -> [String] -> [ObjectTree] =
-               lam cast. lam kind. lam children.
-               map (lam child.
-                   let obj = {
-                       name = child,
-                       doc = objDefaultDoc,
-                       namespace = namespaceAdd namespace (join [kind, "-", child]),
-                       renderIt = true,
-                       isStdlib = isStdlib,
-                       kind = cast child,
-                       sourceCode = sourceCodeEmpty (),
-                       prefix = objPrefix obj,
-                       id = 0
-                   } in
+           let createChildren : [Object] -> [ObjectTree] =
+               lam children.
+               map (lam obj.
                    ObjectNode { children = [], obj = obj }
                ) children
            in
 
-           let syns = createChildren (lam. ObjSyn { langName = name, variants = [] }) "syn" added.syns in
-           let sems = createChildren (lam. ObjSem { langName = name, variants = [], ty = None {} }) "sem" added.sems in
-           let cons = createChildren (lam. ObjCon { t = "" }) "con" added.cons in
-           let types = createChildren (lam. ObjType { t = Some "" }) "type" added.types in
+           let syns = createChildren added.syns in
+           let sems = createChildren added.sems in
+           let cons = createChildren added.cons in
+           let types = createChildren added.types in
 
            let children = join [children, syns, sems, cons, types] in
 
