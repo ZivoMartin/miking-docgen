@@ -44,7 +44,7 @@ lang RawRenderer = RendererInterface
             let parents = strJoin " + " (map (lam p. renderLink p (objGetLink obj opt p) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
-        case { obj = { kind = ( ObjSyn {} | ObjSem {} )} & obj } then
+        case { obj = { kind = ( ObjSyn { variants = variants } | ObjSem { variants = variants } )} & obj } then
             let langName = objGetLangName obj in
             let langLink = renderLink langName (objGetLink obj opt langName) opt in
             let sectionTitle = renderBold "From:" opt in

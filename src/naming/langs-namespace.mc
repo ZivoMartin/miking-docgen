@@ -79,7 +79,7 @@ let langNamespaceGetByName : LangNamespaceSet -> String -> Option LangNamespace 
 
 
 let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> LangNamespaceSet =
-    lam set. lam name. lam explicit.
+    lam set. lam name. lam namespace.
 
     let parents = map
         (lam parent.
@@ -88,24 +88,52 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
              else
                  namingWarn "Failed to fetch the parent lang.";
                  langNamespaceDefault
-        ) explicit.parents in
+        ) namespace.parents in
 
     let unite : (LangNamespace -> [Object]) -> [Object] = lam getter.
         let union = foldl (lam acc. lam from.
                 let field = getter from in
-                foldl (lam acc. lam arg. hmInsert (objName arg) arg acc) acc field
-            ) (hashmapEmpty ()) (cons explicit parents) in
+                foldl (lam acc. lam obj.
+                    let name = objName obj in
+                    let obj =
+                        match hmLookup name acc
+                        with Some inner then objMerge inner obj
+                        else obj
+                    in
+                    hmInsert name obj acc 
+                ) acc field
+            ) (hashmapEmpty ()) (cons namespace parents) in
         hmValues union
     in
 
+    let intersect : (LangNamespace -> [Object]) -> [Object] = lam getter.
+        let explicit = foldl (lam acc. lam arg. hmInsert (objName arg) arg acc) (hashmapEmpty ()) (getter namespace) in
+        let intersect = foldl (lam acc. lam from.
+                let field = getter from in
+                foldl (lam acc. lam obj.
+                    let name = objName obj in
+                    match hmLookup name acc with Some inner then
+                        let obj = objMerge inner obj in
+                        hmInsert name obj acc
+                    else acc
+                ) acc field
+            ) explicit parents in
+        hmValues intersect
+    in
+
     let diff : (LangNamespace -> [Object]) -> [Object] = lam getter.
-        let explicit = foldl (lam acc. lam arg. hmInsert (objName arg) () acc) (hashmapEmpty ()) (getter explicit) in
+        let explicit = foldl (lam acc. lam arg. hmInsert (objName arg) () acc) (hashmapEmpty ()) (getter namespace) in
         
         let diff = foldl (lam acc. lam from.
                 let field = getter from in
                 foldl (lam acc. lam obj.
                     let name = objName obj in
                     match hmLookup name explicit with None {} then
+                        let obj =
+                            match hmLookup name acc
+                            with Some inner then objMerge inner obj
+                            else obj
+                        in
                         hmInsert name obj acc
                     else acc
                 ) acc field
@@ -113,14 +141,21 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
         hmValues diff
     in
     
-    let full = { explicit with 
+    let full = { namespace with 
          syns = unite (lam namespace. namespace.syns),
          sems = unite (lam namespace. namespace.sems),
          types = unite (lam namespace. namespace.types),
          cons = unite (lam namespace. namespace.cons)
     } in
 
-    let implicit = { explicit with 
+    let explicit = { namespace with 
+         syns = intersect (lam namespace. namespace.syns),
+         sems = intersect (lam namespace. namespace.sems),
+         types = intersect (lam namespace. namespace.types),
+         cons = intersect (lam namespace. namespace.cons)
+    } in
+
+    let implicit = { namespace with 
          syns = diff (lam namespace. namespace.syns),
          sems = diff (lam namespace. namespace.sems),
          types = diff (lam namespace. namespace.types),
@@ -146,12 +181,20 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
       nameMap = hmInsert name idSet set.nameMap
     }
 
-let langNamespaceGetAddedChildren : LangNamespaceSet -> String -> Option LangNamespace =
+let langNamespaceGetImplicitChildren : LangNamespaceSet -> String -> Option LangNamespace =
     lam set. lam name.
     optionJoin
         (optionMap
         (lam id. optionMap (lam d. d.implicit) (hmIntLookup id set.idMap))
         (langNamespaceNameToId set name))
+
+let langNamespaceGetExplicitChildren : LangNamespaceSet -> String -> Option LangNamespace =
+    lam set. lam name.
+    optionJoin
+        (optionMap
+        (lam id. optionMap (lam d. d.explicit) (hmIntLookup id set.idMap))
+        (langNamespaceNameToId set name))
+
         
 
 let langNamespaceCleanObj : Object -> Object =

@@ -53,9 +53,11 @@ CLOSED: [2025-11-15 Sat 02:21]
 When we click on the page make sure to close the search bar even if the focus is not on it
 ** TODO Fix the background color of the description.
 * TODO Objects strengthening
-** TODO Keep track of all the available variant of a syntax
+** DONE Keep track of all the available variant of a syntax
+CLOSED: [2025-12-01 Mon 16:34]
 ** TODO Keep track of all the constructors of a type
-** TODO Instead of just storing the name, store the whole object in the lang namespace, with updated informations.
+** DONE Instead of just storing the name, store the whole object in the lang namespace, with updated informations.
+CLOSED: [2025-12-01 Mon 13:01]
 ** DONE Add children to languages based on the langNamespace, probably during naming
 CLOSED: [2025-12-01 Mon 01:38]
 ** DONE Parse int.mc and bool.mc before starting, so we can correctly redirect Int, Bool, etc.

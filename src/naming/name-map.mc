@@ -1,4 +1,4 @@
-include "../global/logger.mc"
+    include "../global/logger.mc"
 include "../global/namespace-utils.mc"
 
 type NameMapEntry a = { entry: a, id: Int, namespace: String, isNested: Bool }

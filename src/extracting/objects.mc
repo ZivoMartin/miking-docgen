@@ -1,7 +1,6 @@
 -- # ObjectKinds and Object helpers
 --
 -- This module defines:
--- - `ObjectKind`: kinds of program elements (let, type, lang, sem, …)
 -- - `Object`: carries name, namespace, doc, kind, source code, prefix, stdlib flag
 -- - `ObjectTree`: a simple tree wrapper for grouping objects
 --
@@ -9,76 +8,8 @@
 
 include "../global/util.mc"
 include "./source-code-builder.mc"
-include "util.mc"
-
-include "mexpr/ast.mc"
-
--- The ObjectKinds language augments kinds with extra info per block type.
--- For blocks involving types, we reuse stdlib types from `mexpr/ast.mc` and their utilities.
-lang ObjectKinds = MExprAst
-
-    -- All possible object kinds
-    syn ObjectKind = 
-    | ObjProgram {}
-    | ObjInclude { pathInFile: String }
-    | ObjLet { rec : Bool, args : [String], ty: Option Type }
-    | ObjLang { parents : [String] }
-    | ObjType { t: Option String }
-    | ObjUse {}
-    | ObjSem { langName: String, variants: [String], ty: Option Type } -- Variants are the names of each alternative.
-    | ObjSyn { langName: String, variants: [String] }
-    | ObjCon { t: String }
-    | ObjMexpr {}
-    | ObjUtest {}
-    | ObjRecursiveBloc {}
-
-    -- Converts an ObjectKind to a readable string (for logs/debugging).
-    sem objKindToString : ObjectKind -> String
-    sem objKindToString =
-    | ObjLet { rec = rec, args = args, ty = ty} -> join ["ObjLet, recursive: ", bool2string rec, ", args: [", strJoin ", " args, "]"]
-    | ObjLang { parents = parents } -> join ["ObjLang, parents: ", strJoin ", " parents]
-    | ObjType { t = t } -> join ["ObjType", match t with Some t then concat ", " t else ""]
-    | ObjUse {} -> "ObjUse"
-    | ObjSem { langName =  langName } ->  join ["ObjSem, langName = ", langName]
-    | ObjSyn { langName = langName } -> join ["ObjSyn, langName = ", langName]
-    | ObjCon { t = t } -> join ["ObjCon: ", t]
-    | ObjMexpr {} -> "ObjMexpr"
-    | ObjInclude { pathInFile = p } -> join ["ObjInclude, path = ", p]
-    | ObjUtest {} -> "ObjUtest"
-    | ObjRecursiveBloc {} -> "ObjRecursiveBloc"
-    | ObjProgram {} -> "ObjProgram"
-    | _ -> warn "All object kinds are not supported in objKindToString sementic"; ""
-         
-    -- First keyword for this kind (used for printing/links/extension).
-    sem getFirstWord =
-    | ObjLet {} -> "let"
-    | ObjLang {} -> "lang"
-    | ObjType {} -> "type"
-    | ObjUse {} -> "use"
-    | ObjSem {} -> "sem"
-    | ObjSyn {} -> "syn"
-    | ObjCon {} -> "con"
-    | ObjMexpr {} -> "mexpr"
-    | ObjInclude {} -> "include"
-    | ObjUtest {} -> "utest"
-    | ObjRecursiveBloc {} -> "recursive"
-    | ObjProgram {} -> ""
-    | _ -> warn "All object kinds are not supported in getFirstWord sementic"; ""
-
-    -- True if the object has a page.
-    sem objKindHasUrl : ObjectKind -> Bool
-    sem objKindHasUrl =
-    | ObjRecursiveBloc {} | ObjInclude {} | ObjUse {} -> false
-    | _ -> true  
-
-    -- True if the object can be casted into a link.
-    sem objKindHasLink : ObjectKind -> Bool
-    sem objKindHasLink =
-    | ObjRecursiveBloc {} -> false
-    | _ -> true  
-
-
-end
+include "./object-kinds.mc"
+include "./util.mc"
 
 -- The object type is designed to represent the documentation-side structure of the code.
 -- Its fields are:
@@ -212,6 +143,12 @@ let objSetType = use ObjectKinds in lam obj. lam ty.
     case ObjLet d then ObjLet { d with ty = ty }
     case ObjSem d then ObjSem { d with ty = ty }    
     case _ then obj.kind end }
+
+let objMerge : Object -> Object -> Object =
+    use ObjectKinds in
+    lam obj1. lam obj2.
+    let kind = objKindMerge (objKind obj1) (objKind obj2) in
+    objWithKind obj1 kind
     
     
 -- Object tree (hierarchy). Wraps Object to allow recursive nesting.
@@ -229,6 +166,7 @@ let objTreeWithChildren : ObjectTree -> [ObjectTree] -> ObjectTree = lam tree. l
 
 let objTreeDoc : ObjectTree -> String = lam tree. objDoc (objTreeObj tree)
 let objTreeSourceCode : ObjectTree -> SourceCode = lam tree. objSourceCode (objTreeObj tree)
+let objTreeName : ObjectTree -> String = lam tree. objName (objTreeObj tree)
 
 let objTreeWithDoc : ObjectTree -> String -> ObjectTree = lam tree. lam doc.
     match tree with ObjectNode { obj = obj, children = children } in ObjectNode { obj = { obj with doc = doc}, children = children }

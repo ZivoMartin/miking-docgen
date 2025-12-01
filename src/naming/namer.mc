@@ -76,15 +76,15 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             { ctx = ctx, nextId = nextId, objTree = objTree }
         in
 
-        let annotateAndProcess : NameContext -> Int -> [ObjectTree] -> WorkRes =
-            lam ctx. lam nextId. lam children.
+        let annotateAndProcess : ObjectTree -> NameContext -> Int -> [ObjectTree] -> WorkRes =
+            lam objTree. lam ctx. lam nextId. lam children.
             match annotate ctx objTree nextId children with
             { ctx = ctx, nextId = nextId, objTree = objTree } in
             process ctx objTree nextId children
         in
 
-        let processAndAnnotate : NameContext -> Int -> [ObjectTree] -> WorkRes =
-            lam ctx. lam nextId. lam children.
+        let processAndAnnotate : ObjectTree -> NameContext -> Int -> [ObjectTree] -> WorkRes =
+            lam objTree. lam ctx. lam nextId. lam children.
             match process ctx objTree nextId children with
             { ctx = ctx, nextId = nextId, objTree = objTree } in
             annotate ctx objTree nextId children
@@ -92,8 +92,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
 
         -- We first insert the direct children, then we call process. So direct children will be
         -- inserted twice, which is absolutly fine and doesn't change correctness.
-        let nameDirectChildrenAndProcess : NameContext -> Int -> [ObjectTree] -> WorkRes =
-            lam ctx. lam nextId. lam children.
+        let nameDirectChildrenAndProcess : ObjectTree -> NameContext -> Int -> WorkRes =
+            lam objTree. lam ctx. lam nextId.
+            let children = objTreeChildren objTree in
             match foldl (
                 lam acc. lam child.
                 let child = objTreeRemoveChildren child in
@@ -102,7 +103,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                 { ctx = ctx, nextId = nextId }
             ) { ctx = ctx, nextId = nextId } children 
             with { ctx = ctx, nextId = nextId } in
-            annotateAndProcess ctx nextId children
+            annotateAndProcess objTree ctx nextId children
         in
 
         switch kind
@@ -137,7 +138,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                  match useThis nameMap nextId "type" langNamespace.types with { nameMap = nameMap, nextId = nextId } in
 
                  let ctx = { ctx with nameMap = nameMap } in
-                 annotateAndProcess ctx nextId children
+                 annotateAndProcess objTree ctx nextId children
              else
                  namingWarn (join ["Failed to fetch the ", used, "lang."]);
                  { ctx = ctx, nextId = nextId, objTree = objTree}
@@ -173,30 +174,54 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
            let langNamespace = langNamespaceSetBuildNamespace ctx.langNamespaceSet langNamespace parents in
            let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet name langNamespace in
            let ctx = { ctx with langNamespaceSet = langNamespaceSet } in
+
+           let explicit = match langNamespaceGetExplicitChildren langNamespaceSet name with Some explicit then explicit else
+                       namingWarn (join ["Failed to fetch the explicit lang namespace of ", name, "."]); langNamespaceDefault
+           in
            
-           let added = match langNamespaceGetAddedChildren langNamespaceSet name with Some added then added else
+           let createChildren : [Object] -> [ObjectTree] =
+               lam updatedChildren: [Object].
+               map (lam obj.
+                   match find (lam original. eqString (objTreeName original) (objName obj)) children
+                   with Some child then ObjectNode { obj = obj, children = objTreeChildren child }
+                   else namingWarn (join ["Explicit children of the lang namespace and actual children doesn't match for ", objName obj, "."]);
+                        ObjectNode { children = [], obj = obj }  
+ 
+               ) updatedChildren
+           in
+
+           let syns = createChildren explicit.syns in
+           let sems = createChildren explicit.sems in
+           let cons = createChildren explicit.cons in
+           let types = createChildren explicit.types in
+
+           let children = join [syns, sems, cons, types] in           
+
+           let implicit = match langNamespaceGetImplicitChildren langNamespaceSet name with Some implicit then implicit else
                        namingWarn (join ["Failed to fetch the implicit lang namespace of ", name, "."]); langNamespaceDefault
            in
            
            let createChildren : [Object] -> [ObjectTree] =
                lam children.
                map (lam obj.
-                   ObjectNode { children = [], obj = obj }
+                   ObjectNode { children = [], obj = obj }  
                ) children
            in
 
-           let syns = createChildren added.syns in
-           let sems = createChildren added.sems in
-           let cons = createChildren added.cons in
-           let types = createChildren added.types in
+           let syns = createChildren implicit.syns in
+           let sems = createChildren implicit.sems in
+           let cons = createChildren implicit.cons in
+           let types = createChildren implicit.types in
 
            let children = join [children, syns, sems, cons, types] in
 
-           nameDirectChildrenAndProcess ctx nextId children
+           let objTree = ObjectNode { children = children, obj = obj } in
+
+           nameDirectChildrenAndProcess objTree ctx nextId
            
-        case ObjRecursiveBloc {} then nameDirectChildrenAndProcess ctx nextId children
-        case ObjInclude {} | ObjProgram {} then processAndAnnotate ctx nextId children
-        case _ then annotateAndProcess ctx nextId children
+        case ObjRecursiveBloc {} then nameDirectChildrenAndProcess objTree ctx nextId
+        case ObjInclude {} | ObjProgram {} then processAndAnnotate objTree ctx nextId children
+        case _ then annotateAndProcess objTree ctx nextId children
         end
     in
 
