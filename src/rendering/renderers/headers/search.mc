@@ -3,7 +3,7 @@ include "string.mc"
 
 let searchHtml: String = 
 "<div id=\"search-container\">
-  <input id=\"search-bar\" type=\"text\" placeholder=\"Type to search\" />
+  <input id=\"search-bar\" type=\"text\" placeholder=\"Type to search [r]\" />
   <div id=\"search-results\"></div>
 </div>"
 
@@ -147,6 +147,7 @@ export default function Search() {
   useEffect(() => {
     // inject CSS
     const style = document.createElement(\"style\");
+    
     style.textContent = searchCss;
     document.head.appendChild(style);
     // force light theme
@@ -215,7 +216,7 @@ let searchJs: [SearchDictObj] -> String = lam objects.
 let dict = buildDict objects in
 join [
 "
-const results = [", dict, "];
+const results = [", dict, "];   
 
 const searchBar = document.getElementById(\"search-bar\");
 const resultsDiv = document.getElementById(\"search-results\");
@@ -243,13 +244,30 @@ let inputProcess = () => {
     }
 
     resultsDiv.appendChild(frag);
+
+    return candidates;
 };
 
+
+document.addEventListener(\"keypress\", (event) => {
+    if (event.key === 'r') {
+        searchBar.focus();
+    }
+});
+
+searchBar.addEventListener(\"keydown\", (event) => {
+    if (event.key === \"Enter\") {
+        event.preventDefault();
+        const candidates = inputProcess() || [];
+        if (candidates.length > 0) {
+            window.location.href = candidates[0].link;
+        }
+    }
+});
 searchBar.addEventListener(\"input\", inputProcess);
 searchBar.addEventListener(\"focus\", inputProcess);
-searchBar.addEventListener(\"focusout\", (event) => {
-  const newTarget = event.relatedTarget;
-  if (!resultsDiv.contains(newTarget)) {
+document.addEventListener(\"mousedown\", (event) => {
+  if (!searchBar.contains(event.target) && !resultsDiv.contains(event.target)) {
     resultsDiv.innerHTML = \"\";
   }
 });
