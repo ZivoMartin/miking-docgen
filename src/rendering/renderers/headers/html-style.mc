@@ -90,7 +90,6 @@ pre {
 }
 
 .doc-description {
-  background-color: var(--docDescriptionBGColor);
   padding: 0.5em 1em;
   color: var(--docDescriptionTextColor);
   font-style: italic;
