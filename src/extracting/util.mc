@@ -61,11 +61,16 @@ let strExtractType = use TokenReader in lam typedef.
         case [x, "in"] | [x] then x
         case [current] ++ rest then
             let res = strExtractType rest in
-            switch (current, res)
-            case (_, "," ++ _) | ("{", "}" ++ _) | ("[", _) | (_, "]" ++ _) | ("(", _) | (_, ")" ++ _) | (_, ":" ++ _) then
+            match (current, res)
+            with (_, "," ++ _)
+               | ("{", "}" ++ _)
+               | ("[", _)
+               | (_, "]" ++ _)
+               | ("(", _)
+               | (_, ")" ++ _)
+               | (_, ":" ++ _) then
                 concat current res
-            case (current, _) then join [current, " ", res]
-            end
+            else join [current, " ", res]
         end in strExtractType (reverse typedef)
 
 -- Extracts the type signature from a list of syntax tree nodes.
@@ -75,6 +80,23 @@ let extractType = use TokenReader in lam typedef.
             match w with DocTreeLeaf { token = TokenWord { content = content } } then cons content a
             else a
          ) [] typedef)
+
+
+-- Extracts sem variant names from a stream of syntax tree nodes starting with '|'.
+let extractSemVariants : [DocTree] -> [String] = lam stream.
+    recursive let work : [DocTree] -> Option [String] -> [String] = lam stream. lam typeAcc.
+        switch (nthWord stream 0, typeAcc)
+        case (Some { word = "|", rest = stream }, Some typeAcc) then cons (strExtractType typeAcc) (work stream (Some []))
+        case (Some { word = "|", rest = stream }, None {}) then work stream (Some [])
+        case (Some { word = "->", rest = stream }, Some typeAcc) then cons (strExtractType typeAcc) (work stream (None {}))
+        case (Some { word = word, rest = stream }, Some typeAcc) then work stream (Some (cons word typeAcc))
+        case (Some { rest = stream }, None {}) then work stream (None {})
+        case (None {}, Some typeAcc) then [strExtractType typeAcc]
+        case (None {}, None {}) then []
+        end
+        
+    in work stream (None {})
+
 
 -- Extracts parent names from a list of syntax tree nodes.
 -- Stops when encountering 'end', 'type', or a few other keywords.
@@ -99,22 +121,6 @@ recursive let skipUseIn : [DocTree] -> [DocTree] = lam children.
             []
     else children
 end
-
--- Extracts variant names from a stream of syntax tree nodes starting with '|'.
--- Returns a list of the variants as strings.
-let extractVariants : [DocTree] -> [String] = lam stream.
-    recursive let extractVariants : [DocTree] -> Option [String] -> [String] = lam stream. lam typeAcc.
-        switch (nthWord stream 0, typeAcc)
-        case (Some { word = "|", rest = stream }, Some typeAcc) then cons (strExtractType typeAcc) (extractVariants stream (Some []))
-        case (Some { word = "|", rest = stream }, None {}) then extractVariants stream (Some [])
-        case (Some { word = "->", rest = stream }, Some typeAcc) then cons (strExtractType typeAcc) (extractVariants stream (None {}))
-        case (Some { word = word, rest = stream }, Some typeAcc) then extractVariants stream (Some (cons word typeAcc))
-        case (Some { rest = stream }, None {}) then extractVariants stream (None {})
-        case (None {}, Some typeAcc) then [strExtractType typeAcc]
-        case (None {}, None {}) then []
-        end
-        
-    in extractVariants stream (None {})
 
 -- Extracts argument names from a lambda expression represented as syntax tree nodes.
 -- Returns a list of parameter names.

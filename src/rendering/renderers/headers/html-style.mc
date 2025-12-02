@@ -131,7 +131,7 @@ pre {
   color: var(--gotoLinkColor);
   text-decoration: none;
   position: absolute;
-  top: 0.6em;
+  top: 0.3em;
   right: 1em;
   opacity: 0.7;
   font-weight: 500;

@@ -50,6 +50,7 @@ include "../global/logger.mc"
 
 include "fileutils.mc"
 
+include "./syn-variant.mc"
 include "./util.mc"
 include "./objects.mc"
 include "./source-code-builder.mc"
@@ -183,8 +184,9 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                         let args = extractParams children in
                         ObjLet { rec = rec, args = args, ty = None {} }
                     case StateSem {} then
-                        ObjSem { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual children), ty = None {} }
-                    case StateSyn {} then ObjSyn { langName = extractLastNamespaceElement namespace, variants = extractVariants (goToEqual children) }
+                        ObjSem { langName = extractLastNamespaceElement namespace, variants = extractSemVariants (goToEqual children), ty = None {} }
+                    case StateSyn {} then
+                         ObjSyn { langName = extractLastNamespaceElement namespace, variants = synVariantParse (goToEqual children) }
                     case StateLang {} then ObjLang { parents = extractParents name.rest }
                     case (StateCon {} | StateTopCon {}) then
                         let t =

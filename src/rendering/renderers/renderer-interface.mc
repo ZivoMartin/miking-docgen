@@ -124,6 +124,8 @@ lang RendererInterface =
     -- Takes children TreeSourceCode and produces RenderingData.
     sem renderTreeSourceCode : [TreeSourceCode] -> Object -> RenderingOptions -> RenderingData
 
+    -- Render the variant list of a syn.
+    sem renderSynVariants : Object -> [SynVariant] -> RenderingOptions -> String
 
     -- ## Formatting Helpers
 

@@ -30,10 +30,12 @@ CLOSED: [2025-11-26 Wed 11:47]
 * TODO UI Features
 ** TODO Support Markdown formatting with a flag
 ** TODO Mouse-over on hooks
-** TODO Add keyboard shortcuts in the HTML renderer
+** DONE Add keyboard shortcuts in the HTML renderer
+CLOSED: [2025-12-02 Tue 23:22]
 ** TODO Add a button to access the parent page
 ** TODO Add tests of each object on its top-level page
-** TODO Integrate the documentation of the fields of each variants
+** DONE Integrate the documentation of the fields of each variants
+CLOSED: [2025-12-03 Wed 00:35]
 ** TODO Integrate the constructors of the type on the page
 ** TODO Types annotation in documentation
 ** TODO For MDX, merge the fodler name with the md description of the namespace
@@ -48,13 +50,18 @@ CLOSED: [2025-11-21 Fri 12:22]
 ** DONE No-code flag
 CLOSED: [2025-11-15 Sat 02:21]
 * TODO Design
+** TODO Improve the design the design of the syn-variants
 ** TODO Make a great design for the kind links
-** TODO Fix minor ui bug
+** DONE Fix minor ui bug
+CLOSED: [2025-12-02 Tue 23:22]
 When we click on the page make sure to close the search bar even if the focus is not on it
-** TODO Fix the background color of the description.
+** DONE Fix the background color of the description.
+CLOSED: [2025-12-02 Tue 15:36]
 * TODO Objects strengthening
 ** DONE Keep track of all the available variant of a syntax
 CLOSED: [2025-12-01 Mon 16:34]
+** DONE Create a real variant type which contains the name of the variant with it's type along with the documentation
+CLOSED: [2025-12-03 Wed 00:35]
 ** TODO Keep track of all the constructors of a type
 ** DONE Instead of just storing the name, store the whole object in the lang namespace, with updated informations.
 CLOSED: [2025-12-01 Mon 13:01]
@@ -89,13 +96,16 @@ CLOSED: [2025-11-29 Sat 12:11]
 ** DONE Being able to click on primitive subtypes
 CLOSED: [2025-11-29 Sat 12:11]   ; (merged conceptually but kept explicitly)
 
-* TODO To fix
-** TODO Check that the JS version is still working
+* TODO Follow up in MDX
+** TODO Support for syntax variants visualisation
 
+* TODO TOFIX
+** TODO Check that the JS version is still working
+** TODO Fix the submit handling
 ** TODO Render doc signatures without pure code to be able to put link.
 ** TODO The test on rec.mc fails, we should see all the rec variables.
 ** TODO Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
-
+** TODO Lang A has now an empty source code, which is not normal.
 ** DONE Recover doc-renderer
 CLOSED: [2025-11-19 Wed 15:43]
 ** DONE Fix folder input of outer files (covered by rewrite)
@@ -103,7 +113,6 @@ CLOSED: [2025-11-16 Sun 02:17]
 
 ** DONE Fix the urlPrefix issue 
 CLOSED: [2025-11-29 Sat 20:57]
-
 
 * Summary of Code Review
 

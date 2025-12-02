@@ -39,16 +39,25 @@ lang RawRenderer = RendererInterface
     sem renderTopPageDoc (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
+
+        let renderStemFrom = lam obj.
+            let langName = objGetLangName obj in
+            let langLink = renderLink langName (objGetLink obj opt langName) opt in
+            let sectionTitle = renderBold "From:" opt in
+            strJoin nl [sectionTitle, langLink, ""]
+        in
+
         let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj } then
             let parents = strJoin " + " (map (lam p. renderLink p (objGetLink obj opt p) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
-        case { obj = { kind = ( ObjSyn { variants = variants } | ObjSem { variants = variants } )} & obj } then
-            let langName = objGetLangName obj in
-            let langLink = renderLink langName (objGetLink obj opt langName) opt in
-            let sectionTitle = renderBold "From:" opt in
-            strJoin nl [sectionTitle, langLink, ""]
+        case { obj = { kind = ObjSyn { variants = variants } } & obj } then
+             let stemFrom = renderStemFrom obj in
+             let variants = renderSynVariants obj variants opt in
+             join [variants, nl, nl, stemFrom]
+        case { obj = { kind = ObjSem { variants = variants } } & obj } then
+            renderStemFrom obj
         case { obj = obj } then
             ""
         end in
@@ -77,7 +86,16 @@ lang RawRenderer = RendererInterface
                 renderGotoLink link opt
             else ""
         in
-        renderBlocDefault data opt "" "" link ""
+
+        let details =
+            switch objKind obj
+            case ObjSyn { variants = variants } then
+                let variants = renderSynVariants obj variants opt in
+                renderHidenCode "▶" "▼" variants true opt
+            case _ then ""
+            end
+        in
+        renderBlocDefault data opt "" details link ""
     
     -- Renders the description text of an object (from obj.doc).
     sem renderDocDescription (desc: String) =
@@ -118,6 +136,15 @@ lang RawRenderer = RendererInterface
         if eqString tests "" then ""
         else renderHidenCode "Show Tests" "Hide Tests" tests true opt
     
+    sem renderSynVariants (obj: Object) (variants: [SynVariant]) =
+    | opt -> let opt = fixOptFormat opt in
+        strJoin (renderNewLine opt)
+                (map (lam v.
+                 let right = join [v.name, " ", v.vtype] in
+                 let right = strToSourceCode right in
+                 let right = renderSourceCode right  opt in
+                 join [right, ": ", v.doc])variants)
+
     -- Goto link wrapper (uses renderLink).
     sem renderGotoLink (link: String) =
     | opt -> let opt = fixOptFormat opt in

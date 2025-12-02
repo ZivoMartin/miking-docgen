@@ -1,4 +1,4 @@
--- # ObjectKinds and Object helpers
+-- # Object definition  
 --
 -- This module defines:
 -- - `Object`: carries name, namespace, doc, kind, source code, prefix, stdlib flag
@@ -23,7 +23,7 @@ include "./util.mc"
 -- - `prefix`: The part of the namespace removed because it is redundant.  
 --   Example: if we have `src/foo.mc` and `src/bar.mc`, we can drop `src/`.  
 --   `objWithPrefix` both removes the given prefix (warning if the namespace does not start with it)
---   and stores it so we can recover the original namespace later.  
+--   and stores it so we can recover the original namespace later.
 -- - `isStdlib`: Marks whether the object belongs to the stdlib.
 -- - `renderIt` : Indicates if the object should be rendered during rendering stage.
 type Object = use ObjectKinds in {
