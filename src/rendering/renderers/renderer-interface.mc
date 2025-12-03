@@ -85,8 +85,10 @@ lang RendererInterface =
     sem renderLinkList : [Object] -> RenderingOptions -> String
 
     -- Renders a single "goto" link to another documentation page.
-    -- Takes the raw link, then calls renderLink internally.
     sem renderGotoLink : String -> RenderingOptions -> String
+
+    -- Renders the "parent" link to another documentation page.
+    sem renderParentLink : Object -> RenderingOptions -> String
 
     -- Renders a single link: first argument is title, second is raw link.
     sem renderLink : String -> String -> RenderingOptions -> String

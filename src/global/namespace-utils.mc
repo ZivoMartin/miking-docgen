@@ -78,4 +78,21 @@ let namespaceIsNested : Namespace -> Bool =
         let split = namespaceSplit nesting in
         match split with [_] | ["lang-" ++ _, _] then false else true
     else false
-            
+
+let namespaceLast : Namespace -> Option String =
+    lam namespace.
+    match namespaceSplit namespace with ([_] ++ _) & s then
+        Some (last s)
+    else None {}
+    
+let namespaceGetSubNamespace : Namespace -> Namespace =
+    lam namespace.
+    let split = namespaceSplit namespace in
+    match split with [] then namespace else
+    let rev = reverse split in
+    let split = tail rev in
+    namespaceRebuild (reverse split)
+
+let namespaceIsRoot : Namespace -> Bool =
+    lam namespace.
+    or (null namespace) (eqString "/" namespace)

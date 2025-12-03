@@ -46,7 +46,10 @@ lang HtmlRenderer = RendererInterface
 
     -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =
-    | { fmt = Html {} } & opt -> getHeader (objName obj) opt.srcFolder
+    | { fmt = Html {} } & opt ->
+      let header = getHeader (objName obj) opt.srcFolder in
+      let rawHeader = renderWithRaw opt "" renderHeader obj "" in
+      join [header, "\n", rawHeader]
 
     -- HTML heading: delegates inner text to raw title rendering, then wraps as <hN>.
     sem renderTitle size s =
@@ -144,6 +147,9 @@ lang HtmlRenderer = RendererInterface
     sem renderGotoLink (link: String) =
     | { fmt = Html {} } & opt -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
+    sem renderParentLink (obj: Object) =
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"parent-link\">" renderParentLink obj "</div>"
+
     -- Toggleable hidden code block; uses a button and a collapsible div
     sem renderHidenCode (hidden: String) (shown: String) (code: String) (jumpLine: Bool) =
     | { fmt = Html {} } & opt ->

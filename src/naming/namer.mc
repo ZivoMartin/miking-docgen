@@ -8,15 +8,19 @@ type NamingRes = {
      nameContext: NameContext
 }
 
+
+let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String =
+    use Formats in
+    lam stdlibFolder. lam urlPrefix. lam fmt. lam isStdlib. lam namespace. 
+    let ext = concat "." (formatGetExtension fmt) in
+    let prefix = if isStdlib then stdlibFolder  else "" in
+    let link =  strJoin "/" [urlPrefix, prefix, concat namespace ext] in
+    normalizePath link
+
 let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
     lam log. lam opt. lam objTree.
 
-    let buildUrl : Bool -> String -> String = lam isStdlib. lam namespace. use Formats in
-        let ext = concat "." (formatGetExtension opt.fmt) in
-        let prefix = if isStdlib then opt.stdlibFolder  else "" in
-        let link =  strJoin "/" [opt.urlPrefix, prefix, concat namespace ext] in
-        normalizePath link
-    in
+    let buildUrl = buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt in
 
     type WorkRes = { ctx: NameContext, nextId: Int, objTree: ObjectTree } in
     recursive let work : ObjectTree -> NameContext -> Int -> WorkRes = use ObjectKinds in

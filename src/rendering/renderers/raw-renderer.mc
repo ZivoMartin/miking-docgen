@@ -151,6 +151,27 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         renderLink "[→]" link opt
 
+    -- Goto link wrapper (uses renderLink).
+    sem renderParentLink (obj: Object) =
+    | opt -> let opt = fixOptFormat opt in
+        let subnamespace = namespaceGetSubNamespace (objNamespace obj) in
+        match namespaceLast subnamespace with Some parentName then
+              let link =
+                  if namespaceIsRoot subnamespace then
+                     ""
+                  else if strEndsWith ".mc" parentName then
+                     buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) subnamespace
+                  else
+                    let parentName =
+                        match strSplitOnce parentName '-' with Some { right = right } then right
+                        else renderingWarn (join ["Incorrect name in namespace: ", parentName, "."]); ""
+                    in
+                    objGetLink obj opt parentName
+              in
+              if null link then "" else renderLink "←" link opt
+        else ""
+
+
     -- Renders a comma-separated list of links for objects (with newline).
     sem renderLinkList (objects: [Object]) =
     | opt -> let opt = fixOptFormat opt in
@@ -283,9 +304,10 @@ lang RawRenderer = RendererInterface
            { res with left = join [res.left, res.right, res.trimmed], right = "", trimmed = "" }
         else res
 
-    -- File-level wrappers (raw renderer leaves them empty).
+    -- File-level wrappers
     sem renderHeader (obj : Object) =
-    | _ -> ""
+    | opt -> let opt = fixOptFormat opt in
+      renderParentLink obj opt
 
     sem renderFooter (obj : Object) =
     | _ -> ""

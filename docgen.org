@@ -32,7 +32,8 @@ CLOSED: [2025-11-26 Wed 11:47]
 ** TODO Mouse-over on hooks
 ** DONE Add keyboard shortcuts in the HTML renderer
 CLOSED: [2025-12-02 Tue 23:22]
-** TODO Add a button to access the parent page
+** DONE Add a button to access the parent page
+CLOSED: [2025-12-03 Wed 13:21]
 ** TODO Add tests of each object on its top-level page
 ** DONE Integrate the documentation of the fields of each variants
 CLOSED: [2025-12-03 Wed 00:35]
@@ -52,6 +53,7 @@ CLOSED: [2025-11-15 Sat 02:21]
 * TODO Design
 ** TODO Improve the design the design of the syn-variants (especially for the top page doc)
 ** TODO Make a great design for the kind links
+** TODO Make a great design for the parent link
 ** DONE Fix minor ui bug
 CLOSED: [2025-12-02 Tue 23:22]
 When we click on the page make sure to close the search bar even if the focus is not on it
@@ -98,12 +100,14 @@ CLOSED: [2025-11-29 Sat 12:11]   ; (merged conceptually but kept explicitly)
 
 * TODO Follow up in MDX
 ** TODO Support for syntax variants visualisation
-
-* TODO TOFIX
-** TODO Check that the JS version is still working
-** TODO Fix the submit handling
 ** TODO Render doc signatures without pure code to be able to put link.
-** TODO The test on rec.mc fails, we should see all the rec variables.
+** TODO Check that the JS version is still working
+** TODO Parent link support
+* TODO TOFIX
+** DONE Fix the submit handling
+CLOSED: [2025-12-03 Wed 01:25]
+** DONE The test on rec.mc fails, we should see all the rec variables.
+CLOSED: [2025-12-03 Wed 01:26]
 ** TODO Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
 ** DONE Lang A has now an empty source code, which is not normal.
 CLOSED: [2025-12-03 Wed 01:25]
