@@ -113,7 +113,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
         switch kind
         case ObjUse {} then
              let used = objName obj in
-             match langNamespaceGetByName ctx.langNamespaceSet used with Some langNamespace then
+             match namespaceSetGetByName ctx.langNamespaceSet used with Some langNamespace then
+                 let langNamespace = langNamespace.full in
+
                  let useThis : NameMap -> Int -> String -> [Object] -> { nameMap: NameMap, nextId: Int } =
                      lam nameMap. lam nextId. lam kind. lam objects.
                      foldl (
