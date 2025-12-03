@@ -181,6 +181,12 @@ a:hover {
   z-index: 1100;
 }
 
+.syn-variants {
+  padding-left: 0.9em;
+  padding-top: 0.9em;
+  font-size: 15px;  
+}
+
 .theme-toggle:hover {
   background: var(--toggleHoverBGColor);
   opacity: 0.9;

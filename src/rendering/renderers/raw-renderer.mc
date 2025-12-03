@@ -142,8 +142,9 @@ lang RawRenderer = RendererInterface
                 (map (lam v.
                  let right = join [v.name, " ", v.vtype] in
                  let right = strToSourceCode right in
-                 let right = renderSourceCode right  opt in
-                 join [right, ": ", v.doc])variants)
+                 let right = renderSourceCode right (Some obj) opt in
+                 if null v.doc then right else join [right, ": ", v.doc])
+                 variants)
 
     -- Goto link wrapper (uses renderLink).
     sem renderGotoLink (link: String) =

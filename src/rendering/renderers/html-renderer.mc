@@ -116,6 +116,9 @@ lang HtmlRenderer = RendererInterface
     -- Top-of-page documentation wrapper
     sem renderTopPageDoc (data: RenderingData) =
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
+
+    sem renderSynVariants (obj: Object) (variants: [SynVariant]) =
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"syn-variants\">" (renderSynVariants obj) variants "</div>"
     
     -- Doc block wrapper; the Bool controls the goto-link inclusion
     sem renderDocBloc (data : RenderingData) =
