@@ -227,6 +227,12 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
            nameDirectChildrenAndProcess objTree ctx nextId
            
         case ObjRecursiveBloc {} then nameDirectChildrenAndProcess objTree ctx nextId
+        case ObjCon {} then
+            let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewCon ctx.typeNamespaceSet obj } in
+            annotateAndProcess objTree ctx nextId children
+        case ObjType {} then
+            let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewType ctx.typeNamespaceSet obj } in
+            annotateAndProcess objTree ctx nextId children
         case ObjInclude {} | ObjProgram {} then processAndAnnotate objTree ctx nextId children
         case _ then annotateAndProcess objTree ctx nextId children
         end

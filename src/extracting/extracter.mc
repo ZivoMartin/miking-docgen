@@ -196,7 +196,22 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                                 extractingWarn (join ["The constructor ", name.word, " is typeless."]);
                                 ""
                         in
-                        ObjCon { t = t }
+
+                        recursive let extractParentType : [DocTree] -> Option String -> String =
+                            lam stream. lam candidate.
+                            match nthWord stream 0 with Some { word = word, rest = stream } then
+                                let candidate =
+                                    if isUpperAlpha (head word) then Some word
+                                    else candidate
+                                in
+                                extractParentType stream candidate
+                            else match candidate with Some res then res
+                            else extractingWarn (join ["Invalid definition of the constructor ", name.word, "."]); ""
+                        in
+
+                        let parentType = extractParentType name.rest (None {}) in
+
+                        ObjCon { t = t, parentType = parentType }
 
                     case (StateType {} | StateTopType {}) then
                         let t = match nthWord name.rest 0 with Some { word = "=", rest = typedef } then

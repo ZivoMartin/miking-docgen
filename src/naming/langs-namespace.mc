@@ -42,13 +42,6 @@ type LangNamespaceDatas = {
 
 type LangNamespaceSet = NamespaceSet LangNamespaceDatas
  
-let langNamespaceSetEmpty : () -> LangNamespaceSet = lam. {
-    idMap = hashmapEmpty (),
-    nameMap = hashmapEmpty (),
-    nextId = 1
-}
-
-
 let langNamespaceGetById : LangNamespaceSet -> Id -> Option LangNamespace =
     lam set. lam id.
     optionMap (lam d. d.full) (namespaceSetGetById set id)

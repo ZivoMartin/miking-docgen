@@ -237,10 +237,10 @@ end
 lang ObjConKind = ObjectKindInterface
 
     syn ObjectKind =
-        | ObjCon { t: String }
+        | ObjCon { t: String, parentType: String }
 
     sem objKindToString =
-        | ObjCon { t = t } -> join ["ObjCon: ", t]
+        | ObjCon { t = t, parentType = parentType } -> join ["ObjCon: ", t, " with parent: ", parentType]
 
     sem getFirstWord =
         | ObjCon {} -> "con"

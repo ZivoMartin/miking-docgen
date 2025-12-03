@@ -1,16 +1,20 @@
 include "./langs-namespace.mc"
 include "./name-map.mc"
+include "./types-namespace.mc"
+
 include "../extracting/objects.mc"
 
 type NameMap = NameMap String
 
 type NameContext = {
     langNamespaceSet: LangNamespaceSet,
+    typeNamespaceSet: TypeNamespaceSet,
     nameMap: NameMap
 }
 
 let nameContextEmpty : () -> NameContext = lam. {
-    langNamespaceSet = langNamespaceSetEmpty (),
+    langNamespaceSet = namespaceSetEmpty (),
+    typeNamespaceSet = namespaceSetEmpty (),
     nameMap = nameMapEmpty ()
 }
 

@@ -17,7 +17,8 @@ let namespaceSetEmpty : all a. () -> NamespaceSet a = lam. {
 
 let namespaceSetNameToId : all a. NamespaceSet a -> String -> Option Id =
     lam set. lam name.
-    optionMap head (hmLookup name set.nameMap)
+    match hmLookup name set.nameMap with Some ([id] ++ _) then Some id
+    else None {}
 
 let namespaceSetGetById : all a. NamespaceSet a -> Id -> Option a =
     lam set. lam id.
@@ -51,3 +52,10 @@ let namespaceSetInsert : all a. NamespaceSet a -> String -> a -> NamespaceSet a 
       idMap = hmIntInsert id namespace set.idMap,
       nameMap = hmInsert name idSet set.nameMap
     }
+
+let namespaceSetUpdate : all a. NamespaceSet a -> String -> a -> NamespaceSet a =
+    lam set. lam name. lam namespace.
+    match hmLookup name set.nameMap with Some ([id] ++ rest) then
+         { set with idMap = hmIntInsert id namespace set.idMap }
+    else namingWarn (join ["Updating a non existing entry: ", name, "."]);
+         namespaceSetInsert set name namespace

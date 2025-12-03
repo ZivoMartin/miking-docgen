@@ -16,6 +16,8 @@ CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non-MC files at the root, keep track of each search dataset.
 
 * TODO Project health
+** TODO Refactoring the extracting by adding a parse method in ObjectKind
+** TODO Rename ObjectKinds familiy of items
 ** TODO Clean all error/warning messages
 ** TODO If a link is incorrect in a comment, display a proper warning or error message
 ** TODO Refresh the whole documentation of the project
