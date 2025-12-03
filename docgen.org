@@ -50,7 +50,7 @@ CLOSED: [2025-11-21 Fri 12:22]
 ** DONE No-code flag
 CLOSED: [2025-11-15 Sat 02:21]
 * TODO Design
-** TODO Improve the design the design of the syn-variants
+** TODO Improve the design the design of the syn-variants (especially for the top page doc)
 ** TODO Make a great design for the kind links
 ** DONE Fix minor ui bug
 CLOSED: [2025-12-02 Tue 23:22]
@@ -105,7 +105,8 @@ CLOSED: [2025-11-29 Sat 12:11]   ; (merged conceptually but kept explicitly)
 ** TODO Render doc signatures without pure code to be able to put link.
 ** TODO The test on rec.mc fails, we should see all the rec variables.
 ** TODO Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
-** TODO Lang A has now an empty source code, which is not normal.
+** DONE Lang A has now an empty source code, which is not normal.
+CLOSED: [2025-12-03 Wed 01:25]
 ** DONE Recover doc-renderer
 CLOSED: [2025-11-19 Wed 15:43]
 ** DONE Fix folder input of outer files (covered by rewrite)

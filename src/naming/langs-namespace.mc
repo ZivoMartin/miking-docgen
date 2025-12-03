@@ -195,7 +195,5 @@ let langNamespaceGetExplicitChildren : LangNamespaceSet -> String -> Option Lang
         (lam id. optionMap (lam d. d.explicit) (hmIntLookup id set.idMap))
         (langNamespaceNameToId set name))
 
-        
-
 let langNamespaceCleanObj : Object -> Object =
     lam obj. { obj with sourceCode = sourceCodeEmpty () }

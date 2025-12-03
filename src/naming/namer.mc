@@ -175,47 +175,48 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
            let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet name langNamespace in
            let ctx = { ctx with langNamespaceSet = langNamespaceSet } in
 
+           let updateChildren : [ObjectTree] -> (Object -> ObjectTree) -> LangNamespace -> [ObjectTree] =
+               lam children. lam cast. lam namespace.
+
+               let createChildren : [Object] -> [ObjectTree] =
+                   lam updatedChildren: [Object].
+                   map cast updatedChildren
+               in
+
+               let syns = createChildren namespace.syns in
+               let sems = createChildren namespace.sems in
+               let cons = createChildren namespace.cons in
+               let types = createChildren namespace.types in
+
+               join [children, syns, sems, cons, types]
+           in
+
+
            let explicit = match langNamespaceGetExplicitChildren langNamespaceSet name with Some explicit then explicit else
                        namingWarn (join ["Failed to fetch the explicit lang namespace of ", name, "."]); langNamespaceDefault
            in
            
-           let createChildren : [Object] -> [ObjectTree] =
-               lam updatedChildren: [Object].
-               map (lam obj.
-                   match find (lam original. eqString (objTreeName original) (objName obj)) children
-                   with Some child then ObjectNode { obj = obj, children = objTreeChildren child }
-                   else namingWarn (join ["Explicit children of the lang namespace and actual children doesn't match for ", objName obj, "."]);
-                        ObjectNode { children = [], obj = obj }  
- 
-               ) updatedChildren
-           in
-
-           let syns = createChildren explicit.syns in
-           let sems = createChildren explicit.sems in
-           let cons = createChildren explicit.cons in
-           let types = createChildren explicit.types in
-
-           let children = join [syns, sems, cons, types] in           
-
            let implicit = match langNamespaceGetImplicitChildren langNamespaceSet name with Some implicit then implicit else
                        namingWarn (join ["Failed to fetch the implicit lang namespace of ", name, "."]); langNamespaceDefault
            in
-           
-           let createChildren : [Object] -> [ObjectTree] =
-               lam children.
-               map (lam obj.
-                   ObjectNode { children = [], obj = obj }  
-               ) children
+
+           let children = updateChildren [] (
+                   lam obj.
+                   match find (lam original. eqString (objTreeName original) (objName obj)) children
+                   with Some child then
+                        let sourceCode = objSourceCode (objTreeObj child) in
+                        let obj = objWithSourceCode obj sourceCode in
+                        let children = objTreeChildren child in
+                        ObjectNode { obj = obj, children = children }
+                   else
+                        namingWarn (join ["Explicit children of the lang namespace and actual children doesn't match for ", objName obj, "."]);
+                        ObjectNode { children = [], obj = obj }
+              ) explicit
            in
 
-           let syns = createChildren implicit.syns in
-           let sems = createChildren implicit.sems in
-           let cons = createChildren implicit.cons in
-           let types = createChildren implicit.types in
+           let children = updateChildren children (lam obj. ObjectNode { children = [], obj = obj } ) implicit in
 
-           let children = join [children, syns, sems, cons, types] in
-
-           let objTree = ObjectNode { children = children, obj = obj } in
+           let objTree = ObjectNode { children = children, obj = objTreeObj objTree } in
 
            nameDirectChildrenAndProcess objTree ctx nextId
            
