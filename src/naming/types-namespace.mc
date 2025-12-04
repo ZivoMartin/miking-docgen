@@ -35,7 +35,7 @@ let typeNamespaceGetTypeConstructors : TypeNamespaceSet -> Object -> Option [Obj
         findMap (
             lam id.
             match namespaceSetGetById set id with Some typedef then
-                if eqString (objNamespace obj) (objNamespace typedef.typeObj) then
+                if eqi (objId obj) (objId typedef.typeObj) then
                      Some typedef.constructors
                 else None {}
             else namingWarn (join ["Failed to fetch ", int2string id, " from the id map."]); None {}

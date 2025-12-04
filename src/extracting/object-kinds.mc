@@ -11,6 +11,9 @@ lang ObjectKindInterface = MExprAst
     sem getFirstWord   : ObjectKind -> String
     sem objKindHasUrl  : ObjectKind -> Bool
     sem objKindHasLink : ObjectKind -> Bool
+    sem objKindHasTests : ObjectKind -> Bool    
+    sem objKindHasTests =
+    | _ -> false
 
     sem objKindMergeFailed : ObjectKind -> ObjectKind -> ObjectKind
     sem objKindMergeFailed =
@@ -97,6 +100,8 @@ lang ObjLetKind = ObjectKindInterface
     sem objKindHasLink =
         | ObjLet {} -> true
 
+    sem objKindHasTests =
+        | ObjLet {} -> true
 end
 
 ----------------------------------------------------------------------

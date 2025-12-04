@@ -35,7 +35,7 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         lam arg. lam child.
         match arg with { doc = doc, prev = prev, children = children } in
         let namespace = objNamespace child.obj in
-        if and (objHasName child) (eqString namespace prev) then
+        if and (objHasName child.obj) (eqString namespace prev) then
            let doc = if eqString objDefaultDoc doc then "" else doc in
            let newDoc = objTryGetDoc child.obj in
            let doc = concat doc newDoc in
@@ -58,76 +58,6 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
     ) { children = [], saw = hashmapEmpty () } merged.children in
     sanitized.children
         
-
-
-
--- ## injectTests
---
--- Post-processes a list of `RenderingData` nodes to attach unit tests to their parent
--- documentation blocks.
--- - Iterates through children (`children`).
--- - Buffers any `RenderingData` elements that correspond to test code.
--- - When a new non-test block (`current`) is encountered, merges the buffered tests
---   into that block by:
---   * Concatenating the test code (`tests`) into the `tests` field
---   * Concatenating their raw rows (`row`) into the `rowTests` field
--- - Clears the buffer after attaching tests.
---
--- Returns: the transformed list of `RenderingData`, where test blocks are folded into
--- the corresponding parent documentation block.
-let injectTests : [RenderingData] -> [RenderingData] = use ObjectKinds in lam children.
-    type Arg = { current: Option RenderingData, acc: [RenderingData], tests: [RenderingData] } in
-
-    -- - Takes the accumulated list, the current block, and buffered tests.
-    -- - Extracts the "lastRow" of the last test, trimming trailing comments and empty lines.
-    -- - Builds the final `tests` and `rowTests` strings by concatenating buffered test code.
-    -- - Produces a new `RenderingData` with its tests attached, then pushes it into the accumulator.
-    let pushChildInAcc: [RenderingData] -> RenderingData -> [RenderingData] -> [RenderingData] = lam acc. lam current. lam tests.
-        let testsStr: (String, String) =
-            match tests with [last] ++ tests then
-                let lastRow = last.row in
-                recursive let trimRow = lam row.
-                  match row with [h] ++ t then
-                        let l = strTrim h in
-                        if strStartsWith "--" l then
-                           trimRow t
-                        else if eqString l "" then
-                           trimRow t
-                        else strJoin "\n" (reverse row)
-                  else []
-                in
-                let lastRow = trimRow (reverse (strSplit "\n" lastRow)) in
-                
-                let row: String = join (map (lam t. t.row) (reverse tests)) in                            
-                let tests: String = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
-                (join [tests, last.left, last.right], concat row lastRow)
-            else ("", "")
-        in
-        let current: RenderingData = { current with tests = testsStr.0, rowTests = testsStr.1 } in
-        join [tests, [current], acc]
-    in
-                    
-    let foldRes: Arg = foldl (lam arg. lam child.
-        match arg with { current = current, acc = acc, tests = tests } in
-        let isUtest = match objKind child.obj with ObjUtest {} then true else false in
-        switch current
-        case Some current then
-             if isUtest then { arg with tests = cons child tests }
-             else { arg with current = Some child, tests = [], acc = pushChildInAcc acc current tests }
-        case None {} then
-             if isUtest then { arg with acc = cons child acc }
-             else { arg with current =  Some child }
-        end
-    ) { current = None {}, acc = [], tests = [] } children
-    in
-    
-    let children = switch foldRes.current
-        case Some current then pushChildInAcc foldRes.acc current foldRes.tests
-        case None {} then foldRes.acc
-        end
-    in
-    
-    reverse children
 
 -- ## RenderingDataSet
 --

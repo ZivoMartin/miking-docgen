@@ -21,7 +21,7 @@ Move stdlib and non-MC files at the root, keep track of each search dataset.
 ** TODO Clean all error/warning messages
 ** TODO If a link is incorrect in a comment, display a proper warning or error message
 ** TODO Refresh the whole documentation of the project
-** TODO In case of an actual error, report a precise message (at least the file in which it occurred)
+** TODO Replace row by raw everywhere
 ** DONE Use strictly-lower instead of lower-or-equal in the name map (for correctness)
 CLOSED: [2025-11-26 Wed 11:35]
 ** DONE Clean “use in process” of the namer (for correctness)
@@ -32,11 +32,13 @@ CLOSED: [2025-11-26 Wed 11:47]
 * TODO UI Features
 ** TODO Support Markdown formatting with a flag
 ** TODO Mouse-over on hooks
+** TODO For tests, only consider a test if it contains at least once the name of the tested object
 ** DONE Add keyboard shortcuts in the HTML renderer
 CLOSED: [2025-12-02 Tue 23:22]
 ** DONE Add a button to access the parent page
 CLOSED: [2025-12-03 Wed 13:21]
 ** TODO Add tests of each object on its top-level page
+** TODO Make sure that a recursive block has acces to it's test
 ** DONE Integrate the documentation of the fields of each variants
 CLOSED: [2025-12-03 Wed 00:35]
 ** DONE Integrate the constructors of the type on the page

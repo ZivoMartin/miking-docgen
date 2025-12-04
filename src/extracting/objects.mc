@@ -167,6 +167,7 @@ let objTreeWithChildren : ObjectTree -> [ObjectTree] -> ObjectTree = lam tree. l
 let objTreeDoc : ObjectTree -> String = lam tree. objDoc (objTreeObj tree)
 let objTreeSourceCode : ObjectTree -> SourceCode = lam tree. objSourceCode (objTreeObj tree)
 let objTreeName : ObjectTree -> String = lam tree. objName (objTreeObj tree)
+let objTreeKind : ObjectTree -> use ObjectKinds in ObjectKind = lam tree. objKind (objTreeObj tree)
 
 let objTreeWithDoc : ObjectTree -> String -> ObjectTree = lam tree. lam doc.
     match tree with ObjectNode { obj = obj, children = children } in ObjectNode { obj = { obj with doc = doc}, children = children }

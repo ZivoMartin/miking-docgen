@@ -15,7 +15,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
     | { kind = ObjLet {} | ObjType {} | ObjSem {} | ObjSyn {} | ObjLang {} | ObjCon {} } & obj -> Some (objName obj)
     | _ -> None {}
 
-    sem objHasName : Object -> Option String
+    sem objHasName : Object -> Bool
     sem objHasName =
     | obj -> optionIsSome (objNameIfHas obj)
 

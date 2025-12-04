@@ -32,7 +32,6 @@ lang RawRenderer = RendererInterface
 
         let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
         let tests = renderDocTests data opt in
-
         join [bonusTopDoc, signature, bonusSignDescDoc, doc, bonusDescCodeDoc, code, bonusBottomDoc, tests]
             
     -- Top page section: title + details (e.g., parent langs) + default block.
@@ -139,7 +138,7 @@ lang RawRenderer = RendererInterface
     sem renderDocTests (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         let tests = strFullTrim data.tests in
-        if eqString tests "" then ""
+        if null tests then ""
         else renderHidenCode "Show Tests" "Hide Tests" tests true opt
     
     sem renderTypeConstructors (obj: Object) =
@@ -289,10 +288,36 @@ lang RawRenderer = RendererInterface
 
     -- Top-level source code rendering: splits, renders, and aggregates.
     -- If row's length is length than 30, we concatenate everything in left.
-    sem renderTreeSourceCode (tree: [TreeSourceCode]) (obj : Object) =
+    sem renderTreeSourceCode (tree: [TreeSourceCode]) (tests: [RenderingData]) (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
         let renderSourceCode = lam b. renderSourceCode (wordBufferToSourceCode b) (None {}) opt in
+
+        let integrateTests: RenderingData -> [RenderingData] -> RenderingData =
+            lam d. lam tests.
+            let testsStr: (String, String) =
+                let tests = reverse tests in
+                match tests with [last] ++ tests then
+                    let lastRow = last.row in
+                    recursive let trimRow = lam row.
+                      match row with [h] ++ t then
+                            let l = strTrim h in
+                            if strStartsWith "--" l then
+                               trimRow t
+                            else if eqString l "" then
+                               trimRow t
+                            else strJoin "\n" (reverse row)
+                      else []
+                    in
+                    let lastRow = trimRow (reverse (strSplit "\n" lastRow)) in
+
+                    let row: String = join (map (lam t. t.row) (reverse tests)) in                            
+                    let tests: String = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
+                    (join [tests, last.left, last.right], concat row lastRow)
+                else ("", "")
+            in
+            { d with tests = testsStr.0, rowTests = testsStr.1 }
+        in
 
         let getFormatedString : [TreeSourceCode] -> String = lam code.
             foldl (lam s. lam node.
@@ -323,9 +348,12 @@ lang RawRenderer = RendererInterface
             rowTests = "",
             row = row
         } in
-        if gti 50 (length res.row) then
-           { res with left = join [res.left, res.right, res.trimmed], right = "", trimmed = "" }
-        else res
+        let res =
+            if gti 50 (length res.row) then
+              { res with left = join [res.left, res.right, res.trimmed], right = "", trimmed = "" }
+            else res
+        in
+        integrateTests res tests
 
     -- File-level wrappers
     sem renderHeader (obj : Object) =

@@ -123,8 +123,8 @@ lang RendererInterface =
     sem renderWord : SourceCodeWord -> Option Object -> RenderingOptions -> String
 
     -- Renders top-level source code for an object.
-    -- Takes children TreeSourceCode and produces RenderingData.
-    sem renderTreeSourceCode : [TreeSourceCode] -> Object -> RenderingOptions -> RenderingData
+    -- Takes children TreeSourceCode (with eventual tests rendering datas) and produces RenderingData.
+    sem renderTreeSourceCode : [TreeSourceCode] -> [RenderingData] -> Object -> RenderingOptions -> RenderingData
 
     -- Render the variants from list of a syn.
     sem renderSynVariants : Object -> [SynVariant] -> RenderingOptions -> String

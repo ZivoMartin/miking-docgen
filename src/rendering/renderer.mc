@@ -78,14 +78,14 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
     renderSetup obj opt;
 
     log "Beginning of rendering stage.";
-    recursive
-    let render: ObjectTree -> RenderingData = lam objTree.  -- # Global Rendering Pipeline
 
-        -- Base case for objects that do not require a documentation page.
-        -- For objects such as Use or Include we just want to return source code data.
+    recursive
+    let render: ObjectTree -> [RenderingData] -> RenderingData =
+        lam objTree. lam tests.
+    
         let emptyPreview = lam obj.
             let trees = reconstructSourceCode (objSourceCode obj) [] in
-            renderTreeSourceCode trees obj opt
+            renderTreeSourceCode trees [] obj opt
         in
 
         objLog (objTreeObj objTree) opt;
@@ -109,25 +109,38 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 -- If the first children doesn't have any doc, we give it the doc of
                 -- the bloc, which is what the user wants in 99% of the cases.
                 let recChildren: [[ObjectTree]] = unwrapRecursives opt children in
-                let recDatas = map (lam children. map render children) recChildren in
+                let recDatas = map (lam children. map (lam child. render child []) children) recChildren in
                 let recDatas = reverse recDatas in
 
                 -- Recursive calls: render all children
-                let children = map render children in
+                type Acc = { tests: [RenderingData], children: [RenderingData] } in
+                let acc = foldl
+                    (lam acc: Acc. lam child.
+                        let kind = objTreeKind child in
+                        match kind with ObjUtest {} then 
+                            let datas = render child [] in
+                            { children = cons datas acc.children, tests = cons datas acc.tests }
+                        else
+                            let datas =
+                                if objKindHasTests kind then render child acc.tests
+                                else render child []
+                            in
+                            { children = cons datas acc.children, tests = [] }
+                    ) { tests = [], children = [] } (reverse children)
+                in
 
-                -- Inject test data into children
-                let children = injectTests children in
+                let children = acc.children in
 
                 -- Build source code for the current node
                 let trees = reconstructSourceCode (objSourceCode obj) children in
 
                 -- From the source code tree, build the RenderingData
-                let data = renderTreeSourceCode trees obj opt in
-    
+                let data = renderTreeSourceCode trees tests obj opt in
+
                 write (renderObjTitle 1 data.obj opt);
                 write (renderTopPageDoc data opt);
 
-                -- let children = removeDoubleNames children in
+                let children = removeDoubleNames children in
 
                 -- Order objects into a set
                 let set = buildSet children recDatas in
@@ -171,4 +184,4 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
             else emptyPreview obj
         end
     in
-    let output = render obj in res
+    let output = render obj [] in res
