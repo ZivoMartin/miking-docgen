@@ -32,13 +32,16 @@ CLOSED: [2025-11-26 Wed 11:47]
 * TODO UI Features
 ** TODO Support Markdown formatting with a flag
 ** TODO Mouse-over on hooks
-** TODO For tests, only consider a test if it contains at least once the name of the tested object
+** DONE For tests, only consider a test if it contains at least once the name of the tested object
+CLOSED: [2025-12-04 Thu 16:25]
 ** DONE Add keyboard shortcuts in the HTML renderer
 CLOSED: [2025-12-02 Tue 23:22]
 ** DONE Add a button to access the parent page
 CLOSED: [2025-12-03 Wed 13:21]
-** TODO Add tests of each object on its top-level page
-** TODO Make sure that a recursive block has acces to it's test
+** DONE Add tests of each object on its top-level page
+CLOSED: [2025-12-04 Thu 16:25]
+** DONE Make sure that a recursive block has acces to it's test
+CLOSED: [2025-12-04 Thu 17:06]
 ** DONE Integrate the documentation of the fields of each variants
 CLOSED: [2025-12-03 Wed 00:35]
 ** DONE Integrate the constructors of the type on the page
@@ -127,6 +130,9 @@ CLOSED: [2025-11-16 Sun 02:17]
 ** DONE Fix the urlPrefix issue 
 CLOSED: [2025-11-29 Sat 20:57]
 
+* TODO Optimization
+** TODO Do not write the recursive and there children twice.
+ 
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

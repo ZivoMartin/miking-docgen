@@ -221,3 +221,43 @@ let pathIsInStdlib : String -> Bool =
          let abs = normalizePath (join [pwd, "/", path]) in
          strStartsWith stdlibLoc abs
     end
+
+let strContains : String -> String -> Bool = lam needle. lam haystack.
+  let n = length haystack in
+  let m = length needle in
+  if eqi m 0 then true else
+  if lti n m then false else
+    recursive let work = lam i.
+      if gti i (subi n m) then false
+      else if eqStringSlice needle haystack i m
+      then true
+      else work (addi i 1)
+    in work 0
+
+
+utest strContains "ell" "Hello" with true
+utest strContains "Hello" "Hello" with true
+utest strContains "Hello" "Helloo" with true
+utest strContains "xyz" "Hello" with false
+
+-- Empty needle cases
+utest strContains "" "Hello" with true
+utest strContains "" "" with true
+
+-- Empty haystack cases
+utest strContains "abc" "" with false
+utest strContains "H" "" with false
+
+-- Needle longer than haystack
+utest strContains "HelloWorld" "Hello" with false
+
+-- Occurrence at start
+utest strContains "He" "Hello" with true
+
+-- Occurrence at end
+utest strContains "lo" "Hello" with true
+
+-- Overlapping patterns
+utest strContains "ana" "banana" with true
+utest strContains "nana" "banana" with true
+utest strContains "naan" "banana" with false

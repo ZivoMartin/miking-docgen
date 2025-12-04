@@ -105,13 +105,6 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 -- Push header of the output file
                 write (renderHeader obj opt);
 
-                -- Unwrapping the recursive blocks and rendering all the children.
-                -- If the first children doesn't have any doc, we give it the doc of
-                -- the bloc, which is what the user wants in 99% of the cases.
-                let recChildren: [[ObjectTree]] = unwrapRecursives opt children in
-                let recDatas = map (lam children. map (lam child. render child []) children) recChildren in
-                let recDatas = reverse recDatas in
-
                 -- Recursive calls: render all children
                 type Acc = { tests: [RenderingData], children: [RenderingData] } in
                 let acc = foldl
@@ -128,6 +121,22 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                             { children = cons datas acc.children, tests = [] }
                     ) { tests = [], children = [] } (reverse children)
                 in
+
+                -- Unwrapping the recursive blocks and rendering all the children.
+                -- If the first children doesn't have any doc, we give it the doc of
+                -- the bloc, which is what the user wants in 99% of the cases.
+                -- The tests after the recursive bloc are the tests of the last child of the bloc
+                let recChildren = unwrapRecursives opt children in
+                let recDatas = map (
+                    lam recChildren.
+                        let children = reverse recChildren.children in
+                        let tests = recChildren.tests in
+                        let last = head children in
+                        let tests = map (lam test. render test []) tests in
+                        let last = render last tests in
+                        let children = map (lam child. render child []) (tail children) in
+                        reverse (cons last children)
+                    ) recChildren in
 
                 let children = acc.children in
 

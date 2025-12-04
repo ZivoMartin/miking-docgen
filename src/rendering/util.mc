@@ -35,7 +35,9 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         lam arg. lam child.
         match arg with { doc = doc, prev = prev, children = children } in
         let namespace = objNamespace child.obj in
-        if and (objHasName child.obj) (eqString namespace prev) then
+        if not (objHasName child.obj) then
+           { arg with doc = "", children = cons child children, prev = "" }
+        else if eqString namespace prev then
            let doc = if eqString objDefaultDoc doc then "" else doc in
            let newDoc = objTryGetDoc child.obj in
            let doc = concat doc newDoc in
@@ -54,7 +56,10 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         match arg with { saw = saw, children = children } in
         let namespace = objNamespace child.obj in
         match hmLookup namespace saw with Some _ then arg
-        else { children = cons child children, saw = hmInsert namespace () saw }
+        else {
+                 children = cons child children,
+                 saw = if (objHasName child.obj) then hmInsert namespace () saw else saw
+             }
     ) { children = [], saw = hashmapEmpty () } merged.children in
     sanitized.children
         
@@ -118,12 +123,13 @@ let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet =
     in buildSet { sUse = [], sLet = [], sLang = [],  sSem = [], sSyn = [], sCon = [], sMexpr = [], sInclude = [], sLibInclude = [], sType = [], sUtest = [] } (reverse children) (reverse recDatas)
 
 
-let unwrapRecursives : RenderingOptions -> [ObjectTree] -> [[ObjectTree]] =
+let unwrapRecursives : RenderingOptions -> [ObjectTree] -> [{ children: [ObjectTree], tests: [ObjectTree] }] =
     use ObjectKinds in
     lam opt. lam children.
-    foldl (lam buffer. lam tree.
+    let res = foldl (lam buffer. lam tree.
         let obj = objTreeObj tree in
-        match obj.kind with ObjRecursiveBloc {} then
+        switch obj.kind
+        case ObjRecursiveBloc {} then
             let children = objTreeChildren tree in
             match children with [first] ++ rest then
                 let firstObj = objTreeObj first in
@@ -131,9 +137,14 @@ let unwrapRecursives : RenderingOptions -> [ObjectTree] -> [[ObjectTree]] =
                 let firstObj = if null firstDoc then objWithDoc firstObj (objDoc obj) else firstObj in
                 let first = objTreeWithObj first firstObj in
                 let children = cons first rest in
-                cons children buffer
+                let result = cons { children = children, tests = buffer.testBuffer } buffer.result in
+                { result = result, testBuffer = [] }
             else buffer
-        else buffer) [] children
+        case ObjUtest {} then { buffer with testBuffer = cons tree buffer.testBuffer }
+        case _  then { buffer with testBuffer = [] }
+        end) { result = [], testBuffer = [] } (reverse children)
+    in
+    res.result
 
 let renderFileOrWarn : String -> String -> () = lam path. lam content.
     match fileWriteOpen path with Some wc then

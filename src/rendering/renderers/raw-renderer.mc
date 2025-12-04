@@ -96,7 +96,7 @@ lang RawRenderer = RendererInterface
                 renderHidenCode "▶" "▼" variants true opt
             case ObjType {} then
                 let cons = renderTypeConstructors obj opt in            
-                renderHidenCode "▶" "▼" cons true opt
+                if null cons then "" else renderHidenCode "▶" "▼" cons true opt
             case _ then ""
             end
         in
@@ -296,7 +296,11 @@ lang RawRenderer = RendererInterface
         let integrateTests: RenderingData -> [RenderingData] -> RenderingData =
             lam d. lam tests.
             let testsStr: (String, String) =
+                let name = objName obj in
                 let tests = reverse tests in
+                let tests = filter (lam t.
+                    strContains name t.row
+                 ) tests in
                 match tests with [last] ++ tests then
                     let lastRow = last.row in
                     recursive let trimRow = lam row.
@@ -310,7 +314,7 @@ lang RawRenderer = RendererInterface
                       else []
                     in
                     let lastRow = trimRow (reverse (strSplit "\n" lastRow)) in
-
+                    
                     let row: String = join (map (lam t. t.row) (reverse tests)) in                            
                     let tests: String = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
                     (join [tests, last.left, last.right], concat row lastRow)
@@ -349,7 +353,7 @@ lang RawRenderer = RendererInterface
             row = row
         } in
         let res =
-            if gti 50 (length res.row) then
+            if gti 200 (length res.row) then
               { res with left = join [res.left, res.right, res.trimmed], right = "", trimmed = "" }
             else res
         in

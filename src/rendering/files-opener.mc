@@ -22,14 +22,14 @@ let fileOpenerOpen : ObjectTree -> RenderingOptions -> Option FileOpenerResult =
     
     if objRenderIt obj then
         let path = concat opt.outputFolder (objGetMyLocation obj opt) in
-         match fileWriteOpen path with Some wc then
-             Some {
-                 wc = Some wc,
-                 write = fileWriteString wc,
-                 path = path
-             }
-         else
-             renderingWarn (concat "Failed to open " path); None {}
+        match fileWriteOpen path with Some wc then
+            Some {
+                wc = Some wc,
+                write = fileWriteString wc,
+                path = path
+            }
+        else
+            renderingWarn (concat "Failed to open " path); None {}
 
     else
         Some {
