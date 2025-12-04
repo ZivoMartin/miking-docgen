@@ -130,9 +130,13 @@ CLOSED: [2025-11-16 Sun 02:17]
 ** DONE Fix the urlPrefix issue 
 CLOSED: [2025-11-29 Sat 20:57]
 
-* TODO Optimization
-** TODO Do not write the recursive and there children twice.
- 
+* TODO Optimization (last check: )
+** TODO Replace the GetMyLink fetch by a construction for the object
+** TODO Do not call the writing functions if we don't render at the end of the day
+** DONE Do not register objects that are not rendered during naming
+CLOSED: [2025-12-04 Thu 23:07]
+** TODO Separate object starting with a capital letter and those that are not staring with a capital letter in the naming
+** TODO Instead of storing objects everywhere, create an object map and store only keys to this map.
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

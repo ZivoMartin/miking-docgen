@@ -73,6 +73,8 @@ lang RendererInterface =
     -- Renders the unit tests associated with an object.
     sem renderDocTests : RenderingData -> RenderingOptions -> String
 
+    syn DocObjectParsed =
+
     -- Parses a documentation block.
     sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
 

@@ -200,10 +200,6 @@ let sysRemoveSrcFiles : String -> ReturnCode = lam dir.
     ]
   ]
     
-let strTruncate : String -> String -> String = lam prefix. lam s.
-    if strStartsWith prefix s then
-       subsequence s (length prefix) (length s) s
-    else s
 
 let strSplitOnce : all a. String -> Char -> Option { left: String, right: String } = lam s. lam mid.
     optionMap (lam i.

@@ -33,14 +33,14 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objGetMyLink : Object -> RenderingOptions -> String
     sem objGetMyLink =
     | obj -> lam opt.
-      if not (objKindHasLink (objKind obj)) then ""
+      if or (not (objRenderIt obj)) (not (objKindHasLink (objKind obj))) then ""
       else match nameContextFetchObjUrl opt.nameContext obj with Some res then res
       else objUrlFetchFailed obj (objName obj) true; ""
 
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
-      if not (objKindHasLink (objKind obj)) then ""
+      if or (not (objRenderIt obj)) (not (objKindHasLink (objKind obj))) then ""      
       else match nameContextFetchUrl opt.nameContext obj name with Some res then res
       else objUrlFetchFailed obj name false; ""
 

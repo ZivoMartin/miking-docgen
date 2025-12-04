@@ -63,12 +63,13 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                     let isStdlib = objIsStdlib obj in
 
                     let url = buildUrl isStdlib namespace in
-                    let entry = { entry = url, id = objId obj, namespace = namespace, isNested = isNested } in
+                    let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
+                    let entry = { entry = value, id = objId obj, namespace = namespace, isNested = isNested } in
 
                     log (join
                         ["Adding ", name, " in the name map.\n",
                         "namespace=", entry.namespace, "\n",
-                        "url=", entry.entry, "\n",
+                        "url=", entry.entry.url, "\n",
                         "id=", int2string entry.id, "\n",
                         "isNested=", bool2string entry.isNested, "\n"]);
 
@@ -123,12 +124,14 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                          let name = objName obj in
                          let namespace = join [objNamespace obj, "/", kind, "-", name] in
                          let url = buildUrl langNamespace.objIsStdlib namespace in
-                         let entry = { entry = url, id = acc.nextId, namespace = namespace, isNested = true } in
+                         let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
+
+                         let entry = { entry = value, id = acc.nextId, namespace = namespace, isNested = true } in
 
                          log (join
                              ["Adding ", name, " in the name map from the usage of ", used, ".\n",
                              "namespace=", entry.namespace, "\n",
-                             "url=", entry.entry, "\n",
+                             "url=", entry.entry.url, "\n",
                              "id=", int2string entry.id, "\n",
                              "isNested=", bool2string entry.isNested, "\n"]);
 
@@ -235,7 +238,9 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewType ctx.typeNamespaceSet obj } in
             annotateAndProcess objTree ctx nextId children
         case ObjInclude {} | ObjProgram {} then processAndAnnotate objTree ctx nextId children
-        case _ then annotateAndProcess objTree ctx nextId children
+        case _ then
+             if objRenderIt obj then annotateAndProcess objTree ctx nextId children
+             else { ctx = ctx, nextId = nextId, objTree = objTree }
         end
     in
 
