@@ -34,8 +34,9 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
     (
         lam arg. lam child.
         match arg with { doc = doc, prev = prev, children = children } in
-        let namespace = objNamespace child.obj in
-        if not (objHasName child.obj) then
+        let obj = child.obj in
+        let namespace = objNamespace obj in
+        if not (objHasName obj) then
            { arg with doc = "", children = cons child children, prev = "" }
         else if eqString namespace prev then
            let doc = if eqString objDefaultDoc doc then "" else doc in
@@ -55,11 +56,11 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         lam arg. lam child.
         match arg with { saw = saw, children = children } in
         let namespace = objNamespace child.obj in
-        match hmLookup namespace saw with Some _ then arg
-        else {
-                 children = cons child children,
-                 saw = if (objHasName child.obj) then hmInsert namespace () saw else saw
-             }
+        
+        if objHasName child.obj then
+           match hmLookup namespace saw with Some _ then printLn namespace;arg
+           else { children = cons child children, saw = hmInsert namespace () saw }
+        else { arg with children = cons child children }
     ) { children = [], saw = hashmapEmpty () } merged.children in
     sanitized.children
         
