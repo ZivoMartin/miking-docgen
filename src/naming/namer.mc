@@ -8,7 +8,6 @@ type NamingRes = {
      nameContext: NameContext
 }
 
-
 let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String =
     use Formats in
     lam stdlibFolder. lam urlPrefix. lam fmt. lam isStdlib. lam namespace. 
@@ -228,9 +227,11 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
            
         case ObjRecursiveBloc {} then nameDirectChildrenAndProcess objTree ctx nextId
         case ObjCon {} then
+            let obj = objWithId obj nextId in
             let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewCon ctx.typeNamespaceSet obj } in
             annotateAndProcess objTree ctx nextId children
         case ObjType {} then
+            let obj = objWithId obj nextId in        
             let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewType ctx.typeNamespaceSet obj } in
             annotateAndProcess objTree ctx nextId children
         case ObjInclude {} | ObjProgram {} then processAndAnnotate objTree ctx nextId children

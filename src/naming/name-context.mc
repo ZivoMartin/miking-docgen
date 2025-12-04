@@ -28,3 +28,8 @@ let nameContextFetchObjUrl : NameContext -> Object -> Option String =
     let namespace = objNamespace obj in
     let name = objName obj in
     nameMapFetch ctx.nameMap name (objId obj) namespace true
+
+let nameContextGetTypeConstructors : NameContext -> Object -> Option [Object] =
+    lam ctx.
+    typeNamespaceGetTypeConstructors ctx.typeNamespaceSet
+    

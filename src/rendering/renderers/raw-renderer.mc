@@ -40,11 +40,10 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
 
-        let renderStemFrom = lam obj.
-            let langName = objGetLangName obj in
-            let langLink = renderLink langName (objGetLink obj opt langName) opt in
+        let renderStemFrom = lam obj. lam from.
+            let link = renderLink from (objGetLink obj opt from) opt in
             let sectionTitle = renderBold "From:" opt in
-            strJoin nl [sectionTitle, langLink, ""]
+            strJoin nl [sectionTitle, link, ""]
         in
 
         let details = switch data
@@ -52,12 +51,16 @@ lang RawRenderer = RendererInterface
             let parents = strJoin " + " (map (lam p. renderLink p (objGetLink obj opt p) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
+        case { obj = { kind = ObjType {} } & obj } then
+             renderTypeConstructors obj opt
+        case { obj = { kind = ObjCon { parentType = parentType } } & obj } then
+             renderStemFrom obj parentType
         case { obj = { kind = ObjSyn { variants = variants } } & obj } then
-             let stemFrom = renderStemFrom obj in
+             let stemFrom = renderStemFrom obj (objGetLangName obj) in
              let variants = renderSynVariants obj variants opt in
              join [variants, nl, nl, stemFrom]
         case { obj = { kind = ObjSem { variants = variants } } & obj } then
-            renderStemFrom obj
+            renderStemFrom obj (objGetLangName obj)
         case { obj = obj } then
             ""
         end in
@@ -92,6 +95,9 @@ lang RawRenderer = RendererInterface
             case ObjSyn { variants = variants } then
                 let variants = renderSynVariants obj variants opt in
                 renderHidenCode "▶" "▼" variants true opt
+            case ObjType {} then
+                let cons = renderTypeConstructors obj opt in            
+                renderHidenCode "▶" "▼" cons true opt
             case _ then ""
             end
         in
@@ -136,6 +142,23 @@ lang RawRenderer = RendererInterface
         if eqString tests "" then ""
         else renderHidenCode "Show Tests" "Hide Tests" tests true opt
     
+    sem renderTypeConstructors (obj: Object) =
+    | opt -> let opt = fixOptFormat opt in
+        match nameContextGetTypeConstructors opt.nameContext obj with Some constructors then
+            strJoin (renderNewLine opt)
+                (map (lam cons.
+                 let name = objName cons in
+                 match objKind cons with ObjCon { t = t } then
+                     let right = join [name, " ", t] in
+                     let right = strToSourceCode right in
+                     let right = renderSourceCode right (Some cons) opt in
+                     let doc = objTryGetDoc cons in
+                     let doc = strTrim doc in
+                     if null doc then right else join [right, ": ", doc]
+                 else renderingWarn "A constructor were expected here."; "")
+                 constructors)
+        else renderingWarn (join ["Failed to render constructors of ", objName obj, "."]); ""
+
     sem renderSynVariants (obj: Object) (variants: [SynVariant]) =
     | opt -> let opt = fixOptFormat opt in
         strJoin (renderNewLine opt)
