@@ -58,7 +58,7 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         let namespace = objNamespace child.obj in
         
         if objHasName child.obj then
-           match hmLookup namespace saw with Some _ then printLn namespace;arg
+           match hmLookup namespace saw with Some _ then arg
            else { children = cons child children, saw = hmInsert namespace () saw }
         else { arg with children = cons child children }
     ) { children = [], saw = hashmapEmpty () } merged.children in

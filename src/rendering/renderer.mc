@@ -93,7 +93,7 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
         switch objTree
         case ObjectNode { obj = { kind = ObjUse {}} & obj, children = children } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [ p ] } then
-            let res = render p in
+            let res = render p [] in
             emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [] } then emptyPreview obj
         case ObjectNode { obj = { kind = ObjInclude {} } & obj } then
