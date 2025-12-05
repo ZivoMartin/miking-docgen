@@ -33,14 +33,13 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objGetMyLink : Object -> RenderingOptions -> String
     sem objGetMyLink =
     | obj -> lam opt.
-      if or (not (objRenderIt obj)) (not (objKindHasLink (objKind obj))) then ""
-      else match nameContextFetchObjUrl opt.nameContext obj with Some res then res
-      else objUrlFetchFailed obj (objName obj) true; ""
+      buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) (objNamespace obj)
 
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
-      if or (not (objRenderIt obj)) (not (objKindHasLink (objKind obj))) then ""      
+      let kind = objKind obj in
+      if not (objKindHasLink kind) then ""
       else match nameContextFetchUrl opt.nameContext obj name with Some res then res
       else objUrlFetchFailed obj name false; ""
 
@@ -54,11 +53,9 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objGetMyLocation =
     | obj -> lam opt.
       let name = objName obj in
-      match nameContextFetchObjUrl opt.nameContext obj with Some res then
-          let prefixLength = length opt.urlPrefix in
-          subsequence res prefixLength (length res)
-      else objUrlFetchFailed obj name false; ""
-
+      let link = objGetMyLink obj opt in
+      let prefixLength = length opt.urlPrefix in
+      subsequence link prefixLength (length link)
             
     -- Human-friendly display title; special-cases include/utest.
     sem objTitle : Object -> String

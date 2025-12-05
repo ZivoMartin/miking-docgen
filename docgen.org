@@ -68,7 +68,8 @@ CLOSED: [2025-12-02 Tue 23:22]
 When we click on the page make sure to close the search bar even if the focus is not on it
 ** DONE Fix the background color of the description.
 CLOSED: [2025-12-02 Tue 15:36]
-* TODO Objects strengthening
+* DONE Objects strengthening
+CLOSED: [2025-12-05 Fri 17:37]
 ** DONE Keep track of all the available variant of a syntax
 CLOSED: [2025-12-01 Mon 16:34]
 ** DONE Create a real variant type which contains the name of the variant with it's type along with the documentation
@@ -130,9 +131,11 @@ CLOSED: [2025-11-16 Sun 02:17]
 ** DONE Fix the urlPrefix issue 
 CLOSED: [2025-11-29 Sat 20:57]
 
-* TODO Optimization (last check: )
-** TODO Replace the GetMyLink fetch by a construction for the object
-** TODO Do not call the writing functions if we don't render at the end of the day
+* TODO Optimization
+** DONE Replace the GetMyLink fetch by a construction for the object
+CLOSED: [2025-12-04 Thu 23:17]
+** DONE Do not call the writing functions if we don't render at the end of the day
+CLOSED: [2025-12-04 Thu 23:17]
 ** DONE Do not register objects that are not rendered during naming
 CLOSED: [2025-12-04 Thu 23:07]
 ** TODO Separate object starting with a capital letter and those that are not staring with a capital letter in the naming

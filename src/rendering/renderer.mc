@@ -102,8 +102,6 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
 
             match fileOpenerOpen objTree opt with Some { wc = wc, write = write, path = path } then
                 (match path with "" then () else log (concat "Rendering file " path));
-                -- Push header of the output file
-                write (renderHeader obj opt);
 
                 -- Unwrapping the recursive blocks and rendering all the children.
                 -- If the first children doesn't have any doc, we give it the doc of
@@ -148,47 +146,51 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 -- From the source code tree, build the RenderingData
                 let data = renderTreeSourceCode trees tests obj opt in
 
-                write (renderObjTitle 1 data.obj opt);
-                write (renderTopPageDoc data opt);
+                (if objRenderIt obj then                
 
-                let children = removeDoubleNames children in
+                    write (renderHeader obj opt);
+                    write (renderObjTitle 1 data.obj opt);
+                    write (renderTopPageDoc data opt);
 
-                -- Order objects into a set
-                let set = buildSet children recDatas in
-    
-                 -- Display uses and includes
-                let displayUseInclude = lam title. lam arr.
-                    let title = match arr with [] then "" else match title with "" then "" else
-                            renderSectionTitle title opt in
-                    write title;
-                    write (renderLinkList arr opt)
-                in
-    
-                -- Display types and constructors
-                let displayDefault = lam title. lam arr.
-                    let title = match arr with [] then "" else match title with "" then "" else
-                            renderSectionTitle title opt in
-                    write title;
-                    iter (lam u. write (renderDocBloc u opt)) arr
-                in
-    
-                iter (lam a. displayUseInclude a.0 a.1)
-                     [("Using", set.sUse),
-                     ("Includes", set.sInclude),
-                     ("Stdlib Includes", set.sLibInclude)];
-                iter (lam a. displayDefault a.0 a.1)
-                    [("Types", set.sType),
-                    ("Constructors", set.sCon),
-                    ("Languages", set.sLang),
-                    ("Syntaxes", set.sSyn),
-                    ("Variables", set.sLet),
-                    ("Semantics", set.sSem),
-                    ("Mexpr", set.sMexpr)];
+                    let children = removeDoubleNames children in
 
-                -- Push the footer of the page
-                write (renderFooter obj opt);
+                    -- Order objects into a set
+                    let set = buildSet children recDatas in
 
-                (match wc with Some wc then fileWriteClose wc else ());
+                     -- Display uses and includes
+                    let displayUseInclude = lam title. lam arr.
+                        let title = match arr with [] then "" else match title with "" then "" else
+                                renderSectionTitle title opt in
+                        write title;
+                        write (renderLinkList arr opt)
+                    in
+
+                    -- Display types and constructors
+                    let displayDefault = lam title. lam arr.
+                        let title = match arr with [] then "" else match title with "" then "" else
+                                renderSectionTitle title opt in
+                        write title;
+                        iter (lam u. write (renderDocBloc u opt)) arr
+                    in
+
+                    iter (lam a. displayUseInclude a.0 a.1)
+                         [("Using", set.sUse),
+                         ("Includes", set.sInclude),
+                         ("Stdlib Includes", set.sLibInclude)];
+                    iter (lam a. displayDefault a.0 a.1)
+                        [("Types", set.sType),
+                        ("Constructors", set.sCon),
+                        ("Languages", set.sLang),
+                        ("Syntaxes", set.sSyn),
+                        ("Variables", set.sLet),
+                        ("Semantics", set.sSem),
+                        ("Mexpr", set.sMexpr)];
+
+                    -- Push the footer of the page
+                    write (renderFooter obj opt);
+
+                    (match wc with Some wc then fileWriteClose wc else ())
+                else ());
 
                 -- Only preserving name-context embedded in options if accepted in the node.
                 data

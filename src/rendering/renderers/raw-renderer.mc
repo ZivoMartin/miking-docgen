@@ -186,7 +186,7 @@ lang RawRenderer = RendererInterface
                   else
                     let parentName =
                         match strSplitOnce parentName '-' with Some { right = right } then right
-                        else renderingWarn (join ["Incorrect name in namespace: ", parentName, "."]); ""
+                        else parentName
                     in
                     objGetLink obj opt parentName
               in

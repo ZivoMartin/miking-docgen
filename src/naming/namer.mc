@@ -8,14 +8,6 @@ type NamingRes = {
      nameContext: NameContext
 }
 
-let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String =
-    use Formats in
-    lam stdlibFolder. lam urlPrefix. lam fmt. lam isStdlib. lam namespace. 
-    let ext = concat "." (formatGetExtension fmt) in
-    let prefix = if isStdlib then stdlibFolder  else "" in
-    let link =  strJoin "/" [urlPrefix, prefix, concat namespace ext] in
-    normalizePath link
-
 let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
     lam log. lam opt. lam objTree.
 
@@ -47,8 +39,8 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             { res with objTree = ObjectNode { obj = obj, children = reverse (objTreeChildren res.objTree) } }
         in
         
-        let annotate : NameContext -> ObjectTree -> Int -> [ObjectTree] -> WorkRes =
-            lam ctx. lam objTree. lam nextId. lam children.
+        let annotate : NameContext -> ObjectTree -> Int -> WorkRes =
+            lam ctx. lam objTree. lam nextId.
 
             let children = objTreeChildren objTree in
             let obj = objTreeObj objTree in
@@ -82,7 +74,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
 
         let annotateAndProcess : ObjectTree -> NameContext -> Int -> [ObjectTree] -> WorkRes =
             lam objTree. lam ctx. lam nextId. lam children.
-            match annotate ctx objTree nextId children with
+            match annotate ctx objTree nextId with
             { ctx = ctx, nextId = nextId, objTree = objTree } in
             process ctx objTree nextId children
         in
@@ -91,7 +83,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             lam objTree. lam ctx. lam nextId. lam children.
             match process ctx objTree nextId children with
             { ctx = ctx, nextId = nextId, objTree = objTree } in
-            annotate ctx objTree nextId children
+            annotate ctx objTree nextId
         in
 
         -- We first insert the direct children, then we call process. So direct children will be
@@ -183,12 +175,12 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
            let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet name langNamespace in
            let ctx = { ctx with langNamespaceSet = langNamespaceSet } in
 
-           let updateChildren : [ObjectTree] -> (Object -> ObjectTree) -> LangNamespace -> [ObjectTree] =
+           let updateChildren : [ObjectTree] -> (Object -> [ObjectTree]) -> LangNamespace -> [ObjectTree] =
                lam children. lam cast. lam namespace.
 
                let createChildren : [Object] -> [ObjectTree] =
                    lam updatedChildren: [Object].
-                   map cast updatedChildren
+                   join (map cast updatedChildren)
                in
 
                let syns = createChildren namespace.syns in
@@ -210,19 +202,24 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
 
            let children = updateChildren [] (
                    lam obj.
-                   match find (lam original. eqString (objTreeName original) (objName obj)) children
-                   with Some child then
-                        let sourceCode = objSourceCode (objTreeObj child) in
-                        let obj = objWithSourceCode obj sourceCode in
-                        let children = objTreeChildren child in
-                        ObjectNode { obj = obj, children = children }
-                   else
+                   let filtered = filter (lam original. eqString (objTreeName original) (objName obj)) children in
+                   if null filtered then
                         namingWarn (join ["Explicit children of the lang namespace and actual children doesn't match for ", objName obj, "."]);
-                        ObjectNode { children = [], obj = obj }
+                        [ObjectNode { children = [], obj = obj }]                        
+                   else
+                        let filtered = reverse filtered in
+                        
+                        let last = head filtered in
+                        let sourceCode = objSourceCode (objTreeObj last) in
+                        let lastObj = objWithSourceCode obj sourceCode in
+                        let lastChildren = objTreeChildren last in
+                        let last = ObjectNode { obj = lastObj, children = lastChildren } in
+                        let filtered = cons last (tail filtered) in
+                        reverse filtered
               ) explicit
            in
 
-           let children = updateChildren children (lam obj. ObjectNode { children = [], obj = obj } ) implicit in
+           let children = updateChildren children (lam obj. [ObjectNode { children = [], obj = obj }] ) implicit in
 
            let objTree = ObjectNode { children = children, obj = objTreeObj objTree } in
 

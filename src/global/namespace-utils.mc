@@ -95,4 +95,4 @@ let namespaceGetSubNamespace : Namespace -> Namespace =
 
 let namespaceIsRoot : Namespace -> Bool =
     lam namespace.
-    or (null namespace) (eqString "/" namespace)
+    match namespaceSeparate namespace with None {} | Some { nesting = "" } then true else false

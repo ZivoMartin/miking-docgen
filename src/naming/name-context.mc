@@ -4,6 +4,15 @@ include "./types-namespace.mc"
 
 include "../extracting/objects.mc"
 
+let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String =
+    use Formats in
+    lam stdlibFolder. lam urlPrefix. lam fmt. lam isStdlib. lam namespace. 
+    let ext = concat "." (formatGetExtension fmt) in
+    let prefix = if isStdlib then stdlibFolder  else "" in
+    let link =  strJoin "/" [urlPrefix, prefix, concat namespace ext] in
+    normalizePath link
+
+
 type NameMapValue = {
     url: String,
     obj: Object
@@ -28,13 +37,6 @@ let nameContextFetchUrl : NameContext -> Object -> String -> Option String =
     let namespace = objNamespace obj in
     optionMap (lam v. v.url)
          (nameMapFetch ctx.nameMap name (objId obj) namespace false)
-
-let nameContextFetchObjUrl : NameContext -> Object -> Option String =
-    lam ctx. lam obj.
-    let namespace = objNamespace obj in
-    let name = objName obj in
-    optionMap (lam v. v.url)    
-         (nameMapFetch ctx.nameMap name (objId obj) namespace true)
 
 let nameContextGetTypeConstructors : NameContext -> Object -> Option [Object] =
     lam ctx.
