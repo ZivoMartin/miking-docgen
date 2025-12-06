@@ -76,10 +76,10 @@ lang RendererInterface =
     syn DocObjectParsed =
 
     -- Parses a documentation block.
-    sem renderDocObjectParse : String -> Bool -> RenderingOptions -> DocObjectParsed
+    sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
 
     -- Render the output of renderDocObjectParse into a string well formatted.
-    sem renderFormattedDoc : Object -> DocObjectParsed -> RenderingOptions -> String
+    sem renderFormattedDoc : Object -> DocObjectParsed -> Bool -> RenderingOptions -> String
 
     -- ## Navigation / Linking
 

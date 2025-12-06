@@ -51,7 +51,8 @@ CLOSED: [2025-12-04 Thu 17:06]
 CLOSED: [2025-12-03 Wed 00:35]
 ** DONE Integrate the constructors of the type on the page
 CLOSED: [2025-12-04 Thu 01:16]
-** TODO Types annotation in documentation
+** DONE Types annotation in documentation
+CLOSED: [2025-12-06 Sat 17:03]
 ** TODO For MDX, merge the fodler name with the md description of the namespace
 ** DONE Add show/hide in HTML renderer
 CLOSED: [2025-11-21 Fri 19:13]

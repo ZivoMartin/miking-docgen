@@ -26,8 +26,8 @@ lang RawRenderer = RendererInterface
         let signature = renderDocSignature obj opt in
 
         let doc = objDoc data.obj in
-        let doc = renderDocObjectParse doc true opt in
-        let doc = renderFormattedDoc data.obj doc opt in
+        let doc = renderDocObjectParse doc opt in
+        let doc = renderFormattedDoc data.obj doc true opt in
         let doc = renderDocDescription doc opt in
 
         let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
@@ -275,7 +275,7 @@ lang RawRenderer = RendererInterface
         end
 
     -- Top-level source code rendering: splits, renders, and aggregates.
-    -- If row's length is length than 30, we concatenate everything in left.
+    -- If row s length is length than 30, we concatenate everything in left.
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (tests: [RenderingData]) (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
@@ -411,9 +411,10 @@ lang RawRenderer = RendererInterface
          match datas.obj with Some obj then
              let doc = objTryGetDoc obj in
              let doc = strTrim doc in
-             let doc = renderDocObjectParse doc false opt in
-             let doc = renderFormattedDoc obj doc opt in
+             let doc = renderDocObjectParse doc opt in
+             let doc = renderFormattedDoc obj doc false opt in
              let sign = renderPureDocSignature obj opt in
+             let sign = renderSourceCodeStr sign (None {}) opt in
              let doc = join [sign, if null doc then "" else "\n\n", doc] in
              renderTooltip link doc opt
          else link

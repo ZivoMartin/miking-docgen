@@ -17,8 +17,8 @@ lang DocContentInterface = RendererInterface
     sem docContentIsHook =
     | _ -> false
 
-    sem renderDocContent : Object -> DocContent -> RenderingOptions -> String
-    sem renderDocContent (obj: Object) =
+    sem renderDocContent : Object -> Bool -> DocContent -> RenderingOptions -> String
+    sem renderDocContent (obj: Object) (renderHooks: Bool) =
     | _ -> lam opt. renderingWarn "docContentStr is not fully implemented."; ""
 
 end
@@ -28,10 +28,10 @@ lang DocContentRawTextLang = DocContentInterface
     syn DocContent =
     | DocContentRawText String
 
-    sem renderDocContent (obj: Object) =
+    sem renderDocContent (obj: Object) (renderHooks: Bool) =
     | DocContentRawText s -> lam opt. renderRemoveDocForbidenChars s opt
 
-    sem docContentNext =       
+    sem docContentNext =
     | ([c] ++ _) & s ->
       recursive let work = lam stream. lam acc. lam escaped.
          if and (not escaped) (docContentIsHook stream) then
@@ -53,7 +53,7 @@ lang DocContentArgHookLang = DocContentInterface
     syn DocContent =
     | DocContentArgHook String
 
-    sem renderDocContent (obj: Object) =
+    sem renderDocContent (obj: Object) (renderHooks: Bool) =
     | DocContentArgHook s -> lam opt. renderItalic (renderRemoveDocForbidenChars s opt) opt
 
     sem docContentIsHook =
@@ -72,10 +72,10 @@ lang DocContentObjHookLang = DocContentInterface
     syn DocContent =
     | DocContentObjHook String
 
-    sem renderDocContent (obj: Object) =
+    sem renderDocContent (obj: Object) (renderHooks: Bool) =
     | DocContentObjHook s -> lam opt.
       let doc = renderRemoveDocForbidenChars s opt in
-      let hook = renderHook obj doc opt in
+      let hook = if renderHooks then renderHook obj doc opt else doc in
       renderBold hook opt
 
     sem docContentIsHook =
@@ -92,10 +92,10 @@ lang DocContentLang = DocContentArgHookLang + DocContentObjHookLang + DocContent
 
     type DocContentText = [DocContent]
 
-    sem renderDocContentText : Object -> DocContentText -> RenderingOptions -> String
-    sem renderDocContentText (obj: Object) =
+    sem renderDocContentText : Object -> Bool -> DocContentText -> RenderingOptions -> String
+    sem renderDocContentText (obj: Object) (renderHooks: Bool) =
     | txt -> lam opt.
-          foldl (lam acc. lam content. concat (renderDocContent obj content opt) acc) "" (reverse txt)
+          foldl (lam acc. lam content. concat (renderDocContent obj renderHooks content opt) acc) "" (reverse txt)
 
     sem docContentParse : String -> DocContentText
     sem docContentParse =
@@ -122,8 +122,8 @@ lang DocObjectInterface = DocContentLang
     sem docObjectNext =
     | _ -> { stream = [], obj = None {} }
 
-    sem renderDocObject : Object -> DocObject -> RenderingOptions -> String
-    sem renderDocObject (obj: Object) =
+    sem renderDocObject : Object -> Bool -> DocObject -> RenderingOptions -> String
+    sem renderDocObject (obj: Object) (renderHooks: Bool) =
     | _ -> lam str. renderingWarn "One of the doc object does not implement docObjToStr."; ""
 
     sem docObjectFetchDocLines : [String] -> { doc: [String], rest: [String] }
@@ -150,16 +150,17 @@ lang DocObjectArgLang = DocObjectInterface
     syn DocObject =
     | DocObjectArg { arg: String, doc: DocContentText, t: Option String }
  
-    sem renderDocObject (obj: Object) =
+    sem renderDocObject (obj: Object) (renderHooks: Bool) =
     | DocObjectArg { arg = arg, doc = doc, t = t } -> lam opt.
       let arg = renderRemoveDocForbidenChars arg opt in
       let t =
           match t with Some t then
-              let t = renderSourceCodeStr t (Some obj) opt in
+              let obj = if renderHooks then Some obj else None {} in
+              let t = renderSourceCodeStr t obj opt in
               concat ": " t
           else ""
       in
-      let doc = renderDocContentText obj doc opt in
+      let doc = renderDocContentText obj renderHooks doc opt in
       
       join [arg, t, " - ", strTrim doc]
 
@@ -191,15 +192,16 @@ lang DocObjectReturnLang = DocObjectInterface
     syn DocObject =
     | DocObjectReturn { doc: DocContentText, t: Option String }
 
-    sem renderDocObject (obj: Object) =
+    sem renderDocObject (obj: Object) (renderHooks: Bool) =
     | DocObjectReturn { doc = doc, t = t } -> lam opt.
       let t =
           match t with Some t then
-              let t = renderSourceCodeStr t (Some obj) opt in
+              let obj = if renderHooks then Some obj else None {} in
+              let t = renderSourceCodeStr t obj opt in
               concat t " - "
            else ""
       in
-      let doc = renderDocContentText obj doc opt in
+      let doc = renderDocContentText obj renderHooks doc opt in
       let doc = strTrim doc in
       concat t doc
  
@@ -226,8 +228,8 @@ lang DocObjectBriefLang = DocObjectInterface
     syn DocObject =
     | DocObjectBrief { doc: DocContentText }
 
-    sem renderDocObject (obj: Object) =
-    | DocObjectBrief { doc = doc } -> lam opt. renderDocContentText obj doc opt
+    sem renderDocObject (obj: Object) (renderHooks: Bool) =
+    | DocObjectBrief { doc = doc } -> lam opt. renderDocContentText obj renderHooks doc opt
 
     sem docObjectIsDirective =
     | ".brief " ++ _ -> true
@@ -250,9 +252,9 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
        args: [DocObject]
      }
 
-    sem renderDocObjectParse : String -> Bool -> RenderingOptions -> DocObjectParsed
+    sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
     sem renderDocObjectParse =
-    | s -> lam renderHooks. lam opt.
+    | s -> lam opt.
        let sTrimmed = strTrim s in
        let beginDelimitor = "*-" in
        let endDelimitor = "-*" in
@@ -263,27 +265,6 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
              renderingWarn "One of the lines doesn't start with '*', the bloc will be treated as raw comment.";
              DocObjectRaw s
           else
-             let lines =
-                 if renderHooks then lines
-                 else
-                    map (lam line.
-                          recursive let removeHooks =
-                              lam acc. lam line.
-                              switch line
-                              case ['\\', c] ++ line then
-                                  let acc = concat [c, '\\'] acc in
-                                  removeHooks acc line
-                              case ['#'] ++ line then
-                                  removeHooks acc line
-                              case [c] ++ line then
-                                  let acc = cons c acc in
-                                  removeHooks acc line
-                              case [] then reverse acc
-                              end
-                          in
-                          removeHooks "" line
-                      ) lines
-             in
              let lines = map (lam l. strTrim (tail l)) lines in
              recursive let parse = lam stream. lam acc.
                  match docObjectNext stream with { stream = stream, obj = obj} in
@@ -313,7 +294,7 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
         DocObjectRaw s
 
 
-    sem renderFormattedDoc (obj: Object) (objParsed: DocObjectParsed) =
+    sem renderFormattedDoc (obj: Object) (objParsed: DocObjectParsed) (renderHooks: Bool) =
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
         switch objParsed
@@ -324,7 +305,7 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
                return = return
              } then
              let renderClean = lam obj. lam x. lam opt.
-               stripEndingNewlines (renderDocObject obj x opt)
+               stripEndingNewlines (renderDocObject obj renderHooks x opt)
              in
 
              let mkSection = lam title. lam content.
