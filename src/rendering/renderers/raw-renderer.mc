@@ -26,7 +26,7 @@ lang RawRenderer = RendererInterface
         let signature = renderDocSignature obj opt in
 
         let doc = objDoc data.obj in
-        let doc = renderDocObjectParse doc opt in
+        let doc = renderDocObjectParse doc true opt in
         let doc = renderFormattedDoc data.obj doc opt in
         let doc = renderDocDescription doc opt in
 
@@ -40,14 +40,14 @@ lang RawRenderer = RendererInterface
         let nl = renderNewLine opt in
 
         let renderStemFrom = lam obj. lam from.
-            let link = renderLink from (objGetLink obj opt from) opt in
+            let link = renderHook obj from opt in
             let sectionTitle = renderBold "From:" opt in
             strJoin nl [sectionTitle, link, ""]
         in
 
         let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj } then
-            let parents = strJoin " + " (map (lam p. renderLink p (objGetLink obj opt p) opt) parents) in
+            let parents = strJoin " + " (map (lam p. renderHook obj p opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
         case { obj = { kind = ObjType {} } & obj } then
@@ -107,13 +107,12 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         concat desc (renderNewLine opt)
 
-    -- Renders the object signature as source code.
-    sem renderDocSignature (obj : Object) =
+    sem renderPureDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         let type2str = lam t. type2str t in
         let name = objName obj in
         let kind = objKind obj in
-        let code = switch obj.kind
+        switch obj.kind
         case ObjLet { ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
             join ["let ", name, " : ", t]
@@ -131,7 +130,12 @@ lang RawRenderer = RendererInterface
             join ["sem ", name, " : ", t]
         case kind then
             join [getFirstWord kind, " ", name]
-        end in
+        end
+
+    -- Renders the object signature as source code.
+    sem renderDocSignature (obj : Object) =
+    | opt -> let opt = fixOptFormat opt in
+        let code = renderPureDocSignature obj opt in
         renderSourceCodeStr code (Some obj) opt
 
     -- Renders the unit tests section (hidden if empty).
@@ -176,12 +180,12 @@ lang RawRenderer = RendererInterface
     -- Goto link wrapper (uses renderLink).
     sem renderParentLink (obj: Object) =
     | opt -> let opt = fixOptFormat opt in
-        let subnamespace = namespaceGetSubNamespace (objNamespace obj) in
-        match namespaceLast subnamespace with Some parentName then
+        let namespace = objNamespace obj in
+        let subnamespace = namespaceGetSubNamespace namespace in
+        if namespaceIsRoot namespace then ""
+        else match namespaceLast subnamespace with Some parentName then
               let link =
-                  if namespaceIsRoot subnamespace then
-                     ""
-                  else if strEndsWith ".mc" parentName then
+                  if strEndsWith ".mc" parentName then
                      buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) subnamespace
                   else
                     let parentName =
@@ -257,23 +261,7 @@ lang RawRenderer = RendererInterface
                 case CodeType {} then (lam word.
                                       let word = match strSplitOnce word '_' with Some { left = left, right = word } then word else word in
                                       let word =
-                                          match obj with Some obj then
-                                              let getStdlibFile = lam s.
-                                                  let ext = formatGetExtension opt.fmt in
-                                                  normalizePath (join ["/", opt.stdlibFolder, "/", s, ".", ext])
-                                              in
-                                              let link =
-                                                  switch word
-                                                  case "Int" then getStdlibFile "int.mc"
-                                                  case "Bool" then getStdlibFile "bool.mc"
-                                                  case "String" then getStdlibFile "string.mc"
-                                                  case "Char" then getStdlibFile "char.mc"
-                                                  case _ then
-                                                      match objTryGetLink obj opt word with Some link then link
-                                                      else objGetMyLink obj opt
-                                                  end
-                                              in
-                                              renderLink word link opt
+                                          match obj with Some obj then renderHook obj word opt
                                           else word
                                       in
                                       renderType word)
@@ -397,9 +385,45 @@ lang RawRenderer = RendererInterface
     sem renderText (text : String) =
     | _ -> text
 
+    sem renderHook (obj: Object) (name: String) =
+    | opt -> let opt = fixOptFormat opt in
+         let getStdlibFile = lam s.
+             let ext = formatGetExtension opt.fmt in
+             { url = normalizePath (join ["/", opt.stdlibFolder, "/", s, ".", ext]), obj = None {} }
+         in
+         let datas =
+             switch name
+             case "Int" then getStdlibFile "int.mc"
+             case "Bool" then getStdlibFile "bool.mc"
+             case "String" then getStdlibFile "string.mc"
+             case "Char" then getStdlibFile "char.mc"
+             case _ then
+                 let datas = optionGetOrElse (lam.
+                     { url = objGetMyLink obj opt, obj = obj }
+                     ) (objTryFetch obj opt name)
+                 in
+                 { url = datas.url, obj = Some datas.obj }
+             end
+         in
+         let link = renderLink name datas.url opt in
+         match datas.obj with Some obj then
+             let doc = objTryGetDoc obj in
+             let doc = strTrim doc in
+             let doc = renderDocObjectParse doc false opt in
+             let doc = renderFormattedDoc obj doc opt in
+             let sign = renderPureDocSignature obj opt in
+             let doc = join [sign, if null doc then "" else "\n\n", doc] in
+             renderTooltip link doc opt
+         else link
+
+
     sem renderLink (title : String) (link : String) =
     | _ -> join [title, " (", link, ")"]
-    
+
+    sem renderTooltip (title : String) (content : String) =
+    | _ -> join [title, " (", content, ")"]
+
+
     sem renderType (content : String) = 
     | _ -> content
 

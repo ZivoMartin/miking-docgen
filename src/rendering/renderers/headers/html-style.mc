@@ -225,4 +225,30 @@ a:hover {
 #themeMenu button:hover {
   background: var(--toggleHoverBGColor);
 }
+
+.tooltip {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.tooltip-text {
+  visibility: hidden;
+  background: black;
+  color: white;
+  padding: 5px 8px;
+  border-radius: 4px;
+
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  white-space: pre;
+  display: inline-block;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+}
 "]

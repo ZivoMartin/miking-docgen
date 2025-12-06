@@ -40,14 +40,14 @@ lang ObjectsRenderer = ObjectKinds + Formats
     | obj -> lam opt. lam name.
       let kind = objKind obj in
       if not (objKindHasLink kind) then ""
-      else match nameContextFetchUrl opt.nameContext obj name with Some res then res
+      else match nameContextFetch opt.nameContext obj name with Some res then res.url
       else objUrlFetchFailed obj name false; ""
 
-    sem objTryGetLink : Object -> RenderingOptions -> String -> Option String
-    sem objTryGetLink =
+    sem objTryFetch : Object -> RenderingOptions -> String -> Option NameMapValue
+    sem objTryFetch =
     | obj -> lam opt. lam name.
-      if not (objKindHasLink (objKind obj)) then Some ""
-      else nameContextFetchUrl opt.nameContext obj name
+      if not (objKindHasLink (objKind obj)) then None {}
+      else nameContextFetch opt.nameContext obj name
 
     sem objGetMyLocation : Object -> RenderingOptions -> String
     sem objGetMyLocation =

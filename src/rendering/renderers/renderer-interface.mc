@@ -76,7 +76,7 @@ lang RendererInterface =
     syn DocObjectParsed =
 
     -- Parses a documentation block.
-    sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
+    sem renderDocObjectParse : String -> Bool -> RenderingOptions -> DocObjectParsed
 
     -- Render the output of renderDocObjectParse into a string well formatted.
     sem renderFormattedDoc : Object -> DocObjectParsed -> RenderingOptions -> String
@@ -95,6 +95,12 @@ lang RendererInterface =
     -- Renders a single link: first argument is title, second is raw link.
     sem renderLink : String -> String -> RenderingOptions -> String
 
+    -- Render a link toward another object page.
+    sem renderHook : Object -> String -> RenderingOptions -> String 
+
+    -- Render a tooltip, which is a popup containing text,
+    -- activated on mouseover.
+    sem renderTooltip : String -> String -> RenderingOptions -> String 
 
     -- ## Code Rendering
 

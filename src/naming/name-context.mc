@@ -32,11 +32,10 @@ let nameContextEmpty : () -> NameContext = lam. {
     nameMap = nameMapEmpty ()
 }
 
-let nameContextFetchUrl : NameContext -> Object -> String -> Option String =
+let nameContextFetch : NameContext -> Object -> String -> Option NameMapValue =
     lam ctx. lam obj. lam name.
     let namespace = objNamespace obj in
-    optionMap (lam v. v.url)
-         (nameMapFetch ctx.nameMap name (objId obj) namespace false)
+    nameMapFetch ctx.nameMap name (objId obj) namespace false
 
 let nameContextGetTypeConstructors : NameContext -> Object -> Option [Object] =
     lam ctx.

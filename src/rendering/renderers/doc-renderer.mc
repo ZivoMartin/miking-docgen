@@ -72,9 +72,8 @@ lang DocContentObjHookLang = DocContentInterface
     sem renderDocContent (obj: Object) =
     | DocContentObjHook s -> lam opt.
       let doc = renderRemoveDocForbidenChars s opt in
-      let link = objGetLink obj opt s in
-      let link = renderLink doc link opt in
-      renderBold link opt
+      let hook = renderHook obj doc opt in
+      renderBold hook opt
 
     sem docContentIsHook =
     | ['#'] ++ _ -> true
@@ -216,9 +215,9 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
        args: [DocObject]
      }
 
-    sem renderDocObjectParse : String -> RenderingOptions -> DocObjectParsed
+    sem renderDocObjectParse : String -> Bool -> RenderingOptions -> DocObjectParsed
     sem renderDocObjectParse =
-    | s -> lam opt.
+    | s -> lam renderHooks. lam opt.
        let sTrimmed = strTrim s in
        let beginDelimitor = "*-" in
        let endDelimitor = "-*" in
@@ -229,6 +228,7 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
              renderingWarn "One of the lines doesn't start with '*', the bloc will be treated as raw comment.";
              DocObjectRaw s
           else
+             let lines = if renderHooks then lines else map (lam line. strReplace "#" "" line) lines in
              let lines = map (lam l. strTrim (tail l)) lines in
              recursive let parse = lam stream. lam acc.
                  match docObjectNext stream with { stream = stream, obj = obj} in

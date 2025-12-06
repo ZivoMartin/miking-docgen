@@ -161,5 +161,9 @@ lang HtmlRenderer = RendererInterface
     sem renderLink (title : String) (link : String) =
     | { fmt = Html {}, urlPrefix = urlPrefix } & opt -> join ["<a href=\"", link, "\">", title, "</a>"]
 
+    sem renderTooltip (title : String) (content : String) =
+    | { fmt = Html {}, urlPrefix = urlPrefix } & opt ->
+      join ["<div class=\"tooltip\">", title, "<span class=\"tooltip-text\">", content, "</span></div>"]
+
     
 end
