@@ -61,7 +61,7 @@ lang DocContentArgHookLang = DocContentInterface
 
     sem docContentNext =
     | ['@'] ++ s ->
-      match splitOnR (eqc ' ') s with { left = hook, right = stream } in
+      match splitOnR (lam c. not (isAlpha c)) s with { left = hook, right = stream } in
       { stream = stream, content = Some (DocContentArgHook hook)}
       
 
@@ -83,7 +83,7 @@ lang DocContentObjHookLang = DocContentInterface
 
     sem docContentNext =
     | ['#'] ++ s ->
-      match splitOnR (eqc ' ') s with { left = hook, right = stream } in
+      match splitOnR (lam c. not (isAlpha c)) s with { left = hook, right = stream } in
       { stream = stream, content = Some (DocContentObjHook hook)}
 
 end
@@ -148,12 +148,20 @@ end
 lang DocObjectArgLang = DocObjectInterface
 
     syn DocObject =
-    | DocObjectArg { arg: String, doc: DocContentText }
+    | DocObjectArg { arg: String, doc: DocContentText, t: Option String }
  
     sem renderDocObject (obj: Object) =
-    | DocObjectArg { arg = arg, doc = doc } -> lam opt.
+    | DocObjectArg { arg = arg, doc = doc, t = t } -> lam opt.
       let arg = renderRemoveDocForbidenChars arg opt in
-      join [arg, ":", renderDocContentText obj doc opt]
+      let t =
+          match t with Some t then
+              let t = renderSourceCodeStr t (Some obj) opt in
+              concat ": " t
+          else ""
+      in
+      let doc = renderDocContentText obj doc opt in
+      
+      join [arg, t, " - ", strTrim doc]
 
     sem docObjectIsDirective =
     | ".lam[" ++ _ -> true
@@ -164,7 +172,15 @@ lang DocObjectArgLang = DocObjectInterface
         let line = strJoin "]" line in
         let lines = cons line lines in
         match docObjectFetchDoc lines with { doc = doc, rest = rest } in
-        { stream = rest, obj = Some (DocObjectArg { doc = doc, arg = arg }) }
+        
+        match
+            match strSplitOnce arg ':' with Some { left = arg, right = t } then
+                let t = strTrim t in
+                { arg = arg, t = Some t }
+            else { arg = arg, t = None {} }
+        with { arg = arg, t = t} in
+
+        { stream = rest, obj = Some (DocObjectArg { doc = doc, arg = arg, t = t }) }
       else
         renderingWarn "You have an incorrect .lam declaration in your code. Closing bracket is missing.";
         { stream = lines, obj =  None {}}
@@ -173,19 +189,35 @@ end
 lang DocObjectReturnLang = DocObjectInterface
 
     syn DocObject =
-    | DocObjectReturn { doc: DocContentText }
+    | DocObjectReturn { doc: DocContentText, t: Option String }
 
     sem renderDocObject (obj: Object) =
-    | DocObjectReturn { doc = doc } -> lam opt. renderDocContentText obj doc opt
+    | DocObjectReturn { doc = doc, t = t } -> lam opt.
+      let t =
+          match t with Some t then
+              let t = renderSourceCodeStr t (Some obj) opt in
+              concat t " - "
+           else ""
+      in
+      let doc = renderDocContentText obj doc opt in
+      let doc = strTrim doc in
+      concat t doc
  
     sem docObjectIsDirective =
-    | ".return " ++ _ -> true
+    | ".return" ++ _ -> true
 
     sem docObjectNext =
-    | [".return " ++ line] ++ lines ->
+    | [".return" ++ line] ++ lines ->
+      match
+         if strStartsWith "[" line then
+             let line = tail line in
+             match splitOnR (eqChar ']') line with { left = left, right = right } in
+             { t = Some left, line = if strStartsWith "]" right then tail right else right }
+         else { t = None {}, line = line }
+      with { t = t, line = line } in
       let lines = cons line lines in
       match docObjectFetchDoc lines with { doc = doc, rest = rest } in
-      { stream = rest, obj = Some (DocObjectReturn { doc = doc }) }
+      { stream = rest, obj = Some (DocObjectReturn { doc = doc, t = t }) }
 
 end
 
@@ -291,22 +323,46 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
                args = args,
                return = return
              } then
-             let brief = optionMapOr "" (lam brief. renderDocObject obj brief opt) brief in
-             let briefTitle = renderBold "Description:\n" opt in
-             let briefSection = if null brief then "" else
-                                join [briefTitle, brief] in
+             let renderClean = lam obj. lam x. lam opt.
+               stripEndingNewlines (renderDocObject obj x opt)
+             in
 
-             let args = strJoin "\n" (map (lam arg. renderDocObject obj arg opt) args) in
-             let argsTitle = renderBold "Arguments:\n" opt in             
-             let argSection = if null args then "" else
-                              join [if null briefSection then "" else nl, argsTitle, args] in
+             let mkSection = lam title. lam content.
+               if null content then "" else join [title, content]
+             in
 
-             let return = optionMapOr "" (lam return. renderDocObject obj return opt) return in
-             let returnTitle = renderBold "Returns:\n" opt in
-             let returnSection = if null return then "" else
-                                 join [if and (null argSection) (null briefSection) then "" else nl, returnTitle, return] in
-             
+             let sep = lam prev. if null prev then "" else concat nl nl in
+
+             let brief =
+               optionMapOr "" (lam b. renderClean obj b opt) brief
+             in
+
+             let briefSection =
+               mkSection (renderBold "Description:\n" opt) brief
+             in
+
+             let args =
+               strJoin "\n" (map (lam a. renderClean obj a opt) args)
+             in
+
+             let argSection =
+               if null args then ""
+               else join [sep briefSection, renderBold "Arguments:\n" opt, args]
+             in
+
+             let return =
+               optionMapOr "" (lam r. renderClean obj r opt) return
+             in
+
+             let returnSection =
+               if null return then ""
+               else join [sep (join [briefSection, argSection]),
+                          renderBold "Returns:\n" opt,
+                          return]
+             in
+
              join [briefSection, argSection, returnSection]
+
         end 
 
 end

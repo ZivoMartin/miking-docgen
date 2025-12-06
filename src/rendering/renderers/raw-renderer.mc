@@ -398,13 +398,15 @@ lang RawRenderer = RendererInterface
              case "String" then getStdlibFile "string.mc"
              case "Char" then getStdlibFile "char.mc"
              case _ then
-                 let datas = optionGetOrElse (lam.
-                     { url = objGetMyLink obj opt, obj = obj }
-                     ) (objTryFetch obj opt name)
-                 in
-                 { url = datas.url, obj = Some datas.obj }
+                match objTryFetch obj opt name with Some datas then
+                    { url = datas.url, obj = Some datas.obj }
+                else if eqString (objName obj) name then
+                    { url = objGetMyLink obj opt, obj = Some obj }
+                else
+                    { url = "", obj = None {} }
              end
-         in
+         in  
+         if null datas.url then name else
          let link = renderLink name datas.url opt in
          match datas.obj with Some obj then
              let doc = objTryGetDoc obj in

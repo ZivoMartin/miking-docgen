@@ -35,7 +35,8 @@ CLOSED: [2025-11-26 Wed 11:47]
 CLOSED: [2025-12-06 Sat 01:33]
 ** DONE Keep the doc formatted in the tooltip
 CLOSED: [2025-12-06 Sat 01:33]
-** TODO Allow escaping for the # in the doc
+** DONE Allow escaping for the # in the doc
+CLOSED: [2025-12-06 Sat 12:42]
 ** DONE For tests, only consider a test if it contains at least once the name of the tested object
 CLOSED: [2025-12-04 Thu 16:25]
 ** DONE Add keyboard shortcuts in the HTML renderer

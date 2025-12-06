@@ -61,6 +61,7 @@ utest splitOnR (lam x. eqi x 3) [1,2,3,4,5] with { left = [1,2], right = [3,4,5]
 utest splitOnR (lam x. eqi x 9) [1,2,3] with { left = [1,2,3], right = [] }
 utest splitOnR (lam x. true) [1,2,3] with { left = [], right = [1,2,3] }
 
+
 let hmTraits = hashmapStrTraits
 let hmInsert = lam x. hashmapInsert hmTraits x
 let hmMem = lam x. hashmapMem hmTraits x
@@ -257,3 +258,10 @@ utest strContains "lo" "Hello" with true
 utest strContains "ana" "banana" with true
 utest strContains "nana" "banana" with true
 utest strContains "naan" "banana" with false
+
+
+let stripEndingNewlines =
+  lam s.
+  let reversed = reverse s in
+  match splitOnR (lam c. not (eqChar '\n' c)) reversed with { right = s} in
+  reverse s
