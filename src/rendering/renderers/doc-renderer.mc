@@ -31,16 +31,19 @@ lang DocContentRawTextLang = DocContentInterface
     sem renderDocContent (obj: Object) =
     | DocContentRawText s -> lam opt. renderRemoveDocForbidenChars s opt
 
-    sem docContentNext =
+    sem docContentNext =       
     | ([c] ++ _) & s ->
-      recursive let work = lam stream. lam acc.
-         if docContentIsHook stream then { stream = stream, acc = reverse acc }
-         else 
-         match stream with [c] ++ stream then
-              work stream (cons c acc)
+      recursive let work = lam stream. lam acc. lam escaped.
+         if and (not escaped) (docContentIsHook stream) then
+            { stream = stream, acc = reverse acc }
+         else match stream with [c] ++ stream then
+              if and (not escaped) (eqChar '\\' c) then
+                 work stream acc true
+              else
+                 work stream (cons c acc) false
          else { stream = [], acc = reverse acc}
       in
-      match work s [] with { stream = stream, acc = acc } in
+      match work s [] false with { stream = stream, acc = acc } in
       { stream = stream, content = Some (DocContentRawText acc) }
 
 end
@@ -228,7 +231,27 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
              renderingWarn "One of the lines doesn't start with '*', the bloc will be treated as raw comment.";
              DocObjectRaw s
           else
-             let lines = if renderHooks then lines else map (lam line. strReplace "#" "" line) lines in
+             let lines =
+                 if renderHooks then lines
+                 else
+                    map (lam line.
+                          recursive let removeHooks =
+                              lam acc. lam line.
+                              switch line
+                              case ['\\', c] ++ line then
+                                  let acc = concat [c, '\\'] acc in
+                                  removeHooks acc line
+                              case ['#'] ++ line then
+                                  removeHooks acc line
+                              case [c] ++ line then
+                                  let acc = cons c acc in
+                                  removeHooks acc line
+                              case [] then reverse acc
+                              end
+                          in
+                          removeHooks "" line
+                      ) lines
+             in
              let lines = map (lam l. strTrim (tail l)) lines in
              recursive let parse = lam stream. lam acc.
                  match docObjectNext stream with { stream = stream, obj = obj} in
