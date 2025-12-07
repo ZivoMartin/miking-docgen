@@ -32,6 +32,7 @@ output folder using url prefix relative to the actual root.
 ** TODO Integrate the scanning phase in the execution context
 * TODO Project health
 ** TODO Refactoring the extracting by adding a parse method in ObjectKind
+** TODO Put all the shared api in global: objects, file-opener, ...
 ** TODO Rename ObjectKinds familiy of items
 ** TODO Clean all error/warning messages
 ** TODO If a link is incorrect in a comment, display a proper warning or error message

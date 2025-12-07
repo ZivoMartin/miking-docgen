@@ -9,10 +9,18 @@
 -- `ServerOptions` and `RenderingOptions`.
 
 include "./docgen-options.mc"
+include "../scanning/scanning-options.mc"
 include "../server/server-options.mc"
 include "../extracting/extracting-options.mc"
 include "../rendering/rendering-options.mc"
 include "../naming/naming-options.mc"
+
+let getScanningOptions : DocGenOptions -> ScanningOptions = lam opt.
+    {
+       files = opt.files,
+       outputFolder = opt.outputFolder,
+       stdlibFolder = opt.stdlibFolder
+    }
 
 -- Convert a global `DocGenOptions` record and a link string representing the URL of the opening file.
 -- into a `ServerOptions` record used by the server.

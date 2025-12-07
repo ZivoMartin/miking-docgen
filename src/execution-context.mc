@@ -27,6 +27,7 @@
 
 include "./options/docgen-options.mc"
 include "./options/cast-options.mc"
+include "./scanning/scanner.mc"
 include "./mast-gen/mast-generator.mc"
 include "./parsing/parser.mc"
 include "./extracting/extracter.mc"
@@ -34,8 +35,6 @@ include "./labeling/labeler.mc"
 include "./naming/namer.mc"
 include "./rendering/renderer.mc"
 include "./server/server.mc"
-
-type FileToProcess = { path: String, outputFolder: String }
 
 type ExecutionContext =  use TokenReader in {    
     opt: DocGenOptions,
@@ -79,30 +78,11 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
         None {}
 
 let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
-    let files =
-        foldl (lam files: [FileToProcess]. lam file: String.
-            if isFolder file then
-               let newFiles = folderFetchMcFiles file in
-               let newFiles = map (lam path.
-                   let t = tail (strSplit file path) in
-                   let f = strJoin file t in
-                   let outputFolder = normalizePath (join [opt.outputFolder, "/", f]) in
-                   { path = path, outputFolder = dirname outputFolder }) newFiles
-               in
-               concat newFiles files
-            else if sysFileExists file then
-               cons { path = file, outputFolder = opt.outputFolder } files
-            else error (join ["The file ", file, "doesn't exist."])
-        ) [] opt.files
-    in
     
-    if null files then None {} else
+    let scanningOptions = getScanningOptions opt in
+    match scan scanningOptions with { inputs = files } in
 
     let opt = if any (lam f. not (pathIsInStdlib f.path)) files then opt else { opt with stdlibFolder = "" } in
-
-    let stdlibOutput = normalizePath (join [opt.outputFolder, "/", opt.stdlibFolder]) in
-    let stringPath = normalizePath (join [stdlibLoc, "/", "string.mc"]) in
-    let files = cons { path = stringPath, outputFolder = stdlibOutput } files in    
 
     let ctx = {
         opt = opt,
