@@ -147,6 +147,12 @@ lang HtmlRenderer = RendererInterface
     sem renderGotoLink (link: String) =
     | { fmt = Html {} } & opt -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
+    sem renderHookLink (title: String) (link: String) =
+    | { fmt = Html {} } & opt -> join ["<a class=\"hookLink\" href=\"", link, "\">", title,"</a>"]    
+
+    sem renderPageLink (title: String) (link: String) =
+    | { fmt = Html {} } & opt -> join ["<a class=\"pageLink\" href=\"", link, "\">", title, "</a>"]
+
     sem renderParentLink (obj: Object) =
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"parent-link\">" renderParentLink obj "</div>"
 

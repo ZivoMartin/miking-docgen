@@ -89,6 +89,13 @@ lang RendererInterface =
     -- Renders a single "goto" link to another documentation page.
     sem renderGotoLink : String -> RenderingOptions -> String
 
+    -- Renders a link toward a page indicated in the title.
+    -- Used for the include and use links.
+    sem renderPageLink : String -> String -> RenderingOptions -> String
+
+    -- Render a hook link.
+    sem renderHookLink : String -> String -> RenderingOptions -> String
+
     -- Renders the "parent" link to another documentation page.
     sem renderParentLink : Object -> RenderingOptions -> String
 

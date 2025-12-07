@@ -40,14 +40,14 @@ lang RawRenderer = RendererInterface
         let nl = renderNewLine opt in
 
         let renderStemFrom = lam obj. lam from.
-            let link = renderHook obj from opt in
+            let link = renderSourceCodeStr from (Some obj) opt in -- Will cast into a single hook
             let sectionTitle = renderBold "From:" opt in
             strJoin nl [sectionTitle, link, ""]
         in
 
         let details = switch data
         case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj } then
-            let parents = strJoin " + " (map (lam p. renderHook obj p opt) parents) in
+            let parents = strJoin " + " (map (lam p. renderSourceCodeStr p (Some obj) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
         case { obj = { kind = ObjType {} } & obj } then
@@ -57,7 +57,7 @@ lang RawRenderer = RendererInterface
         case { obj = { kind = ObjSyn { variants = variants } } & obj } then
              let stemFrom = renderStemFrom obj (objGetLangName obj) in
              let variants = renderSynVariants obj variants opt in
-             join [variants, nl, nl, stemFrom]
+             join [variants, nl, stemFrom]
         case { obj = { kind = ObjSem { variants = variants } } & obj } then
             renderStemFrom obj (objGetLangName obj)
         case { obj = obj } then
@@ -177,6 +177,14 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         renderLink "[→]" link opt
 
+    sem renderHookLink (title: String) (link: String) =
+    | opt -> let opt = fixOptFormat opt in
+        renderLink title link opt
+
+    sem renderPageLink (title: String) (link: String) =
+    | opt ->  let opt = fixOptFormat opt in
+        renderLink title link opt
+
     -- Goto link wrapper (uses renderLink).
     sem renderParentLink (obj: Object) =
     | opt -> let opt = fixOptFormat opt in
@@ -203,7 +211,7 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let doc = map (lam u.
             let link = objGetLink u opt (objName u) in
-            renderLink (objTitle u) link opt
+            renderPageLink (objTitle u) link opt
             ) objects
         in
         let doc = strJoin ", " doc in
@@ -407,7 +415,7 @@ lang RawRenderer = RendererInterface
              end
          in  
          if null datas.url then name else
-         let link = renderLink name datas.url opt in
+         let link = renderHookLink name datas.url opt in
          match datas.obj with Some obj then
              let doc = objTryGetDoc obj in
              let doc = strTrim doc in
@@ -425,7 +433,6 @@ lang RawRenderer = RendererInterface
 
     sem renderTooltip (title : String) (content : String) =
     | _ -> join [title, " (", content, ")"]
-
 
     sem renderType (content : String) = 
     | _ -> content

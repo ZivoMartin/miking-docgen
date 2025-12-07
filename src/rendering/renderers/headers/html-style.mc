@@ -105,7 +105,7 @@ pre {
   border: 1px solid var(--codeBlockBorderColor);
   border-radius: 4px;
   padding: 0.5em 0.8em;
-  margin-top: 0.5em;
+  margin-top: 1.1em;
   font-family: monospace;
   font-size: 0.9em;
 }
@@ -126,6 +126,17 @@ pre {
 
 .hiden-code {}
 
+a {
+  text-decoration: none;
+  font-size: 1.05em;
+  font-weight: 500;
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+}
+
+a:visited {
+  color: inherit;
+}
+
 .gotoLink {
   font-size: 1.1em;
   color: var(--gotoLinkColor);
@@ -138,21 +149,50 @@ pre {
   transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
-a {
-  color: var(--aColor);
-  text-decoration: none;
-  font-size: 1.05em;
-  font-weight: 500;
-  transition: color 0.2s ease, text-decoration 0.2s ease;
+.gotoLink:hover {
+  text-decoration: underline;
+  opacity: 1;
+  transform: scale(1.1);
 }
 
-a:hover {
+.gotoLink:visited {
+  color: var(--gotoLinkColor);
+}
+
+.pageLink {
+  text-decoration: none;
+  font-size: 1.05em;
+  font-weight: 500;z    
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+  color: var(--gotoLinkColor);  
+}
+
+.pageLink:visited {
+  color: var(--gotoLinkColor);
+}
+
+.pageLink:hover {
   text-decoration: underline;
 }
 
-.gotoLink:hover {
-  opacity: 1;
-  transform: scale(1.1);
+.hookLink {
+  text-decoration: none;
+  font-size: 1.05em;
+  font-weight: 500;z    
+  transition: color 0.2s ease, text-decoration 0.2s ease;
+  color: inherit;
+}
+
+.hookLink:visited {
+  color: inherit;
+}
+
+.hookLink:hover {
+  text-decoration: underline;
+}
+
+.hookLink:active {
+  opacity: 0.85;
 }
 
 ", searchCss, "
@@ -182,8 +222,6 @@ a:hover {
 }
 
 .syn-variants {
-  padding-left: 0.9em;
-  padding-top: 0.9em;
   font-size: 15px;  
 }
 

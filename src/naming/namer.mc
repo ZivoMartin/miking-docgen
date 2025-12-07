@@ -65,7 +65,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                         "id=", int2string entry.id, "\n",
                         "isNested=", bool2string entry.isNested, "\n"]);
 
-                    let nameMap = nameMapInsert ctx.nameMap name entry in
+                    let nameMap = nameMapInsert ctx.nameMap name namespace entry in
                     { ctx with nameMap = nameMap }
                 else ctx
             in            
@@ -87,7 +87,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
         in
 
         -- We first insert the direct children, then we call process. So direct children will be
-        -- inserted twice, which is absolutly fine and doesn't change correctness.
+        -- inserted twice, which is absolutly fine and doesn t change correctness.
         let nameDirectChildrenAndProcess : ObjectTree -> NameContext -> Int -> WorkRes =
             lam objTree. lam ctx. lam nextId.
             let children = objTreeChildren objTree in
@@ -127,7 +127,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                              "id=", int2string entry.id, "\n",
                              "isNested=", bool2string entry.isNested, "\n"]);
 
-                         let nameMap = nameMapInsert acc.nameMap name entry in
+                         let nameMap = nameMapInsert acc.nameMap name namespace entry in
                          { nameMap = nameMap, nextId = addi acc.nextId 1 }
                      ) { nameMap = nameMap, nextId = nextId } objects
                  in

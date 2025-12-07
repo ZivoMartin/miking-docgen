@@ -84,8 +84,16 @@ let namespaceLast : Namespace -> Option String =
     match namespaceSplit namespace with ([_] ++ _) & s then
         Some (last s)
     else None {}
-    
-let namespaceGetSubNamespace : Namespace -> Namespace =
+
+let namespaceGetName : Namespace -> Option String =
+    lam namespace.
+    match namespaceLast namespace with Some name then
+        if strEndsWith ".mc" name then Some name
+        else match strSplitOnce name '-' with Some { right = right } then Some right
+        else None {}
+    else None {}
+
+    let namespaceGetSubNamespace : Namespace -> Namespace =
     lam namespace.
     let split = namespaceSplit namespace in
     match split with [] then namespace else
