@@ -41,7 +41,7 @@
 --    end
 --    ```  
 --    Here, `end` breaks both the `sem` and the `lang` block.
---    In this context, we also have to decides to which block `lang` belongs.
+--    In this context, we also have to decides to which block `end` belongs.
 --
 -- 3. **Hard break**  
 --    A new keyword forces a reinterpretation of the tree.  
@@ -62,7 +62,7 @@
 -- The parser first processes the include header of the file and recursively
 -- parses all included files. Each include is represented in the DocTree by
 -- an `DocTreeIncludeNode`, which may either contain the included file’s tree or be
--- marked as already visited to prevent infinite loops.
+-- marked as already visited to prevent useless reprocessing.
 --
 -- ## Result
 -- The final output is a `DocTree` for the entire project. This tree preserves

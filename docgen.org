@@ -1,5 +1,5 @@
-* TODO Path Managment
-** TODO Fix folder input when nested files include outer files
+* DONE Path Managment
+CLOSED: [2025-12-07 Sun 17:12]
 ** DONE Allow providing multiple files/folders
 CLOSED: [2025-11-29 Sat 12:43]
 ** DONE Allow the user to specify where to put the stdlib files
@@ -14,7 +14,22 @@ and see if is stdlib.
 ** DONE Rewrite folder processing
 CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non-MC files at the root, keep track of each search dataset.
-
+* TODO Scanning step
+** TODO During the scanning, find all the degree 0 nodes in the include graph to reduce the amount of entry point
+This is very easy, we start with the list of all the requested files,
+then we can see the include graph as a cycle less oriented graph,
+which means that we only need to process nodes with degree 0 since
+any node with degree more than 0 will be processed via at least one
+of the degree 0 nodes.
+To get the degree 0 node, it's insanly easy, we read the header of each files
+to see what is imported and the 0 degree files are those that are never
+imported at any point.
+** TODO During scaning, decide the real root of the output folder
+We basically can decide the root of the deepest file during the scanning
+since we process all the files to process. So from this information,
+when later processing a file we can guess it's final position in the
+output folder using url prefix relative to the actual root.
+** TODO Integrate the scanning phase in the execution context
 * TODO Project health
 ** TODO Refactoring the extracting by adding a parse method in ObjectKind
 ** TODO Rename ObjectKinds familiy of items
@@ -64,8 +79,8 @@ CLOSED: [2025-11-14 Fri 01:58]
 CLOSED: [2025-11-21 Fri 12:22]
 ** DONE No-code flag
 CLOSED: [2025-11-15 Sat 02:21]
-* DONE Design
-CLOSED: [2025-12-07 Sun 01:22]
+* TODO Design
+** TODO Give a better design to the hooks that do not have any colorisation.
 ** DONE The frame of the tooltip
 CLOSED: [2025-12-07 Sun 01:19]
 ** DONE Improve the design the design of the syn-variants (especially for the top page doc)
@@ -148,16 +163,23 @@ CLOSED: [2025-11-16 Sun 02:17]
 CLOSED: [2025-11-29 Sat 20:57]
 
 * TODO Optimization
+** TODO In rendering, keep track of what files we already rendered during previous steps
+** TODO During naming, stop when the object should not be rendered anymore
+** TODO Do not inject children from a SINGLE parent lang IF you don't already have it
+The idea is that if it comes from more than one parent then it is an assembling
+and so generate new information, but if it comes from a single parent
+and you don't add anything on it then you just duplicate informations and
+it is an exponential waste of time.
+** TODO Reword the hashmap API of the miking stdlib to have a non fixed amount of buckets.
 ** DONE Replace the GetMyLink fetch by a construction for the object
 CLOSED: [2025-12-04 Thu 23:17]
 ** DONE Do not call the writing functions if we don't render at the end of the day
 CLOSED: [2025-12-04 Thu 23:17]
 ** DONE Do not register objects that are not rendered during naming
 CLOSED: [2025-12-04 Thu 23:07]
-** TODO Create buckets in the name-map
+** DONE Create buckets in the name-map
+CLOSED: [2025-12-07 Sun 14:46]
 Separate objects starting with capital letters, thoses that are nested which makes 4 buckets
-** TODO Do not rewrite for recursive bloc
-
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

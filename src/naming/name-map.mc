@@ -5,41 +5,29 @@ type NameMapEntry a = { entry: a, id: Int, namespace: String, isNested: Bool }
 type NameMapBucket a = HashMap String [NameMapEntry a]
 
 type NameMap a = {
-    rootUpper: NameMapBucket a,
-    rootLower: NameMapBucket a,
-    nestedUpper: NameMapBucket a,
-    nestedLower: NameMapBucket a
+    upper: NameMapBucket a,
+    lower: NameMapBucket a
 }
 
 let nameMapGetBucket : all a. NameMap a -> String ->  String -> { bucket: NameMapBucket a, update: NameMapBucket a -> NameMap a } =
     lam nameMap. lam name. lam namespace. 
     let subnamespace = namespaceGetSubNamespace namespace in
-    if null name then
-        namingWarn "Name map can't handle empty name.";
-        { bucket = nameMap.rootUpper, update = lam m. { nameMap with rootUpper = m } }
-    else if isUpperAlpha (head name) then
-        if isNested then
-           { bucket = nameMap.nestedUpper, update = lam m. { nameMap with nestedUpper = m } }
-        else
-           { bucket = nameMap.rootUpper, update = lam m. { nameMap with rootUpper = m } }
-    else
-        if isNested then
-            { bucket = nameMap.nestedLower, update = lam m. { nameMap with nestedLower = m } }
-        else
-            { bucket = nameMap.rootLower, update = lam m. { nameMap with rootLower = m } }
-       
+
+    let upper = { bucket = nameMap.upper, update = lam m. { nameMap with upper = m } } in
+    let lower = { bucket = nameMap.lower, update = lam m. { nameMap with lower = m } } in
+
+    if null name then namingWarn "Name map can't handle empty name."; upper
+    else if isUpperAlpha (head name) then upper
+    else lower
 
 let nameMapEmpty : all a. () -> NameMap a = lam.
 {
-    rootUpper = hashmapEmpty (),
-    rootLower = hashmapEmpty (),
-    nestedUpper = hashmapEmpty (),
-    nestedLower = hashmapEmpty ()
+    upper = hashmapEmpty (),
+    lower = hashmapEmpty ()
 }
 
 let nameMapInsert : all a. NameMap a -> String -> String -> NameMapEntry a -> NameMap a =
     lam nameMap. lam name. lam namespace. lam entry.
-
     match nameMapGetBucket nameMap name namespace with { bucket = oldBucket, update = update } in
 
     let newBucket = match optionMap (cons entry) (hmLookup name oldBucket) with Some entries then
@@ -67,26 +55,21 @@ let nameMapFetch : all a. NameMap a -> String -> Int -> String -> Bool -> Option
         optionJoin res
     in
 
-    let nonNestedFetch: Option a =
-        let predicate = lam entry. idCmp entry.id callerId in
-        if isUpperAlpha (head name) then
-           lookup predicate nameMap.rootUpper
-        else
-           lookup predicate nameMap.rootLower
-    in    
-
     if isCallerNested then
-        optionOrElse
-            (lam.
-               let predicate =
-                   lam entry.
-                   let entryDomain = namespaceGetDomain entry.namespace in
-                   and (idCmp entry.id callerId) (strStartsWith entryDomain callerDomain)
-               in
-               if isUpperAlpha (head name) then
-                  lookup predicate nameMap.nestedUpper
-               else
-                  lookup predicate nameMap.nestedLower)
-            nonNestedFetch
-    else nonNestedFetch
+        let predicate =
+            lam entry.
+            let entryDomain = namespaceGetDomain entry.namespace in
+            or (not entry.isNested)
+               (and (idCmp entry.id callerId) (strStartsWith entryDomain callerDomain))
+        in
+        if isUpperAlpha (head name) then
+           lookup predicate nameMap.upper
+        else
+           lookup predicate nameMap.lower
+    else
+        let predicate = lam entry. and (not entry.isNested) (idCmp entry.id callerId) in
+        if isUpperAlpha (head name) then
+           lookup predicate nameMap.upper
+        else
+           lookup predicate nameMap.lower
         

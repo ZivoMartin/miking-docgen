@@ -269,7 +269,7 @@ end
 lang LetRecBreakerChooser = BreakerChooserInterface
 
     -- We have 3 cases:
-    -- 1. let is still ambiguous—we cannot know if it is a RecLet or a nested Let.
+    -- 1. let is still ambiguous, we cannot know if it is a RecLet or a nested Let.
     --    So we include both "in" and RecursiveEnder (#in/#end) and assume nested,
     --    then fix later if it is not.
     -- 2. utest, type, con, and use are straightforward: inside a recursive,
