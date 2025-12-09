@@ -41,16 +41,20 @@ type ExecutionContext =  use TokenReader in {
     userOutputFolder: String,
     currentFile: String,
     files: [FileToProcess],
+    isRootStdlib: Bool,
+    longestPrefix: String,
+
     tokens: [Token],
     docTree : Option DocTree,
     ast: Option MAst,
     searchDatas: HashMap String String,
     object: Option ObjectTree,
-    isRootStdlib: Bool,
     nameContext: Option NameContext
 }
 
-let buildLogger : ExecutionContext -> String -> Logger = lam ctx. lam step. if ctx.opt.debug then message "INFO" step else lam. ()
+let buildLogger : ExecutionContext -> String -> Logger =
+    lam ctx. lam step.
+    if ctx.opt.debug then message "INFO" step else lam. ()
 
 let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in lam ctx.
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
@@ -67,27 +71,32 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
               nameContext = None {}
           }
     else
+
         -- Creating search engine
         let log = buildLogger ctx "Rendering" in 
         let ropt = getRenderingOption ctx.opt log (nameContextEmpty ()) in
         let ropt = { ropt with outputFolder = ctx.userOutputFolder } in
         let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
                           (hashmap2seq ctx.searchDatas) in
-
         renderSearchFile searchDatas ropt;
+
         None {}
 
 let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     
     let scanningOptions = getScanningOptions opt in
-    match scan scanningOptions with { inputs = files } in
+    match scan scanningOptions with { inputs = files, longestPrefix = longestPrefix } in
 
-    let opt = if any (lam f. not (pathIsInStdlib f.path)) files then opt else { opt with stdlibFolder = "" } in
+    let opt =
+        if any (lam f. not (pathIsInStdlib f.path)) files then opt
+        else { opt with stdlibFolder = "" }
+    in
 
     let ctx = {
         opt = opt,
         currentFile = "",
         userOutputFolder = opt.outputFolder,
+        longestPrefix = longestPrefix,
         files = files,
         isRootStdlib = false,
         tokens = [],
@@ -106,7 +115,8 @@ type Step = ExecutionContext -> ExecutionContext
 
 let gen : Step = lam ctx.
     let log = buildLogger ctx "MExpr Generation" in
-    { ctx with ast = Some (buildMAstFromFile log ctx.currentFile) }
+    let mast = buildMAstFromFile log ctx.currentFile in
+    { ctx with ast = Some mast }
 
 let parse : Step =  lam ctx.
     match ctx.ast with Some ast then
@@ -117,14 +127,14 @@ let parse : Step =  lam ctx.
 let extract : Step =  lam ctx.
     match ctx.docTree with Some docTree then
     let log = buildLogger ctx "Extracting" in 
-    let opt = getExtractingOption ctx.opt ctx.isRootStdlib log in
+    let opt = getExtractingOption ctx.opt ctx.isRootStdlib ctx.longestPrefix log in
     { ctx with object = Some (extract opt docTree ) }
     else crash "doc tree" "extract" "parse"
 
 let label : Step =  lam ctx.
     match (ctx.object, ctx.ast) with (Some object, Some ast) then
     let log = buildLogger ctx "Labeling" in    
-    { ctx with object = Some (label log object ast) }
+    { ctx with object = Some (label log ctx.longestPrefix object ast) }
     else crash "object" "label" "extract"
 
 let name : Step =  lam ctx.

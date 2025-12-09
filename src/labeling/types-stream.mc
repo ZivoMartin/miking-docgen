@@ -8,7 +8,7 @@
 -- - `typeStreamNext`: Iteratively searches for a `let`-binding matching a given name and returns its type and context, while skipping unrelated ones.
 -- - `typeStreamPop`: Pops the top expression from the context stack, useful for recursively analyzing inner expressions.
 --
--- This interface supports scenarios where expressions are not encountered in their declaration order, and enables deferred or conditional type lookups, crucial for features like `Lang` and `Sem` handling in Miking's semantics.
+-- This interface supports scenarios where expressions are not encountered in their declaration order, and enables deferred or conditional type lookups, crucial for features like `Lang` and `Sem` handling in Miking s semantics.
 include "map.mc"
 
 include "../global/logger.mc"

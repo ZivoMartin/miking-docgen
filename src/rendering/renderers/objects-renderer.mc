@@ -76,7 +76,6 @@ lang ObjectsRenderer = ObjectKinds + Formats
         "Object ", objName obj, ":\n",
         "   kind: ", objKindToString (objKind obj), "\n",
         "   namespace: ", objNamespace obj, "\n",
-        "   prefix: ", objPrefix obj, "\n",
         "   link: ", objGetMyLink obj opt, "\n",
         "   isStdlib: ", bool2string (objIsStdlib obj), "\n"
     ])

@@ -1,9 +1,9 @@
-
 type FileToProcess = { path: String, outputFolder: String }
 
 
 type ScanningOutput = {
-    inputs: [FileToProcess]
+    inputs: [FileToProcess],
+    longestPrefix: String
 }
 
 

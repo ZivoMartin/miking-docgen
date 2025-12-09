@@ -234,8 +234,10 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
 
             let go : ParseRes -> DocTree -> ParseRes = lam arg. lam doctree. { arg with tree = cons doctree arg.tree } in
             match token with TokenInclude { content = content } then
+
                 match includeSetInsert includeSet loc content () with
                 { includeSet = includeSet, inserted = inserted, path = path, isStdlib = isStdlib } in
+
                 let insertResult = if inserted then
                     match parse includeSet path lexingCtx with
                     { includeSet = includeSet, lexingCtx = lexingCtx } & parseRes in
@@ -248,6 +250,7 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
                 go arg (DocTreeLeaf { token = token, state = StateProgram {}, pos = pos })
             ) { includeSet = includeSet, lexingCtx = lexingCtx, tree = [] } headerTokens
         in
+        
         match headerDocTree with { includeSet = includeSet, tree = headerTree, lexingCtx = lexingCtx } in
         log (concat "Beginning of parsing stage on " loc);
         match lex lexingCtx fileText with { stream = stream, ctx = lexingCtx } in
@@ -256,7 +259,6 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
         { includeSet = includeSet, lexingCtx = lexingCtx, tree = snippet.tree }
 
         else
-            iter printLn (hmKeys ast.includeSet.set);
             error (join ["Found an invalid path during parsing: ", loc, "."])
     in
     
@@ -264,10 +266,10 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
 
     match goHere pwd basePath with { path = basePos } in
 
-    let includeSet = includeSetNew (dirname basePos) in
+    let includeSet = includeSetNew () in
 
     match includeSetInsert includeSet "." basePath () with { includeSet = includeSet } in    
 
     match parse includeSet basePath lexingCtx with { includeSet = includeSet, tree = tree } & parseRes in
-    log (join ["Parsing is over, computed prefix: ", includeSetPrefix includeSet, "."]);
+    log (join ["Parsing is over."]);
     parseRes2tree parseRes basePath

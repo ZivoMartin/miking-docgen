@@ -96,7 +96,7 @@ let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
 
     in
 
-    let includeSet = includeSetNew (dirname file) in
+    let includeSet = includeSetNew () in
 
     let unit = TmSeq {
       tms = [],

@@ -15,7 +15,8 @@ and see if is stdlib.
 CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non-MC files at the root, keep track of each search dataset.
 * TODO Scanning step
-** TODO During the scanning, find all the degree 0 nodes in the include graph to reduce the amount of entry point
+** DONE During the scanning, find all the degree 0 nodes in the include graph to reduce the amount of entry point
+CLOSED: [2025-12-08 Mon 01:06]
 This is very easy, we start with the list of all the requested files,
 then we can see the include graph as a cycle less oriented graph,
 which means that we only need to process nodes with degree 0 since
@@ -29,8 +30,14 @@ We basically can decide the root of the deepest file during the scanning
 since we process all the files to process. So from this information,
 when later processing a file we can guess it's final position in the
 output folder using url prefix relative to the actual root.
-** TODO Integrate the scanning phase in the execution context
+** TODO Use the longest common prefix to determine the real output folder of each file.
+** TODO Remove the longest output prefix mechanism inside the actual processing (since we now do it beforehand)
+** TODO Smoothly integrate the new prefix inside the processing using the prefix fields of the object
+** TODO Check if the system works when we directly provide nested stdlib files.
+** DONE Integrate the scanning phase in the execution context
+CLOSED: [2025-12-08 Mon 01:07]
 * TODO Project health
+** TODO See if we can remove the isRootStdlib flag.
 ** TODO Refactoring the extracting by adding a parse method in ObjectKind
 ** TODO Put all the shared api in global: objects, file-opener, ...
 ** TODO Rename ObjectKinds familiy of items
@@ -164,6 +171,7 @@ CLOSED: [2025-11-16 Sun 02:17]
 CLOSED: [2025-11-29 Sat 20:57]
 
 * TODO Optimization
+** TODO Try to remove the prefix from the objects.
 ** TODO In rendering, keep track of what files we already rendered during previous steps
 ** TODO During naming, stop when the object should not be rendered anymore
 ** TODO Do not inject children from a SINGLE parent lang IF you don't already have it
@@ -181,6 +189,9 @@ CLOSED: [2025-12-04 Thu 23:07]
 ** DONE Create buckets in the name-map
 CLOSED: [2025-12-07 Sun 14:46]
 Separate objects starting with capital letters, thoses that are nested which makes 4 buckets
+
+
+
 * Summary of Code Review
 
 ** 1. Shell Usage & Command Construction

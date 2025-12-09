@@ -32,11 +32,13 @@ let getServeOption : DocGenOptions -> String -> ServerOptions  = lam opt. lam li
         link = link
     }
 
-let getExtractingOption : DocGenOptions -> Bool -> Logger -> ExtractingOptions  = lam opt. lam rootIsStdlib. lam log.
+let getExtractingOption : DocGenOptions -> Bool -> String -> Logger -> ExtractingOptions =
+    lam opt. lam rootIsStdlib. lam longestPrefix. lam log.
     {
         depth = opt.letDepth,
         rootIsStdlib = rootIsStdlib,
-        log = log
+        log = log,
+        longestPrefix = longestPrefix
     }
 
 

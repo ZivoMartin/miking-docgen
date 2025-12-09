@@ -64,13 +64,12 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
     use TokenReader in use BreakerChooser in use ObjectKinds in
     lam opt. lam tree.
 
-    match opt with { log = log, rootIsStdlib = rootIsStdlib, depth = depth } in
+    match opt with { log = log, rootIsStdlib = rootIsStdlib, depth = depth, longestPrefix = longestPrefix } in
 
     log "Beggining of extraction...";
 
      -- Entry point: tree must be Program node
-    match tree with DocTreeNode { token = TokenProgram { content = content, includeSet = includeSet }, state = StateProgram {} } then
-    let prefix = includeSetPrefix includeSet in
+    match tree with DocTreeNode { token = TokenProgram { content = content }, state = StateProgram {} } then
     
     -- Buffer of collected comments
     type CommentBuffer = [String] in
@@ -82,13 +81,19 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> Bool -> Int -> Depth -> ExtractRecOutput ) =
     lam tree. lam namespace. lam commentBuffer. lam sourceCodeBuilder. lam inStdlib. lam utestCount. lam depth.
 
+        let objWithNamespace =
+            lam obj. lam namespace.
+            let obj = objWithNamespace obj namespace in
+            if objIsStdlib obj then obj
+            else objWithPrefix obj longestPrefix
+        in
+
         let shouldClear : String -> Bool = lam content. gti (count (eqChar '\n') content) 1 in
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         
         let defaultObject = lam namespace. lam isStdlib.
-            let defaultObject = objWithNamespace defaultObject namespace in
             let defaultObject = objWithIsStdlib defaultObject isStdlib in
-            if isStdlib then defaultObject else objWithPrefix defaultObject prefix
+            objWithNamespace defaultObject namespace
         in
     
         switch tree 
@@ -112,6 +117,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                 
                 let obj = { obj with name = name, kind = kind, doc = doc } in
                 let obj = objWithNamespace obj namespace in
+
                 match depthProcess depth obj with { obj = obj, depth = depth } in
 
                 type Arg = { children: [ObjectTree], ctx: ExtractRecOutput } in

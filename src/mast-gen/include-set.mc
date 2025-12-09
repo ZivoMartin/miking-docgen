@@ -14,39 +14,35 @@ include "stdlib.mc"
 include "../global/util.mc"
 
 -- A set of included files with metadata.
-type IncludeSet a =
-    {
-        baseLoc: String,
-        set: HashMap String a,
-        prefix: String,
-        programStartPos: String
-    }
+type IncludeSet a = HashMap String a
 
 -- Creates a new IncludeSet with a given base location.
-let includeSetNew : all a. String -> IncludeSet a = lam baseLoc.
-    { baseLoc = baseLoc, set = hashmapEmpty (), prefix = baseLoc, programStartPos = sysGetCwd () }
-
--- Returns the current prefix stored in the IncludeSet.
-let includeSetPrefix : all a. IncludeSet a -> String = lam set. set.prefix
+let includeSetNew : all a. () -> IncludeSet a = lam.
+    hashmapEmpty ()
 
 -- Result type for inserting a new element in the IncludeSet.
-type IncludeSetInsertResult a = { inserted: Bool, includeSet: IncludeSet a, path: String, isStdlib: Bool }
+type IncludeSetInsertResult a = {
+     inserted: Bool,
+     includeSet: IncludeSet a,
+     path: String,
+     isStdlib: Bool
+}
 
--- Inserts a file path into the IncludeSet, resolving absolute paths and updating the prefix.
-let includeSetInsert : all a. IncludeSet a -> String -> String -> a -> IncludeSetInsertResult a = lam set. lam loc. lam includeContent. lam mapValue.
+-- Inserts a file path into the IncludeSet
+let includeSetInsert : all a. IncludeSet a -> String -> String -> a -> IncludeSetInsertResult a =
+    lam set. lam loc. lam includeContent. lam mapValue.
+
     match goHere (dirname loc) includeContent with { path = path, isStdlib = isStdlib } in
-    match goHere set.programStartPos path with { path = absPath, isStdlib = isStdlib } in
-
-    let set = if isStdlib then set else  { set with prefix = strLongestCommonPrefix (dirname absPath) set.prefix } in
 
     let res = { inserted = false, includeSet = set, isStdlib = isStdlib, path = path } in
-    if hmMem path set.set then res
-    else { res with includeSet = { set with set = hmInsert path mapValue set.set }, inserted = true }
+
+    if hmMem path set then res
+    else { res with includeSet = hmInsert path mapValue set, inserted = true }
 
 -- Replaces or inserts a value in the IncludeSet with the given key.
 let includeSetReplace : all a. IncludeSet a -> String -> a -> IncludeSet a = lam set. lam mapKey. lam mapValue.
-    { set with set = hmInsert mapKey mapValue set.set }
+    hmInsert mapKey mapValue set
     
 -- Looks up a value in the IncludeSet by key.
 let includeSetGetValue: all a. IncludeSet a -> String -> Option a = lam set. lam key.
-    hmLookup key set.set
+    hmLookup key set

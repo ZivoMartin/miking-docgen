@@ -15,7 +15,7 @@
 --  - Sem: To handle the three problems addressed above, here is how we proceed. Each time we see a `sem`:
 --      * We interpolate its name with the language name from the `LangContext`.
 --      * If the `sem` is not present in the `semMap`, we fetch from the TypeStream, then pop the body of the `sem` from the TypeStream and create a new stream containing only the body of the `sem`. We will henceforth call these streams `temporary streams`. We then continue parsing recursively on this temporary stream without modifying the main stream which had the `sem` body popped from it.
---      After the recursive call, we add a new entry to the `LangContext`'s `semMap`, linking the `sem` name to its type (found using the first `next` call on the main type stream) and to the new temporary context resulting from the recursive call. This context may contain the definitions of other `sem`s declared with the same name but with different patterns.
+--      After the recursive call, we add a new entry to the `LangContext` s `semMap`, linking the `sem` name to its type (found using the first `next` call on the main type stream) and to the new temporary context resulting from the recursive call. This context may contain the definitions of other `sem`s declared with the same name but with different patterns.
 --      * If the `sem` is in the `semMap`, we just continue labeling in the existing context. The `sem` type is also found in the hashmap, as all `sem`s with the same name have the same type.
 --      * To handle the disorder in the appearance of `let`s, it is enough to add all skipped items that start with the prefix of the current language to the `semMap`, so that when we encounter them, they will find their stream in the `semMap`, and we then fall back to the previous case.
 
@@ -23,8 +23,9 @@ include "./types-stream.mc"
 include "../extracting/objects.mc"
 include "../global/util.mc"
 
-let label : Logger -> ObjectTree -> MAst -> ObjectTree =
-    use ObjectKinds in use TypeStream in use RemoveMetaVar in lam log. lam tree. lam ast.
+let label : Logger -> String -> ObjectTree -> MAst -> ObjectTree =
+    use ObjectKinds in use TypeStream in use RemoveMetaVar in
+    lam log. lam prefix. lam tree. lam ast.
 
     type SkippedContext = { ctx: TypeStreamContext, t: Type } in
     type LangContext = { langName: String, semMap: HashMap String SkippedContext } in
@@ -114,7 +115,7 @@ let label : Logger -> ObjectTree -> MAst -> ObjectTree =
         else default
     in
     let obj = objTreeObj tree in
-    let filePath = objAbsolutePath obj in
+    let filePath = objAbsolutePath obj prefix in
     log (concat "Labeling on " filePath);
     let ctx = buildTypeStream ast in
     log "Labeling types..";

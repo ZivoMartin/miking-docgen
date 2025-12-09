@@ -12,7 +12,7 @@ include "common.mc"
 include "ext/file-ext.mc"
 
 -- Changes the extension of a file.
--- If the file has an extension, it's replaced; if not, the extension is added.
+-- If the file has an extension, it s replaced; if not, the extension is added.
 -- Example: changeExt "test.txt" "md" => "test.md"
 let changeExt : (String -> String -> String) = lam fileName. lam ext.
     match findiLast (eqc '.') fileName with Some i then
@@ -69,6 +69,7 @@ let hmValues = lam x. hashmapValues hmTraits x
 let hmKeys = lam x. hashmapKeys hmTraits x
 let hmLookup = lam x. hashmapLookup hmTraits x
 let hmLen = lam x. hashmapCount hmTraits x
+let hmRemove = lam x. hashmapRemove hmTraits x
 
 let hmIntTraits : HashMapTraits Int =
   { eq = eqi,
@@ -111,18 +112,22 @@ utest normalizePath "/a/b/../../c" with "/c"
 
 -- Resolves a path based on current location and target.
 -- If the target is absolute, it is returned normalized.
--- If the file exists at the concatenated location, it's returned.
+-- If the file exists at the concatenated location, it s returned.
 -- Otherwise, the target is assumed to be from the standard library.
 let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentLoc. lam target.
     let currentLoc = match currentLoc with "" then "./" else currentLoc in
+
     match target with "" then { path = currentLoc, isStdlib = false } else
-    let path = if strStartsWith "/" target then target
-               else join [currentLoc, "/", target] in
+
+    let path =
+        if strStartsWith "/" target then target
+        else join [currentLoc, "/", target]
+    in
+
     if sysFileExists path then
         { path = normalizePath path, isStdlib = strStartsWith stdlibLoc path }
     else
         { path = join [stdlibLoc, "/", target], isStdlib = true }
-
 
 -- Try to open a file in a String, panic if it fails
 let readOrNever : String -> String = lam fileName.
@@ -265,3 +270,8 @@ let stripEndingNewlines =
   let reversed = reverse s in
   match splitOnR (lam c. not (eqChar '\n' c)) reversed with { right = s} in
   reverse s
+
+let strLongestCommonPrefixArray : [String] -> String =
+    lam s.
+    if null s then "" else
+    foldl strLongestCommonPrefix (head s) (tail s) 

@@ -20,10 +20,6 @@ include "./util.mc"
 -- - `kind`: Specific to the object’s type (see ObjectKind).  
 -- - `sourceCode`: An **absolute** representation of the object’s source code.
 --   It is not just a plain string, but a structured value defined in `source-code-word.mc` and `source-code-builder.mc`.  
--- - `prefix`: The part of the namespace removed because it is redundant.  
---   Example: if we have `src/foo.mc` and `src/bar.mc`, we can drop `src/`.  
---   `objWithPrefix` both removes the given prefix (warning if the namespace does not start with it)
---   and stores it so we can recover the original namespace later.
 -- - `isStdlib`: Marks whether the object belongs to the stdlib.
 -- - `renderIt` : Indicates if the object should be rendered during rendering stage.
 type Object = use ObjectKinds in {
@@ -32,7 +28,6 @@ type Object = use ObjectKinds in {
     namespace: String,
     kind: ObjectKind,
     sourceCode: SourceCode,
-    prefix: String,
     isStdlib: Bool,
     renderIt: Bool,
     id: Int
@@ -47,7 +42,6 @@ let objKind : Object -> use ObjectKinds in ObjectKind = lam obj. obj.kind
 let objDoc : Object -> String = lam obj. obj.doc
 let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode    
 let objNamespace : Object -> String = use ObjectKinds in lam obj. obj.namespace
-let objPrefix : Object -> String = lam obj. obj.prefix
 let objIsStdlib : Object -> Bool = lam obj. obj.isStdlib
 let objRenderIt : Object -> Bool = lam obj. obj.renderIt
 let objId : Object -> Int = lam obj. obj.id
@@ -65,12 +59,7 @@ let objWithId : Object -> Int -> Object = lam obj. lam id. { obj with id = id }
 -- Warns if the namespace does not start with the given prefix.
 let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
     let process = lam.
-        let basePrefix: String =
-            if strStartsWith stdlibLoc prefix then
-                normalizePath (concat stdlibLoc obj.namespace)
-            else
-                normalizePath (concat basePosition obj.namespace)
-        in
+        let basePrefix: String = obj.namespace in
         let lengthBasePrefix = length basePrefix in
         let lengthPrefix = length prefix in
         if strStartsWith prefix basePrefix then subsequence basePrefix lengthPrefix lengthBasePrefix
@@ -79,8 +68,11 @@ let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
             basePrefix
     in
     let namespace = match prefix with "" then obj.namespace else process () in
-    let namespace = if strStartsWith "/" namespace then namespace else cons '/' namespace in
-    { obj with namespace = namespace, prefix = prefix }
+    let namespace =
+        if strStartsWith "/" namespace then namespace
+        else cons '/' namespace
+    in
+    { obj with namespace = namespace }
     
 -- Replaces namespace; strips stdlib prefix if present; re-applies stored `prefix`.
 let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
@@ -90,8 +82,7 @@ let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     else
         namespace
     in
-    let obj = { obj with namespace = namespace } in
-    objWithPrefix obj obj.prefix
+    { obj with namespace = namespace }
 
 -- Returns true if the object has a meaningful id.
 let objHasId : Object -> Bool = lam obj. neqi obj.id 0
@@ -100,8 +91,9 @@ let objHasId : Object -> Bool = lam obj. neqi obj.id 0
 let objHasSourceCode : Object -> Bool = lam obj. not (null obj.sourceCode)
 
 -- Returns absolute path = prefix + namespace.
-let objAbsolutePath : Object -> String = lam obj.
-    concat obj.prefix obj.namespace
+let objAbsolutePath : Object -> String -> String =
+    lam obj. lam prefix.
+    concat prefix obj.namespace
 
 let objDefaultDoc : String = "No documentation available here."
 
@@ -114,7 +106,6 @@ let defaultObject : Object = use ObjectKinds in {
     isStdlib = false,
     kind = ObjProgram {},
     sourceCode = sourceCodeEmpty (),
-    prefix = "",
     id = 0
 }
 

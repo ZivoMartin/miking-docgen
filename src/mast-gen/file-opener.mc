@@ -11,7 +11,11 @@ include "../parsing/lexing/token-readers.mc"
 include "sys.mc"
 
 -- Represents a parsed file header, including its `include`s, header tokens, and full text.
-type ParsingFile = use TokenReader in { includes: [String], headerTokens: [{ token: Token, pos: Pos }], fileText: String }
+type ParsingFile = use TokenReader in {
+    includes: [String],
+    headerTokens: [{ token: Token, pos: Pos }],
+    fileText: String
+}
 
 let parsingFileEmpty = { includes = [], fileText = "", headerTokens = [] }
 
