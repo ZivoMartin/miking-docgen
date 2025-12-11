@@ -34,7 +34,7 @@
 --    ```
 --    If the code above is in `foo.mc`, the path of `x` is `foo.mc/`, and the path
 --    of `y` is `foo.mc/x/`.
--- 3. **Extension** — a personalized extension based on the object kind, computed with
+-- 3. **Extension** — a personalized extension based on the object form, computed with
 --    the Object API. This extension is necessary to distinguish
 --    the folder that contains an object’s subelements from the object’s documentation
 --    file itself.
@@ -112,9 +112,9 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
 
             -- Process children nodes
             let process : State -> [DocTree] -> String -> String -> String -> ObjectForm -> Int -> ExtractRecOutput =
-                lam state. lam children. lam name. lam namespace. lam doc. lam kind. lam utestCount.
+                lam state. lam children. lam name. lam namespace. lam doc. lam form. lam utestCount.
                 
-                let obj = { obj with name = name, kind = kind, doc = doc } in
+                let obj = { obj with name = name, form = form, doc = doc } in
                 let obj = objWithNamespace obj namespace in
 
                 match depthProcess depth obj with { obj = obj, depth = depth } in
@@ -160,7 +160,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
 
             case (StateUse {} | StateTopUse {}) then
                 let name = getName children in
-                let obj = { obj with name = name.word, kind = ObjUse {} } in
+                let obj = { obj with name = name.word, form = ObjUse {} } in
                 let sourceCodeBuilder = foldl absorbWord sourceCodeBuilder children in
                 match finish obj sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
                 { obj = Some (ObjectNode { obj = obj, children = [] }), commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount }
@@ -180,7 +180,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                     end in
                 
                 let name = getName children in
-                let kind = switch state
+                let form = switch state
                     case (StateLet {} | StateTopLet {} | StateRecLet {}) then
                         let rec = match state with StateLet {} | StateTopLet {} then false else true in
                         let children = goToEqual children in
@@ -224,8 +224,8 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                         ObjType { t = t }
 
                     end in
-                let namespace = getNamespace namespace name.word (getFirstWord kind) in
-                process state children name.word namespace doc kind utestCount
+                let namespace = getNamespace namespace name.word (getFirstWord form) in
+                process state children name.word namespace doc form utestCount
                 end
             case _ then
                error (concat "Not covered: " (toString state))
@@ -254,7 +254,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                 log (concat "Extracting on: " path);
                 let res = extractRec tree path [] (newSourceCodeBuilder ()) isStdlib utestCount depth in
                 match res with { obj = Some (ObjectNode { obj = progObj, children = children } & progObjTree) } then
-                    let includeObj = { progObj with renderIt = false, isStdlib = isStdlib, kind = ObjInclude { pathInFile = content }, sourceCode = sourceCodeEmpty () } in
+                    let includeObj = { progObj with renderIt = false, isStdlib = isStdlib, form = ObjInclude { pathInFile = content }, sourceCode = sourceCodeEmpty () } in
                     
                     { defaultRes with obj = Some (ObjectNode { obj = includeObj, children = [ progObjTree ] })  }
                 else

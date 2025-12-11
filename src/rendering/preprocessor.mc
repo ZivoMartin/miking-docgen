@@ -25,9 +25,9 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
         let inner = objTreeObj obj in        
 
         switch obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [ p ] } then
+        case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [ p ] } then
             preprocessRec pathMap p
-        case ObjectNode { obj = { kind = ObjRecursiveBloc {} }, children = children } then
+        case ObjectNode { obj = { form = ObjRecursiveBloc {} }, children = children } then
             foldl preprocessRec pathMap children
         case ObjectNode { obj = obj, children = children } then
             if objRenderIt obj then 

@@ -24,7 +24,7 @@
 -- - Some should not shadow global variables (e.g., local variables inside a `let`).  
 -- - Others, however, should remain accessible (e.g., variables defined inside a `Program`, since they are part of an `include`).  
 --
--- To resolve this, we preserve or update the `nameContext` only when the current node is of kind **Program** or **Lang**.  
+-- To resolve this, we preserve or update the `nameContext` only when the current node is of form **Program** or **Lang**.  
 -- For details, see `./renderers/objects-renderer.mc`.
 
 include "./../global/format-language.mc"

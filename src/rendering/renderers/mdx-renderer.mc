@@ -168,9 +168,9 @@ lang MdxRenderer = RendererInterface
         let link = if objRenderIt data.obj then join [" link=\"", link, "\""] else "" in 
         
         let title = objTitle data.obj in
-        let kind  = getFirstWord (objForm data.obj) in
+        let form  = getFirstWord (objForm data.obj) in
     
-        let left = join ["<DocBlock title=\"", title, "\" kind=\"", kind, "\"", link, ">\n"] in
+        let left = join ["<DocBlock title=\"", title, "\" form=\"", form, "\"", link, ">\n"] in
         let right = "</DocBlock>\n\n" in
         renderWithRaw opt left renderDocBloc data right
 end

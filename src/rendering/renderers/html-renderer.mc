@@ -92,7 +92,7 @@ lang HtmlRenderer = RendererInterface
     -- Small helper to wrap inner content with an HTML span and a CSS class
     sem htmlRenderSpan : String -> String -> String
     sem htmlRenderSpan =
-    | content -> lam kind. join ["<span class=\"", kind, "\">", content, "</span>"]
+    | content -> lam form. join ["<span class=\"", form, "\">", content, "</span>"]
 
     -- Syntax coloring: types, vars, keywords, comments, strings, multi-line comments, numbers
     sem renderType (content : String) = 

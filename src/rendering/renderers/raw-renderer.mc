@@ -46,19 +46,19 @@ lang RawRenderer = RendererInterface
         in
 
         let details = switch data
-        case { obj = { kind = ObjLang { parents = parents & ([_] ++ _) } } & obj } then
+        case { obj = { form = ObjLang { parents = parents & ([_] ++ _) } } & obj } then
             let parents = strJoin " + " (map (lam p. renderSourceCodeStr p (Some obj) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
-        case { obj = { kind = ObjType {} } & obj } then
+        case { obj = { form = ObjType {} } & obj } then
              renderTypeConstructors obj opt
-        case { obj = { kind = ObjCon { parentType = parentType } } & obj } then
+        case { obj = { form = ObjCon { parentType = parentType } } & obj } then
              renderStemFrom obj parentType
-        case { obj = { kind = ObjSyn { variants = variants } } & obj } then
+        case { obj = { form = ObjSyn { variants = variants } } & obj } then
              let stemFrom = renderStemFrom obj (objGetLangName obj) in
              let variants = renderSynVariants obj variants opt in
              join [variants, nl, stemFrom]
-        case { obj = { kind = ObjSem { variants = variants } } & obj } then
+        case { obj = { form = ObjSem { variants = variants } } & obj } then
             renderStemFrom obj (objGetLangName obj)
         case { obj = obj } then
             ""
@@ -111,8 +111,8 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let type2str = lam t. type2str t in
         let name = objName obj in
-        let kind = objForm obj in
-        switch obj.kind
+        let form = objForm obj in
+        switch obj.form
         case ObjLet { ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
             join ["let ", name, " : ", t]
@@ -120,16 +120,16 @@ lang RawRenderer = RendererInterface
             join ["type ", name, match t with Some t then concat " : " t else ""]
         case ObjCon { t = t } then
             join ["con ", name, " : ", t]
-        case (ObjMexpr {} | ObjUtest {}) & kind then
-            getFirstWord kind
+        case (ObjMexpr {} | ObjUtest {}) & form then
+            getFirstWord form
         case ObjLang {} then
             concat "lang " name
         case ObjProgram {} then ""
         case ObjSem { ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
             join ["sem ", name, " : ", t]
-        case kind then
-            join [getFirstWord kind, " ", name]
+        case form then
+            join [getFirstWord form, " ", name]
         end
 
     -- Renders the object signature as source code.
@@ -245,7 +245,7 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         join (map (lam code. match code with Some code then renderWord code obj opt else "") code)
     
-    -- Renders a single token/word according to its kind (with escaping).
+    -- Renders a single token/word according to its form (with escaping).
     sem renderWord (word: SourceCodeWord) (obj: Option Object) =
     | opt -> let opt = fixOptFormat opt in
         let renderSkiped: [Token] -> String = lam skiped.

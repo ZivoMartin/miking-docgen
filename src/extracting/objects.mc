@@ -1,14 +1,14 @@
 -- # Object definition  
 --
 -- This module defines:
--- - `Object`: carries name, namespace, doc, kind, source code, prefix, stdlib flag
+-- - `Object`: carries name, namespace, doc, form, source code, prefix, stdlib flag
 -- - `ObjectTree`: a simple tree wrapper for grouping objects
 --
 -- Used in doc generation and object representation.
 
 include "../global/util.mc"
 include "./source-code-builder.mc"
-include "./object-kinds.mc"
+include "./object-form.mc"
 include "./util.mc"
 
 -- The object type is designed to represent the documentation-side structure of the code.
@@ -17,7 +17,7 @@ include "./util.mc"
 -- - `doc`: All comments above the beginning of the block.  
 -- - `namespace`: The namespace reflects the current position of the node in the tree and is used
 --   to build its documentation path.  
--- - `kind`: Specific to the object’s type (see ObjectForm).  
+-- - `form`: Specific to the object’s type (see ObjectForm).  
 -- - `sourceCode`: An **absolute** representation of the object’s source code.
 --   It is not just a plain string, but a structured value defined in `source-code-word.mc` and `source-code-builder.mc`.  
 -- - `isStdlib`: Marks whether the object belongs to the stdlib.
@@ -26,7 +26,7 @@ type Object = use ObjectForms in {
     name: String,
     doc : String,
     namespace: String,
-    kind: ObjectForm,
+    form: ObjectForm,
     sourceCode: SourceCode,
     isStdlib: Bool,
     renderIt: Bool,
@@ -38,7 +38,7 @@ let basePosition : String = concat (sysGetCwd ()) "/"
 
 -- Simple field accessors.
 let objName : Object -> String = lam obj. obj.name
-let objForm : Object -> use ObjectForms in ObjectForm = lam obj. obj.kind
+let objForm : Object -> use ObjectForms in ObjectForm = lam obj. obj.form
 let objDoc : Object -> String = lam obj. obj.doc
 let objSourceCode : Object -> SourceCode = lam obj. obj.sourceCode    
 let objNamespace : Object -> String = use ObjectForms in lam obj. obj.namespace
@@ -48,7 +48,7 @@ let objId : Object -> Int = lam obj. obj.id
 
 -- Object updaters (immutable setters).
 let objWithName : Object -> String -> Object = lam obj. lam name. { obj with name = name }
-let objWithForm : Object -> use ObjectForms in ObjectForm -> Object = lam obj. lam kind. { obj with kind = kind }
+let objWithForm : Object -> use ObjectForms in ObjectForm -> Object = lam obj. lam form. { obj with form = form }
 let objWithDoc : Object -> String -> Object = lam obj. lam doc. { obj with doc = doc }
 let objWithIsStdlib : Object -> Bool -> Object = lam obj. lam isStdlib. { obj with isStdlib = isStdlib }    
 let objWithSourceCode : Object -> SourceCode -> Object = lam obj. lam sourceCode. { obj with sourceCode = sourceCode }
@@ -108,7 +108,7 @@ let defaultObject : Object = use ObjectForms in {
     namespace = "",
     renderIt = false,
     isStdlib = false,
-    kind = ObjProgram {},
+    form = ObjProgram {},
     sourceCode = sourceCodeEmpty (),
     id = 0
 }
@@ -119,31 +119,31 @@ let objTryGetDoc : Object -> String = lam obj.
 
 -- Extracts the language name from a Sem/Syn object; else empty string.
 let objGetLangName : Object -> String = use ObjectForms in lam obj.
-    match obj.kind with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
+    match obj.form with ObjSem { langName = langName } | ObjSyn { langName = langName } then langName else ""
 
 -- Renders a short textual representation of an object (for printing).
-let objToString = use ObjectForms in lam kind. lam name.
-    switch kind
+let objToString = use ObjectForms in lam form. lam name.
+    switch form
     case ObjLet { rec = rec, args = args } then join [if rec then "recursive " else "", "let ", name, " ", strJoin " " args]
     case ObjType { t = t } then join ["type ", name, match t with Some t then concat " : " t else ""]
     case ObjCon { t = t } then join ["con ", name, " : ", t]
     case ObjMexpr {} then "mexpr"
     case ObjProgram {} then ""
-    case kind then join [getFirstWord kind, " ", name]
+    case form then join [getFirstWord form, " ", name]
     end
 
 -- Sets the (optional) type of a Let/Sem object, keeping other fields the same.
 let objSetType = use ObjectForms in lam obj. lam ty.
-    { obj with kind = switch obj.kind
+    { obj with form = switch obj.form
     case ObjLet d then ObjLet { d with ty = ty }
     case ObjSem d then ObjSem { d with ty = ty }    
-    case _ then obj.kind end }
+    case _ then obj.form end }
 
 let objMerge : Object -> Object -> Object =
     use ObjectForms in
     lam obj1. lam obj2.
-    let kind = objFormMerge (objForm obj1) (objForm obj2) in
-    objWithForm obj1 kind
+    let form = objFormMerge (objForm obj1) (objForm obj2) in
+    objWithForm obj1 form
     
     
 -- Object tree (hierarchy). Wraps Object to allow recursive nesting.
@@ -151,7 +151,7 @@ type ObjectTree
 con ObjectNode : { obj: Object, children: [ObjectTree] } -> ObjectTree
 
 -- Convenience helpers for ObjectTree.
-let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.kind obj.name
+let objTreeToString : ObjectTree -> String = lam tree. match tree with ObjectNode { obj = obj } in objToString obj.form obj.name
 
 let objTreeObj : ObjectTree -> Object = lam tree. match tree with ObjectNode { obj = obj } in obj
 let objTreeChildren : ObjectTree -> [ObjectTree] = lam tree. match tree with ObjectNode { children = children } in children

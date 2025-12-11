@@ -13,7 +13,7 @@ include "./rendering-types.mc"
 let reconstructSourceCode : SourceCode -> [RenderingData] -> [TreeSourceCode] = 
     lam code. lam children. use ObjectForms in
     
-    let children = filter (lam s. match s.obj.kind with ObjInclude {} then false else true) children in
+    let children = filter (lam s. match s.obj.form with ObjInclude {} then false else true) children in
     type Arg = {
         tree: [TreeSourceCode],
         children: [RenderingData],

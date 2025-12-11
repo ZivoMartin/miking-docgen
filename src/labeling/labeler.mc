@@ -57,9 +57,9 @@ let label : Logger -> String -> ObjectTree -> MAst -> ObjectTree =
                 }
         in
     
-        match tree with ObjectNode { obj = { kind = kind, name = name, namespace = namespace } & obj, children = children } then
+        match tree with ObjectNode { obj = { form = form, name = name, namespace = namespace } & obj, children = children } then
             let warn = lam name. labelingWarn (join ["Found a typeless token in ", fileName, " with name ", name, "."]) in
-            switch kind
+            switch form
             case ObjLet {} then
                 match typeStreamNext name ctx with { t = t, ctx = ctx } in
                 (match t with None {} then warn name else ());

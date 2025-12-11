@@ -33,7 +33,7 @@ let mdxCss =
     lineHeight: 1,          // keep a clean baseline
   },
 
-  badge: (kind: string) => ({
+  badge: (form: string) => ({
     display: 'inline-flex',
     alignItems: 'center',
     fontSize: '0.72rem',
@@ -139,12 +139,12 @@ function useDocBlockCtx() {
   return ctx;
 }
 
-export const Badge = ({ kind }) => {
-  if (!kind) return null;
-  return <span style={S.badge(kind)}>{kind}</span>;
+export const Badge = ({ form }) => {
+  if (!form) return null;
+  return <span style={S.badge(form)}>{form}</span>;
 };
 
-export const DocBlock = ({ title, kind, link, compact = false, children }) => {
+export const DocBlock = ({ title, form, link, compact = false, children }) => {
   const [open, setOpen] = useState({});
   const anchorId = useMemo(() => slugify(title), [title]);
 
@@ -157,7 +157,7 @@ export const DocBlock = ({ title, kind, link, compact = false, children }) => {
             {title}
           </a>
         </h3>
-        <Badge kind={kind} />
+        <Badge form={form} />
         <div style={S.spacer} />
         {link && (
           <a href={link} style={S.link}>→</a>
@@ -239,9 +239,9 @@ function useDocBlockCtx() {
  *  Badge
  *  ---------------------------------------------------------------------------------- */
 
-export const Badge: React.FC<{ kind?: string }> = ({ kind }) => {
-  if (!kind) return null;
-  return <span style={S.badge(kind)}>{kind}</span>;
+export const Badge: React.FC<{ form?: string }> = ({ form }) => {
+  if (!form) return null;
+  return <span style={S.badge(form)}>{form}</span>;
 };
 
 /** ------------------------------------------------------------------------------------
@@ -249,13 +249,13 @@ export const Badge: React.FC<{ kind?: string }> = ({ kind }) => {
  *  ---------------------------------------------------------------------------------- */
 type DocBlockProps = {
   title: string;
-  kind?: string;
+  form?: string;
   link?: string;
   compact?: boolean;
   children: React.ReactNode;
 };
 
-export const DocBlock: React.FC<DocBlockProps> = ({ title, kind, link, compact = false, children }) => {
+export const DocBlock: React.FC<DocBlockProps> = ({ title, form, link, compact = false, children }) => {
   const [open, setOpen] = useState<PanelState>({});
   const anchorId = useMemo(() => slugify(title), [title]);
 
@@ -268,7 +268,7 @@ export const DocBlock: React.FC<DocBlockProps> = ({ title, kind, link, compact =
             {title}
           </a>
         </h3>
-        <Badge kind={kind} />
+        <Badge form={form} />
         <div style={S.spacer} />
         {link && (
           <a href={link} style={S.link}>→</a>

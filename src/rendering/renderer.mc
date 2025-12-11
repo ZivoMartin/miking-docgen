@@ -16,7 +16,7 @@
 --   allowing us to abstract away the output format and work uniformly.
 --
 -- - Rendering the children on an object’s page is relatively simple.
---   We can distinguish each child’s type via its `kind` field and display them in the desired order.
+--   We can distinguish each child’s type via its `form` field and display them in the desired order.
 --   Additionally, linking to a child is easy thanks to its `namespace`, which provides a unique and structured identifier.
 --
 -- - Reconstructing the source code is by far the most challenging part.
@@ -91,12 +91,12 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
         objLog (objTreeObj objTree) opt;
 
         switch objTree
-        case ObjectNode { obj = { kind = ObjUse {}} & obj, children = children } then emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [ p ] } then
+        case ObjectNode { obj = { form = ObjUse {}} & obj, children = children } then emptyPreview obj
+        case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [ p ] } then
             let res = render p [] in
             emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj, children = [] } then emptyPreview obj
-        case ObjectNode { obj = { kind = ObjInclude {} } & obj } then
+        case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [] } then emptyPreview obj
+        case ObjectNode { obj = { form = ObjInclude {} } & obj } then
              renderingWarn "Include with more than one child detected"; emptyPreview obj
         case ObjectNode { obj = obj, children = children } then
 
@@ -124,13 +124,13 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 type Acc = { tests: [RenderingData], children: [RenderingData] } in
                 let acc = foldl
                     (lam acc: Acc. lam child.
-                        let kind = objTreeForm child in
-                        match kind with ObjUtest {} then 
+                        let form = objTreeForm child in
+                        match form with ObjUtest {} then 
                             let datas = render child [] in
                             { children = cons datas acc.children, tests = cons datas acc.tests }
                         else
                             let datas =
-                                if objFormHasTests kind then render child acc.tests
+                                if objFormHasTests form then render child acc.tests
                                 else render child []
                             in
                             { children = cons datas acc.children, tests = [] }

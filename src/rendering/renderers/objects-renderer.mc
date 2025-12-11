@@ -9,10 +9,10 @@ include "./headers/search.mc"
 include "string.mc"
 
 lang ObjectsRenderer = ObjectForms + Formats
-    -- Return the object name only for named kinds (let/type/sem/syn/lang/con).
+    -- Return the object name only for named forms (let/type/sem/syn/lang/con).
     sem objNameIfHas : Object -> Option String
     sem objNameIfHas =
-    | { kind = ObjLet {} | ObjType {} | ObjSem {} | ObjSyn {} | ObjLang {} | ObjCon {} } & obj -> Some (objName obj)
+    | { form = ObjLet {} | ObjType {} | ObjSem {} | ObjSyn {} | ObjLang {} | ObjCon {} } & obj -> Some (objName obj)
     | _ -> None {}
 
     sem objHasName : Object -> Bool
@@ -38,8 +38,8 @@ lang ObjectsRenderer = ObjectForms + Formats
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
-      let kind = objForm obj in
-      if not (objFormHasLink kind) then ""
+      let form = objForm obj in
+      if not (objFormHasLink form) then ""
       else match nameContextFetch opt.nameContext obj name with Some res then res.url
       else objUrlFetchFailed obj name false; ""
 
@@ -62,8 +62,8 @@ lang ObjectsRenderer = ObjectForms + Formats
     sem objTitle =    
     | obj ->
         let name = head (reverse (strSplit "/" (objName obj))) in
-        let kind = objForm obj in
-        switch kind
+        let form = objForm obj in
+        switch form
         case ObjInclude { pathInFile = pathInFile } then pathInFile
         case ObjUtest {} then "utest"
         case _ then name
@@ -74,7 +74,7 @@ lang ObjectsRenderer = ObjectForms + Formats
     sem objLog =
     | obj -> lam opt. opt.log (join [
         "Object ", objName obj, ":\n",
-        "   kind: ", objFormToString (objForm obj), "\n",
+        "   form: ", objFormToString (objForm obj), "\n",
         "   namespace: ", objNamespace obj, "\n",
         "   link: ", objGetMyLink obj opt, "\n",
         "   isStdlib: ", bool2string (objIsStdlib obj), "\n"
@@ -88,7 +88,7 @@ lang ObjectsRenderer = ObjectForms + Formats
           -- Recursive calls: render all children and transmit the name-context through the fold.
           let dicts =  foldl (lam dicts. lam child.
               let obj = objTreeObj child in
-              match (objTreeChildren child, obj.kind) with ([], ObjInclude {}) then dicts else
+              match (objTreeChildren child, obj.form) with ([], ObjInclude {}) then dicts else
               let newDicts = objToJsDict child in
               concat newDicts dicts
               ) [] (objTreeChildren tree)

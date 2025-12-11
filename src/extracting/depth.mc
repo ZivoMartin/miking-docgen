@@ -37,7 +37,7 @@ let depthProcess : Depth -> Object -> { depth: Depth, obj: Object  } =
        let obj = objWithRenderIt obj true in
        let default = { depth = depth, obj = obj } in
 
-        switch (depth.depth, obj.kind)
+        switch (depth.depth, obj.form)
         case (_, ObjUtest {} | ObjUse {}) then { obj = objWithRenderIt obj false, depth = { depth with neverRender = true } }
         case (_, ObjRecursiveBloc {} | ObjInclude {}) then { default with obj = objWithRenderIt obj false }
         case (None {}, _) then default

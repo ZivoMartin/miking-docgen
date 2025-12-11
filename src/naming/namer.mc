@@ -20,7 +20,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
 
         let obj = objTreeObj objTree in
         let children = objTreeChildren objTree in
-        let kind = objForm obj in
+        let form = objForm obj in
 
         let isNested = namespaceIsNested (objNamespace obj) in
 
@@ -49,7 +49,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             let objTree = ObjectNode { obj = obj, children = children } in
 
             let ctx = 
-                if objFormHasUrl kind then
+                if objFormHasUrl form then
                     let name = objName obj in
                     let namespace = objNamespace obj in
                     let isStdlib = objIsStdlib obj in
@@ -102,19 +102,19 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             annotateAndProcess objTree ctx nextId children
         in
 
-        switch kind
+        switch form
         case ObjUse {} then
              let used = objName obj in
              match namespaceSetGetByName ctx.langNamespaceSet used with Some langNamespace then
                  let langNamespace = langNamespace.full in
 
                  let useThis : NameMap -> Int -> String -> [Object] -> { nameMap: NameMap, nextId: Int } =
-                     lam nameMap. lam nextId. lam kind. lam objects.
+                     lam nameMap. lam nextId. lam form. lam objects.
                      foldl (
                          lam acc. lam obj.
 
                          let name = objName obj in
-                         let namespace = join [objNamespace obj, "/", kind, "-", name] in
+                         let namespace = join [objNamespace obj, "/", form, "-", name] in
                          let url = buildUrl langNamespace.objIsStdlib namespace in
                          let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
 

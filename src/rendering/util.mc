@@ -10,8 +10,8 @@ include "../global/util.mc"
 -- ## removeDoubleNames
 --
 -- During rendering, we generate one page and one documentation block per child.
--- But what if two children have the same name and the same kind?
--- Since they share the same name, namespace and kind, they will end up with the same URL.
+-- But what if two children have the same name and the same form?
+-- Since they share the same name, namespace and form, they will end up with the same URL.
 -- However, two documentation blocks will still be generated, both pointing
 -- toward the last child’s page.
 --
@@ -67,7 +67,7 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
 
 -- ## RenderingDataSet
 --
--- Groups `RenderingData` nodes into categories by their kind.
+-- Groups `RenderingData` nodes into categories by their form.
 -- This structure is useful for organizing sections in the documentation.
 type RenderingDataSet = {
     sUse: [Object],
@@ -93,7 +93,7 @@ let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet =
     let buildSet = lam set. lam children. lam recDatas.
         switch children
         case [child] ++ children then
-            let switchRes = switch child.obj.kind
+            let switchRes = switch child.obj.form
             case ObjUse {} then ({ set with sUse = cons child.obj set.sUse }, recDatas)
             case ObjLet {} then ({ set with sLet = cons child set.sLet }, recDatas)
             case ObjLang {} then ({ set with sLang = cons child set.sLang }, recDatas)
@@ -129,7 +129,7 @@ let unwrapRecursives : RenderingOptions -> [ObjectTree] -> [{ children: [ObjectT
     lam opt. lam children.
     let res = foldl (lam buffer. lam tree.
         let obj = objTreeObj tree in
-        switch obj.kind
+        switch obj.form
         case ObjRecursiveBloc {} then
             let children = objTreeChildren tree in
             match children with [first] ++ rest then
