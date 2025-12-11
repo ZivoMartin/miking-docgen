@@ -3,10 +3,13 @@ type FileToProcess = { path: String, outputFolder: String }
 
 type ScanningOutput = {
     inputs: [FileToProcess],
-    longestPrefix: String
+    longestPrefix: String,
+    onlyStdlib: Bool
 }
 
 
 let defaultScanningOutput : () -> ScanningOutput = lam. {
-    inputs = []
+    inputs = [],
+    longestPrefix = "",
+    onlyStdlib = false
 }

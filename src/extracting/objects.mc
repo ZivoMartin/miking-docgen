@@ -59,12 +59,15 @@ let objWithId : Object -> Int -> Object = lam obj. lam id. { obj with id = id }
 -- Warns if the namespace does not start with the given prefix.
 let objWithPrefix: Object -> String -> Object = lam obj. lam prefix.
     let process = lam.
-        let basePrefix: String = obj.namespace in
+        let basePrefix = obj.namespace in
         let lengthBasePrefix = length basePrefix in
         let lengthPrefix = length prefix in
-        if strStartsWith prefix basePrefix then subsequence basePrefix lengthPrefix lengthBasePrefix
+        
+        if objIsStdlib obj then basePrefix
+        else if strStartsWith prefix basePrefix then
+            subsequence basePrefix lengthPrefix lengthBasePrefix
         else
-            extractingWarn (join ["The namespace ", basePrefix, "does not start with the prefix ", prefix, "."]);
+            error (join ["The namespace ", basePrefix, " does not start with the prefix ", prefix, "."]);
             basePrefix
     in
     let namespace = match prefix with "" then obj.namespace else process () in
@@ -82,6 +85,7 @@ let objWithNamespace : Object -> String -> Object = lam obj. lam namespace.
     else
         namespace
     in
+
     { obj with namespace = namespace }
 
 -- Returns true if the object has a meaningful id.

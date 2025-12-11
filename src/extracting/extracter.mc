@@ -84,8 +84,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
         let objWithNamespace =
             lam obj. lam namespace.
             let obj = objWithNamespace obj namespace in
-            if objIsStdlib obj then obj
-            else objWithPrefix obj longestPrefix
+            objWithPrefix obj longestPrefix
         in
 
         let shouldClear : String -> Bool = lam content. gti (count (eqChar '\n') content) 1 in

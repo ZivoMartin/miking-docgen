@@ -14,7 +14,8 @@ and see if is stdlib.
 ** DONE Rewrite folder processing
 CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non-MC files at the root, keep track of each search dataset.
-* TODO Scanning step
+* DONE Scanning step
+CLOSED: [2025-12-09 Tue 15:59]
 ** DONE During the scanning, find all the degree 0 nodes in the include graph to reduce the amount of entry point
 CLOSED: [2025-12-08 Mon 01:06]
 This is very easy, we start with the list of all the requested files,
@@ -25,19 +26,23 @@ of the degree 0 nodes.
 To get the degree 0 node, it's insanly easy, we read the header of each files
 to see what is imported and the 0 degree files are those that are never
 imported at any point.
-** TODO During scaning, decide the real root of the output folder
+** DONE During scaning, decide the real root of the output folder
+CLOSED: [2025-12-09 Tue 14:50]
 We basically can decide the root of the deepest file during the scanning
 since we process all the files to process. So from this information,
 when later processing a file we can guess it's final position in the
 output folder using url prefix relative to the actual root.
-** TODO Use the longest common prefix to determine the real output folder of each file.
-** TODO Remove the longest output prefix mechanism inside the actual processing (since we now do it beforehand)
-** TODO Smoothly integrate the new prefix inside the processing using the prefix fields of the object
-** TODO Check if the system works when we directly provide nested stdlib files.
+** DONE Use the longest common prefix to determine the real output folder of each file.
+CLOSED: [2025-12-09 Tue 14:50]
+** DONE Remove the longest output prefix mechanism inside the actual processing (since we now do it beforehand)
+CLOSED: [2025-12-09 Tue 14:50]
+** DONE Smoothly integrate the new prefix inside the processing using the prefix fields of the object
+CLOSED: [2025-12-09 Tue 14:50]
 ** DONE Integrate the scanning phase in the execution context
 CLOSED: [2025-12-08 Mon 01:07]
-* TODO Project health
-** TODO See if we can remove the isRootStdlib flag.
+* Project health
+** DONE See if we can remove the isRootStdlib flag.
+CLOSED: [2025-12-12 Fri 00:43]
 ** TODO Refactoring the extracting by adding a parse method in ObjectKind
 ** TODO Put all the shared api in global: objects, file-opener, ...
 ** TODO Rename ObjectKinds familiy of items
@@ -52,7 +57,7 @@ CLOSED: [2025-11-26 Wed 11:18]
 ** DONE Do not insert new lines in the documentation if a component is missing
 CLOSED: [2025-11-26 Wed 11:47]
 
-* TODO UI Features
+* UI Features
 ** TODO Support Markdown formatting with a flag
 ** DONE Mouse-over on hooks
 CLOSED: [2025-12-06 Sat 01:33]
@@ -87,7 +92,7 @@ CLOSED: [2025-11-14 Fri 01:58]
 CLOSED: [2025-11-21 Fri 12:22]
 ** DONE No-code flag
 CLOSED: [2025-11-15 Sat 02:21]
-* TODO Design
+* Design
 ** TODO Give a better design to the hooks that do not have any colorisation.
 ** DONE The frame of the tooltip
 CLOSED: [2025-12-07 Sun 01:19]
@@ -146,13 +151,14 @@ CLOSED: [2025-11-29 Sat 12:11]
 ** DONE Being able to click on primitive subtypes
 CLOSED: [2025-11-29 Sat 12:11]   ; (merged conceptually but kept explicitly)
 
-* TODO Follow up in MDX
+* Follow up in MDX
 ** TODO Tooltip support.
 ** TODO Support for syntax variants visualisation
 ** TODO Render doc signatures without pure code to be able to put link.
 ** TODO Check that the JS version is still working
 ** TODO Parent link support
-* TODO TOFIX
+* TOFIX
+** TODO When a nested stdlib file is provide we get incorrect output folder.
 ** DONE Parent link is down
 CLOSED: [2025-12-06 Sat 01:33]
 ** DONE Fix the submit handling
@@ -170,7 +176,8 @@ CLOSED: [2025-11-16 Sun 02:17]
 ** DONE Fix the urlPrefix issue 
 CLOSED: [2025-11-29 Sat 20:57]
 
-* TODO Optimization
+* Optimization
+** TODO Simplify the mast-gen step, and optimise the labeling step.
 ** TODO Try to remove the prefix from the objects.
 ** TODO In rendering, keep track of what files we already rendered during previous steps
 ** TODO During naming, stop when the object should not be rendered anymore
@@ -190,54 +197,3 @@ CLOSED: [2025-12-04 Thu 23:07]
 CLOSED: [2025-12-07 Sun 14:46]
 Separate objects starting with capital letters, thoses that are nested which makes 4 buckets
 
-
-
-* Summary of Code Review
-
-** 1. Shell Usage & Command Construction
-- Use of "bash -c" with hand-constructed strings is fragile.
-- Missing shell-escaping for paths (risk of breakage or injection).
-- Quoting is inconsistent and unsafe when paths contain special chars.
-- Recommendation: prefer direct sysRunCommand; if bash is necessary, add robust quoting.
-
-** 2. Python HTTP Server (Directory Traversal Risk)
-- Server joins paths without normalization.
-- A request like "/../../etc/passwd" could escape the doc directory.
-- Recommendation: normalize with abspath and enforce DOC_DIR prefix.
-
-** 3. Platform Assumptions & Portability
-- Hard POSIX assumptions: bash, find, rm, mv, python3, "/", etc.
-- Will not work on Windows without WSL.
-- Recommendation: document POSIX requirement or reduce reliance on shell tools.
-
-** 4. Escaping & Output Safety
-*** 4.1 Markdown/HTML Escaping
-- Escaping system is generally good.
-- Weakness: new renderers could accidentally bypass escaping.
-- Recommendation: document mandatory use of renderFormattedDoc.
-
-*** 4.2 MDX Template Literals
-- MDX embeds docstrings inside JS template literals.
-- `${` is not escaped → potential injection/XSS if input is untrusted.
-- Recommendation: escape `${` → `\${`, or avoid template literals entirely.
-
-*** 4.3 Search Component Generation
-- buildDict generates JS objects with unescaped strings.
-- Not currently dangerous but fragile for future changes.
-- Recommendation: add minimal JS string escaping or generate JSON.
-
-** 5. Error Handling & UX
-- Many direct error calls with minimal context.
-- Recommendation: wrap errors with contextual information; use Options/Results where reasonable.
-
-** 6. Other Robustness Notes
-- Breaker/snippet heuristics are complex and potentially brittle.
-- Heavy use of string concatenation → possible scaling issues.
-- Temporary Python server files are never deleted.
-
-** TL;DR Priorities
-1. Fix directory traversal in Python server.
-2. Sanitize or avoid bash -c usage.
-3. Escape `${` in MDX template literals.
-4. Clarify POSIX assumptions and reduce shell dependence.
-5. Add JS string escaping in buildDict.

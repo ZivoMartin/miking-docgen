@@ -7,9 +7,7 @@ include "./scanning-output.mc"
 let scan : ScanningOptions -> ScanningOutput =
     lam opt.
 
-    printLn "...";
-
-    if null opt.files then { inputs = [], longestPrefix = "" } else
+    if null opt.files then defaultScanningOutput () else
 
     let files =
         foldl (lam files: [String]. lam file: String.
@@ -67,16 +65,19 @@ let scan : ScanningOptions -> ScanningOutput =
     let files = hmKeys files.set in
 
     let nonStdlib = filter (lam f. not (pathIsInStdlib f)) visited in
+    let onlyStdlib = null nonStdlib in
 
-    let commonPrefix = strLongestCommonPrefixArray (if null nonStdlib then visited else nonStdlib) in
+    let commonPrefix = strLongestCommonPrefixArray (if onlyStdlib then visited else nonStdlib) in
     let commonPrefix = dirname commonPrefix in
 
     let commonPrefixLength = length commonPrefix in
     let stdlibLocLength = length stdlibLoc in
+    let stdlibOutputFolder =
+        if onlyStdlib then opt.outputFolder
+        else join [opt.outputFolder, "/", opt.stdlibFolder]
+    in
 
     let files = if pathIsInStdlib (head files) then reverse files else files in
-
-    iter printLn files;
 
     let files =
         map (
@@ -89,8 +90,8 @@ let scan : ScanningOptions -> ScanningOutput =
                 concat outputFolder "/"
              in
 
-            let outputFolder = if pathIsInStdlib path then
-               getRelativeOutputFolder (join [opt.outputFolder, "/", opt.stdlibFolder]) stdlibLocLength
+            let outputFolder = if pathIsInStdlib path then               
+               getRelativeOutputFolder stdlibOutputFolder stdlibLocLength
             else
                getRelativeOutputFolder opt.outputFolder commonPrefixLength
             in
@@ -99,6 +100,4 @@ let scan : ScanningOptions -> ScanningOutput =
         ) files
     in
 
-    printLn "...";
-
-    { inputs = files, longestPrefix = commonPrefix }
+    { inputs = files, longestPrefix = commonPrefix, onlyStdlib = onlyStdlib }

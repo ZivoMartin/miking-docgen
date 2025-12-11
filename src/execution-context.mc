@@ -41,7 +41,6 @@ type ExecutionContext =  use TokenReader in {
     userOutputFolder: String,
     currentFile: String,
     files: [FileToProcess],
-    isRootStdlib: Bool,
     longestPrefix: String,
 
     tokens: [Token],
@@ -58,14 +57,13 @@ let buildLogger : ExecutionContext -> String -> Logger =
 
 let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in lam ctx.
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
-          let isRootStdlib = pathIsInStdlib path in
+          printLn outputFolder;
           Some { ctx with
               opt = { ctx.opt with outputFolder = outputFolder },
               currentFile = path,
               files = files,
               tokens = [],
               docTree = None {},
-              isRootStdlib = isRootStdlib,
               ast = None {},
               object = None {},
               nameContext = None {}
@@ -85,12 +83,13 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
 let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     
     let scanningOptions = getScanningOptions opt in
-    match scan scanningOptions with { inputs = files, longestPrefix = longestPrefix } in
+    match scan scanningOptions with {
+        inputs = files,
+        longestPrefix = longestPrefix,
+        onlyStdlib = onlyStdlib
+    } in
 
-    let opt =
-        if any (lam f. not (pathIsInStdlib f.path)) files then opt
-        else { opt with stdlibFolder = "" }
-    in
+    let opt = if onlyStdlib then { opt with stdlibFolder = "" } else opt in
 
     let ctx = {
         opt = opt,
@@ -98,7 +97,6 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
         userOutputFolder = opt.outputFolder,
         longestPrefix = longestPrefix,
         files = files,
-        isRootStdlib = false,
         tokens = [],
         docTree = None {},
         object = None {},
@@ -127,7 +125,7 @@ let parse : Step =  lam ctx.
 let extract : Step =  lam ctx.
     match ctx.docTree with Some docTree then
     let log = buildLogger ctx "Extracting" in 
-    let opt = getExtractingOption ctx.opt ctx.isRootStdlib ctx.longestPrefix log in
+    let opt = getExtractingOption ctx.opt (pathIsInStdlib ctx.currentFile) ctx.longestPrefix log in
     { ctx with object = Some (extract opt docTree ) }
     else crash "doc tree" "extract" "parse"
 
@@ -191,6 +189,7 @@ let serve : Step = use ObjectsRenderer in lam ctx.
     let log = buildLogger ctx "Serving" in
     let opt = getRenderingOption ctx.opt log nameContext in
     let link = objGetMyLink (objTreeObj obj) opt in
+
     let opt = getServeOption ctx.opt link in    
     startServer opt; ctx
     else crash "object" "serve" "render"
