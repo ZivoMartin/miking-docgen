@@ -124,13 +124,13 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 type Acc = { tests: [RenderingData], children: [RenderingData] } in
                 let acc = foldl
                     (lam acc: Acc. lam child.
-                        let kind = objTreeKind child in
+                        let kind = objTreeForm child in
                         match kind with ObjUtest {} then 
                             let datas = render child [] in
                             { children = cons datas acc.children, tests = cons datas acc.tests }
                         else
                             let datas =
-                                if objKindHasTests kind then render child acc.tests
+                                if objFormHasTests kind then render child acc.tests
                                 else render child []
                             in
                             { children = cons datas acc.children, tests = [] }

@@ -24,7 +24,7 @@ include "../extracting/objects.mc"
 include "../global/util.mc"
 
 let label : Logger -> String -> ObjectTree -> MAst -> ObjectTree =
-    use ObjectKinds in use TypeStream in use RemoveMetaVar in
+    use ObjectForms in use TypeStream in use RemoveMetaVar in
     lam log. lam prefix. lam tree. lam ast.
 
     type SkippedContext = { ctx: TypeStreamContext, t: Type } in

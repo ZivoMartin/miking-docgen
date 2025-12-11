@@ -87,7 +87,7 @@ type RenderingDataSet = {
 -- - A list of rendered children (`children`).
 -- - Recursive block data (`recDatas`), extracted earlier.
 let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet =
-    use ObjectKinds in
+    use ObjectForms in
     lam children. lam recDatas.
     recursive
     let buildSet = lam set. lam children. lam recDatas.
@@ -125,7 +125,7 @@ let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet =
 
 
 let unwrapRecursives : RenderingOptions -> [ObjectTree] -> [{ children: [ObjectTree], tests: [ObjectTree] }] =
-    use ObjectKinds in
+    use ObjectForms in
     lam opt. lam children.
     let res = foldl (lam buffer. lam tree.
         let obj = objTreeObj tree in

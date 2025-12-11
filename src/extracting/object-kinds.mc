@@ -2,28 +2,28 @@ include "mexpr/ast.mc"
 include "./syn-variant.mc"
 include "../global/logger.mc"
 
--- Interface declaring all semantics for ObjectKinds
-lang ObjectKindInterface = MExprAst
+-- Interface declaring all semantics for ObjectForms
+lang ObjectFormInterface = MExprAst
 
-    syn ObjectKind =
+    syn ObjectForm =
 
-    sem objKindToString : ObjectKind -> String
-    sem getFirstWord   : ObjectKind -> String
-    sem objKindHasUrl  : ObjectKind -> Bool
-    sem objKindHasLink : ObjectKind -> Bool
-    sem objKindHasTests : ObjectKind -> Bool    
-    sem objKindHasTests =
+    sem objFormToString : ObjectForm -> String
+    sem getFirstWord   : ObjectForm -> String
+    sem objFormHasUrl  : ObjectForm -> Bool
+    sem objFormHasLink : ObjectForm -> Bool
+    sem objFormHasTests : ObjectForm -> Bool    
+    sem objFormHasTests =
     | _ -> false
 
-    sem objKindMergeFailed : ObjectKind -> ObjectKind -> ObjectKind
-    sem objKindMergeFailed =
+    sem objFormMergeFailed : ObjectForm -> ObjectForm -> ObjectForm
+    sem objFormMergeFailed =
     | obj1 -> lam obj2.
-            extractingWarn (join ["You cannot merge ", objKindToString obj1, " and ", objKindToString obj2, "."]);
+            extractingWarn (join ["You cannot merge ", objFormToString obj1, " and ", objFormToString obj2, "."]);
             obj1
 
-    sem objKindMerge : ObjectKind -> ObjectKind -> ObjectKind
-    sem objKindMerge =
-    | obj1 -> lam obj2. objKindMergeFailed obj1 obj2
+    sem objFormMerge : ObjectForm -> ObjectForm -> ObjectForm
+    sem objFormMerge =
+    | obj1 -> lam obj2. objFormMergeFailed obj1 obj2
 
 
 
@@ -32,21 +32,21 @@ end
 ----------------------------------------------------------------------
 -- ObjProgram
 ----------------------------------------------------------------------
-lang ObjProgramKind = ObjectKindInterface
+lang ObjProgramForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjProgram {}
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjProgram {} -> "ObjProgram"
 
     sem getFirstWord =
         | ObjProgram {} -> ""
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjProgram {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjProgram {} -> true
 
 end
@@ -54,21 +54,21 @@ end
 ----------------------------------------------------------------------
 -- ObjInclude
 ----------------------------------------------------------------------
-lang ObjIncludeKind = ObjectKindInterface
+lang ObjIncludeForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjInclude { pathInFile: String }
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjInclude { pathInFile = p } -> join ["ObjInclude, path = ", p]
 
     sem getFirstWord =
         | ObjInclude {} -> "include"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjInclude {} -> false
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjInclude {} -> true
 
 end
@@ -76,12 +76,12 @@ end
 ----------------------------------------------------------------------
 -- ObjLet
 ----------------------------------------------------------------------
-lang ObjLetKind = ObjectKindInterface
+lang ObjLetForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjLet { rec : Bool, args : [String], ty: Option Type }
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjLet { rec = rec, args = args, ty = ty } ->
             join [
                 "ObjLet, recursive: ",
@@ -94,35 +94,35 @@ lang ObjLetKind = ObjectKindInterface
     sem getFirstWord =
         | ObjLet {} -> "let"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjLet {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjLet {} -> true
 
-    sem objKindHasTests =
+    sem objFormHasTests =
         | ObjLet {} -> true
 end
 
 ----------------------------------------------------------------------
 -- ObjLang
 ----------------------------------------------------------------------
-lang ObjLangKind = ObjectKindInterface
+lang ObjLangForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjLang { parents : [String] }
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjLang { parents = parents } ->
             join ["ObjLang, parents: ", strJoin ", " parents]
 
     sem getFirstWord =
         | ObjLang {} -> "lang"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjLang {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjLang {} -> true
 
 end
@@ -130,28 +130,28 @@ end
 ----------------------------------------------------------------------
 -- ObjType
 ----------------------------------------------------------------------
-lang ObjTypeKind = ObjectKindInterface
+lang ObjTypeForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjType { t: Option String }
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjType { t = t } ->
             join ["ObjType", match t with Some x then concat ", " x else ""]
 
     sem getFirstWord =
         | ObjType {} -> "type"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjType {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjType {} -> true
 
-    sem objKindMerge =
+    sem objFormMerge =
         | ObjType {} & obj1 -> lam obj2.
             match obj2 with ObjType {} then obj1
-            else objKindMergeFailed obj1 obj2
+            else objFormMergeFailed obj1 obj2
 
 
 end
@@ -159,21 +159,21 @@ end
 ----------------------------------------------------------------------
 -- ObjUse
 ----------------------------------------------------------------------
-lang ObjUseKind = ObjectKindInterface
+lang ObjUseForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjUse {}
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjUse {} -> "ObjUse"
 
     sem getFirstWord =
         | ObjUse {} -> "use"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjUse {} -> false
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjUse {} -> true
 
 end
@@ -181,106 +181,106 @@ end
 ----------------------------------------------------------------------
 -- ObjSem
 ----------------------------------------------------------------------
-lang ObjSemKind = ObjectKindInterface
+lang ObjSemForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjSem { langName: String, variants: [String], ty: Option Type }
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjSem { langName = langName } ->
             join ["ObjSem, langName = ", langName]
 
     sem getFirstWord =
         | ObjSem {} -> "sem"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjSem {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjSem {} -> true
 
-    sem objKindMerge =
+    sem objFormMerge =
         | (ObjSem d1) & obj1 -> lam obj2.
             match obj2 with ObjSem d2 then
                 ObjSem { d1 with variants = concat d1.variants d2.variants }
-            else objKindMergeFailed obj1 obj2
+            else objFormMergeFailed obj1 obj2
 
 end
 
 ----------------------------------------------------------------------
 -- ObjSyn
 ----------------------------------------------------------------------
-lang ObjSynKind = ObjectKindInterface
+lang ObjSynForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjSyn { langName: String, variants: [SynVariant] }
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjSyn { langName = langName } ->
             join ["ObjSyn, langName = ", langName]
 
     sem getFirstWord =
         | ObjSyn {} -> "syn"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjSyn {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjSyn {} -> true
 
-    sem objKindMerge =
+    sem objFormMerge =
         | (ObjSyn d1) & obj1 -> lam obj2.
             match obj2 with ObjSyn d2 then
                 ObjSyn { d1 with variants = concat d1.variants d2.variants }
-            else objKindMergeFailed obj1 obj2
+            else objFormMergeFailed obj1 obj2
 
 end
 
 ----------------------------------------------------------------------
 -- ObjCon
 ----------------------------------------------------------------------
-lang ObjConKind = ObjectKindInterface
+lang ObjConForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjCon { t: String, parentType: String }
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjCon { t = t, parentType = parentType } -> join ["ObjCon: ", t, " with parent: ", parentType]
 
     sem getFirstWord =
         | ObjCon {} -> "con"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjCon {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjCon {} -> true
 
-    sem objKindMerge =
+    sem objFormMerge =
         | ObjCon {} & obj1 -> lam obj2.
             match obj2 with ObjCon {} then obj1
-            else objKindMergeFailed obj1 obj2
+            else objFormMergeFailed obj1 obj2
 
 end
 
 ----------------------------------------------------------------------
 -- ObjMexpr
 ----------------------------------------------------------------------
-lang ObjMexprKind = ObjectKindInterface
+lang ObjMexprForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjMexpr {}
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjMexpr {} -> "ObjMexpr"
 
     sem getFirstWord =
         | ObjMexpr {} -> "mexpr"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjMexpr {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjMexpr {} -> true
 
 end
@@ -288,21 +288,21 @@ end
 ----------------------------------------------------------------------
 -- ObjUtest
 ----------------------------------------------------------------------
-lang ObjUtestKind = ObjectKindInterface
+lang ObjUtestForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjUtest {}
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjUtest {} -> "ObjUtest"
 
     sem getFirstWord =
         | ObjUtest {} -> "utest"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjUtest {} -> true
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjUtest {} -> true
 
 end
@@ -310,21 +310,21 @@ end
 ----------------------------------------------------------------------
 -- ObjRecursiveBloc
 ----------------------------------------------------------------------
-lang ObjRecursiveBlocKind = ObjectKindInterface
+lang ObjRecursiveBlocForm = ObjectFormInterface
 
-    syn ObjectKind =
+    syn ObjectForm =
         | ObjRecursiveBloc {}
 
-    sem objKindToString =
+    sem objFormToString =
         | ObjRecursiveBloc {} -> "ObjRecursiveBloc"
 
     sem getFirstWord =
         | ObjRecursiveBloc {} -> "recursive"
 
-    sem objKindHasUrl =
+    sem objFormHasUrl =
         | ObjRecursiveBloc {} -> false
 
-    sem objKindHasLink =
+    sem objFormHasLink =
         | ObjRecursiveBloc {} -> false
 
 end
@@ -332,17 +332,17 @@ end
 ----------------------------------------------------------------------
 -- Combine all object-kind languages
 ----------------------------------------------------------------------
-lang ObjectKinds =
-    ObjProgramKind +
-    ObjIncludeKind +
-    ObjLetKind +
-    ObjLangKind +
-    ObjTypeKind +
-    ObjUseKind +
-    ObjSemKind +
-    ObjSynKind +
-    ObjConKind +
-    ObjMexprKind +
-    ObjUtestKind +
-    ObjRecursiveBlocKind
+lang ObjectForms =
+    ObjProgramForm +
+    ObjIncludeForm +
+    ObjLetForm +
+    ObjLangForm +
+    ObjTypeForm +
+    ObjUseForm +
+    ObjSemForm +
+    ObjSynForm +
+    ObjConForm +
+    ObjMexprForm +
+    ObjUtestForm +
+    ObjRecursiveBlocForm
 end

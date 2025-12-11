@@ -90,7 +90,7 @@ lang RawRenderer = RendererInterface
         in
 
         let details =
-            switch objKind obj
+            switch objForm obj
             case ObjSyn { variants = variants } then
                 let variants = renderSynVariants obj variants opt in
                 renderHidenCode "▶" "▼" variants true opt
@@ -111,7 +111,7 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let type2str = lam t. type2str t in
         let name = objName obj in
-        let kind = objKind obj in
+        let kind = objForm obj in
         switch obj.kind
         case ObjLet { ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
@@ -151,7 +151,7 @@ lang RawRenderer = RendererInterface
             strJoin (renderNewLine opt)
                 (map (lam cons.
                  let name = objName cons in
-                 match objKind cons with ObjCon { t = t } then
+                 match objForm cons with ObjCon { t = t } then
                      let right = join [name, " ", t] in
                      let right = strToSourceCode right in
                      let right = renderSourceCode right (Some cons) opt in

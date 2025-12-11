@@ -14,11 +14,11 @@ let typeNamespaceInsertNewType : TypeNamespaceSet -> Object -> TypeNamespaceSet 
     namespaceSetInsert set (objName obj) { typeObj = obj, constructors = [] }
 
 let typeNamespaceInsertNewCon : TypeNamespaceSet -> Object -> TypeNamespaceSet =
-    use ObjectKinds in
+    use ObjectForms in
     lam set. lam obj.
     let obj = objWithSourceCode obj (sourceCodeEmpty ()) in
 
-    match objKind obj with ObjCon { parentType = parentType } then
+    match objForm obj with ObjCon { parentType = parentType } then
         match namespaceSetGetByName set parentType with Some typedef then
             let typedef = { typedef with constructors = concat typedef.constructors [obj] } in
             namespaceSetUpdate set (objName typedef.typeObj) typedef
@@ -27,9 +27,9 @@ let typeNamespaceInsertNewCon : TypeNamespaceSet -> Object -> TypeNamespaceSet =
     else namingWarn "typeNamespaceInsertNewCon only takes in parameter Con arguments."; set
 
 let typeNamespaceGetTypeConstructors : TypeNamespaceSet -> Object -> Option [Object] =
-    use ObjectKinds in
+    use ObjectForms in
     lam set. lam obj.
-    match objKind obj with ObjType {} then
+    match objForm obj with ObjType {} then
     let name = objName obj in
     match hmLookup name set.nameMap with Some ids then
         findMap (

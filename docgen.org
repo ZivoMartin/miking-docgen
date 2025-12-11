@@ -49,7 +49,8 @@ CLOSED: [2025-12-12 Fri 00:43]
 ** TODO Clean all error/warning messages
 ** TODO If a link is incorrect in a comment, display a proper warning or error message
 ** TODO Refresh the whole documentation of the project
-** TODO Replace row by raw everywhere
+** DONE Replace row by raw everywhere
+CLOSED: [2025-12-12 Fri 00:46]
 ** DONE Use strictly-lower instead of lower-or-equal in the name map (for correctness)
 CLOSED: [2025-11-26 Wed 11:35]
 ** DONE Clean “use in process” of the namer (for correctness)

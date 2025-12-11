@@ -8,7 +8,7 @@ include "../rendering-options.mc"
 include "./headers/search.mc"
 include "string.mc"
 
-lang ObjectsRenderer = ObjectKinds + Formats
+lang ObjectsRenderer = ObjectForms + Formats
     -- Return the object name only for named kinds (let/type/sem/syn/lang/con).
     sem objNameIfHas : Object -> Option String
     sem objNameIfHas =
@@ -38,15 +38,15 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
-      let kind = objKind obj in
-      if not (objKindHasLink kind) then ""
+      let kind = objForm obj in
+      if not (objFormHasLink kind) then ""
       else match nameContextFetch opt.nameContext obj name with Some res then res.url
       else objUrlFetchFailed obj name false; ""
 
     sem objTryFetch : Object -> RenderingOptions -> String -> Option NameMapValue
     sem objTryFetch =
     | obj -> lam opt. lam name.
-      if not (objKindHasLink (objKind obj)) then None {}
+      if not (objFormHasLink (objForm obj)) then None {}
       else nameContextFetch opt.nameContext obj name
 
     sem objGetMyLocation : Object -> RenderingOptions -> String
@@ -62,7 +62,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objTitle =    
     | obj ->
         let name = head (reverse (strSplit "/" (objName obj))) in
-        let kind = objKind obj in
+        let kind = objForm obj in
         switch kind
         case ObjInclude { pathInFile = pathInFile } then pathInFile
         case ObjUtest {} then "utest"
@@ -74,7 +74,7 @@ lang ObjectsRenderer = ObjectKinds + Formats
     sem objLog =
     | obj -> lam opt. opt.log (join [
         "Object ", objName obj, ":\n",
-        "   kind: ", objKindToString (objKind obj), "\n",
+        "   kind: ", objFormToString (objForm obj), "\n",
         "   namespace: ", objNamespace obj, "\n",
         "   link: ", objGetMyLink obj opt, "\n",
         "   isStdlib: ", bool2string (objIsStdlib obj), "\n"

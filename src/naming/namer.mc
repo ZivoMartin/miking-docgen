@@ -14,13 +14,13 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
     let buildUrl = buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt in
 
     type WorkRes = { ctx: NameContext, nextId: Int, objTree: ObjectTree } in
-    recursive let work : ObjectTree -> NameContext -> Int -> WorkRes = use ObjectKinds in
+    recursive let work : ObjectTree -> NameContext -> Int -> WorkRes = use ObjectForms in
         lam objTree. lam ctx. lam nextId. 
 
 
         let obj = objTreeObj objTree in
         let children = objTreeChildren objTree in
-        let kind = objKind obj in
+        let kind = objForm obj in
 
         let isNested = namespaceIsNested (objNamespace obj) in
 
@@ -49,7 +49,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
             let objTree = ObjectNode { obj = obj, children = children } in
 
             let ctx = 
-                if objKindHasUrl kind then
+                if objFormHasUrl kind then
                     let name = objName obj in
                     let namespace = objNamespace obj in
                     let isStdlib = objIsStdlib obj in
@@ -143,12 +143,12 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                  namingWarn (join ["Failed to fetch the ", used, "lang."]);
                  { ctx = ctx, nextId = nextId, objTree = objTree}
         case ObjLang { parents = parents} then
-            let filterIt : (ObjectKind -> Bool) -> [Object] =
+            let filterIt : (ObjectForm -> Bool) -> [Object] =
                 lam keepIt.
                 mapOption (
                     lam child.
                     let obj = objTreeObj child in
-                    if keepIt (objKind obj) then
+                    if keepIt (objForm obj) then
                        Some (langNamespaceCleanObj obj)
                     else
                        None {}

@@ -31,7 +31,7 @@ let depthCreate : Option Int -> Depth = lam d.
 --   - `Program`, `Include`, and `Lang` objects are always accepted, unless `d = 0`.
 --   - Other objects are accepted only if they are within the allowed depth.
 let depthProcess : Depth -> Object -> { depth: Depth, obj: Object  } =
-    use ObjectKinds in lam depth. lam obj.   
+    use ObjectForms in lam depth. lam obj.   
     if depth.neverRender then { depth = depth, obj = objWithRenderIt obj false }
     else
        let obj = objWithRenderIt obj true in
