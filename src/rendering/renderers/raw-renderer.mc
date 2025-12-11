@@ -283,7 +283,7 @@ lang RawRenderer = RendererInterface
         end
 
     -- Top-level source code rendering: splits, renders, and aggregates.
-    -- If row s length is length than 30, we concatenate everything in left.
+    -- If raw s length is length than 30, we concatenate everything in left.
     sem renderTreeSourceCode (tree: [TreeSourceCode]) (tests: [RenderingData]) (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
         match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
@@ -295,28 +295,28 @@ lang RawRenderer = RendererInterface
                 let name = objName obj in
                 let tests = reverse tests in
                 let tests = filter (lam t.
-                    strContains name t.row
+                    strContains name t.raw
                  ) tests in
                 match tests with [last] ++ tests then
-                    let lastRow = last.row in
-                    recursive let trimRow = lam row.
-                      match row with [h] ++ t then
+                    let lastRaw = last.raw in
+                    recursive let trimRaw = lam raw.
+                      match raw with [h] ++ t then
                             let l = strTrim h in
                             if strStartsWith "--" l then
-                               trimRow t
+                               trimRaw t
                             else if eqString l "" then
-                               trimRow t
-                            else strJoin "\n" (reverse row)
+                               trimRaw t
+                            else strJoin "\n" (reverse raw)
                       else []
                     in
-                    let lastRow = trimRow (reverse (strSplit "\n" lastRow)) in
+                    let lastRaw = trimRaw (reverse (strSplit "\n" lastRaw)) in
                     
-                    let row: String = join (map (lam t. t.row) (reverse tests)) in                            
+                    let raw: String = join (map (lam t. t.raw) (reverse tests)) in                            
                     let tests: String = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
-                    (join [tests, last.left, last.right], concat row lastRow)
+                    (join [tests, last.left, last.right], concat raw lastRaw)
                 else ("", "")
             in
-            { d with tests = testsStr.0, rowTests = testsStr.1 }
+            { d with tests = testsStr.0, rawTests = testsStr.1 }
         in
 
         let getFormatedString : [TreeSourceCode] -> String = lam code.
@@ -328,13 +328,13 @@ lang RawRenderer = RendererInterface
                 ) "" (reverse code) in
 
         let buildSourceCodeRaw = lam code. join (map (lam w. lit w.word) code) in
-        let row = foldl (lam row. lam tree.
+        let raw = foldl (lam raw. lam tree.
              concat (switch tree 
-                case TreeSourceCodeNode child then child.row
+                case TreeSourceCodeNode child then child.raw
                 case TreeSourceCodeSnippet code then buildSourceCodeRaw code
-                end) row)
+                end) raw)
                 "" (reverse (concat left right)) in
-        let row = concat row (match trimmed with TrimmedNotFormated code then buildSourceCodeRaw code else "") in
+        let raw = concat raw (match trimmed with TrimmedNotFormated code then buildSourceCodeRaw code else "") in
     
         let res = {
             obj = obj,
@@ -345,11 +345,11 @@ lang RawRenderer = RendererInterface
                 case TrimmedNotFormated b then renderSourceCode b
                 end,
             tests = "",
-            rowTests = "",
-            row = row
+            rawTests = "",
+            raw = raw
         } in
         let res =
-            if gti 200 (length res.row) then
+            if gti 200 (length res.raw) then
               { res with left = join [res.left, res.right, res.trimmed], right = "", trimmed = "" }
             else res
         in

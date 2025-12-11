@@ -3,7 +3,7 @@ let mdxCss =
 
   body: {
     display: 'grid',
-    rowGap: '0.75rem', // uniform spacing between Description / Panels
+    rawGap: '0.75rem', // uniform spacing between Description / Panels
   },
 
   card: (compact: boolean) => ({

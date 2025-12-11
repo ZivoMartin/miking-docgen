@@ -143,7 +143,7 @@ lang MdxRenderer = RendererInterface
     -- Render the full code (trim trailing comments/empties), escaped for MDX.
     sem renderCodeWithoutPreview (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
-        let split = strSplit "\n" data.row in
+        let split = strSplit "\n" data.raw in
         match splitOnR (lam l.
             let trimmed = strTrim l in
             not (or (strStartsWith "--" trimmed) (null trimmed))

@@ -17,10 +17,10 @@ type RenderingData = {
     left : String,
     right : String,
     trimmed : String,
-    row: String,
+    raw: String,
     obj: Object,
     tests: String,
-    rowTests: String
+    rawTests: String
 }
 
 -- An abstract tree representation of source code. It supports:

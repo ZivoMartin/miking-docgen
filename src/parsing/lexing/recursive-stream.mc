@@ -82,7 +82,7 @@ lang RDSInterface = MExprAst
     -- Result type for computing the next recursive block count, private usage, use rdsNext instead.
     type DataStreamComputeNextRes = {
          stream: RDS, -- New stream
-         acc: [Int],                  -- The row cache
+         acc: [Int],                  -- The raw cache
          map: RDSMap, -- A map binding each rec branchs to its cache
          inCount: Int                 -- The actual number of ins.
     }
