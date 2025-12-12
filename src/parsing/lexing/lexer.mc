@@ -87,7 +87,7 @@ type LexingCtx = { ast: MAst, rds: use RecursiveDataStream in RDS }
 
 -- Creates a new lexing context from a MAST.
 let lexingCtxNew: MAst -> LexingCtx = use RecursiveDataStream in lam ast.
-    { ast = ast, rds = createRDS ast.expr }
+    { ast = ast, rds = createRDS ast }
 
 -- A list of tokens paired with their position in the source file.
 type TokenStream = use TokenReader in [(Token, Pos)]

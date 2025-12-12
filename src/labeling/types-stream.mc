@@ -118,7 +118,8 @@ lang DeclTypeStream = TypeStreamInterface
 
 end
 
-lang TypeStream = DeclTypeStream + LamTypeStream + AppTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + MExprPrettyPrint
+lang TypeStream =
+     DeclTypeStream + LamTypeStream + AppTypeStream + SeqTypeStream + RecordTypeStream + MatchTypeStream + MExprPrettyPrint
     sem typeStreamFromExpr : Expr -> TypeStreamContext 
     sem typeStreamFromExpr =
         | ast -> { stack = [ast] }
@@ -126,6 +127,6 @@ lang TypeStream = DeclTypeStream + LamTypeStream + AppTypeStream + SeqTypeStream
     -- Builds a TypeStream, creates an AST via the compiler's parser. Then types this AST via compiler's typer.
     -- Note that meta vars are not removed here    
     sem buildTypeStream : MAst -> TypeStreamContext
-    sem buildTypeStream = | ast -> typeStreamFromExpr ast.expr
+    sem buildTypeStream = | ast -> typeStreamFromExpr ast
 end 
     

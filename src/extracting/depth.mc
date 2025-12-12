@@ -25,7 +25,7 @@ let depthCreate : Option Int -> Depth = lam d.
 
 
 -- ### Rules:
--- - Utests are never accepted (they are excluded entirely).
+-- - Utests and mexpr are never accepted (they are excluded entirely).
 -- - If `depth = None`, files are always accepted, with no restriction.
 -- - If `depth = Some d`:
 --   - `Program`, `Include`, and `Lang` objects are always accepted, unless `d = 0`.
@@ -38,7 +38,7 @@ let depthProcess : Depth -> Object -> { depth: Depth, obj: Object  } =
        let default = { depth = depth, obj = obj } in
 
         switch (depth.depth, obj.form)
-        case (_, ObjUtest {} | ObjUse {}) then { obj = objWithRenderIt obj false, depth = { depth with neverRender = true } }
+        case (_, ObjUtest {} | ObjMexpr {} | ObjUse {}) then { obj = objWithRenderIt obj false, depth = { depth with neverRender = true } }
         case (_, ObjRecursiveBloc {} | ObjInclude {}) then { default with obj = objWithRenderIt obj false }
         case (None {}, _) then default
         case (Some d, ObjProgram {} | ObjLang {}) then { default with depth = { depth with currentDepth = 0 } }

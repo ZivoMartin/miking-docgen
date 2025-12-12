@@ -57,7 +57,6 @@ let buildLogger : ExecutionContext -> String -> Logger =
 
 let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in lam ctx.
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
-          printLn outputFolder;
           Some { ctx with
               opt = { ctx.opt with outputFolder = outputFolder },
               currentFile = path,

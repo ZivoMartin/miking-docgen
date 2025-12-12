@@ -104,7 +104,7 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 (match path with "" then () else log (concat "Rendering file " path));
 
                 -- Unwrapping the recursive blocks and rendering all the children.
-                -- If the first children doesn't have any doc, we give it the doc of
+                -- If the first children doesnt have any doc, we give it the doc of
                 -- the bloc, which is what the user wants in 99% of the cases.
                 -- The tests after the recursive bloc are the tests of the last child of the bloc
                 let recChildren = unwrapRecursives opt children in
@@ -183,8 +183,7 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                         ("Languages", set.sLang),
                         ("Syntaxes", set.sSyn),
                         ("Variables", set.sLet),
-                        ("Semantics", set.sSem),
-                        ("Mexpr", set.sMexpr)];
+                        ("Semantics", set.sSem)];
 
                     -- Push the footer of the page
                     write (renderFooter obj opt);

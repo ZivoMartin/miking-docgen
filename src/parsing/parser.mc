@@ -88,7 +88,10 @@ include "sys.mc"
 -- - And the MAST of this program
 -- - Returns the corresponding `DocTree`.
 -- - Assume that the entry is a valid Miking program.
-let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use BreakerChooser in lam log. lam basePath. lam ast.
+let parse : Logger -> String -> MAst -> DocTree =
+    use TokenReader in use BreakerChooser in
+    lam log. lam basePath. lam ast.
+
     -- Keywords that start new blocks (head snippets)
     -- Using HashSet to improve performances
     let headSnippets =
@@ -226,7 +229,8 @@ let parse : Logger -> String -> MAst -> DocTree = use TokenReader in use Breaker
             end
     -- Here we parse the include header of the file, jump in all the includes before processing the actual code.
     let parse: IncludeSet () -> String -> LexingCtx -> ParseRes = lam includeSet. lam loc. lam lexingCtx.
-        match includeSetGetValue ast.includeSet loc with Some { includes = includes, headerTokens = headerTokens, fileText = fileText } then
+        match parsingOpenFile loc with
+        Some { headerTokens = headerTokens, fileText = fileText } then
         
         let headerDocTree = foldl (lam arg: ParseRes. lam token.
             match arg with { lexingCtx = lexingCtx, includeSet = includeSet, tree = tree } in

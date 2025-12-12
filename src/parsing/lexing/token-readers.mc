@@ -5,7 +5,7 @@
 
 include "../../global/util.mc"
 include "../../global/logger.mc"
-include "../../mast-gen/include-set.mc"
+include "../include-set.mc"
     
 include "hashmap.mc"
 

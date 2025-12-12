@@ -30,16 +30,12 @@ include "mexpr/info.mc"
 include "sys.mc"
 include "ext/file-ext.mc"
 
-include "./include-set.mc"
-include "./file-opener.mc"
 include "./mast.mc"
 
 include "../global/util.mc"
 include "../global/logger.mc"
 
 -- Builds the AST from a file using the Miking compiler parser.
--- Generates a temporary file, processes includes, preserves utests/mexpr,
--- and type-checks the final AST.
 let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
     use MExprTypeCheck in
     use MExprSym in
@@ -55,70 +51,17 @@ let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
           with pruneExternalUtestsWarning = true }
           with eliminateDeadCode = false }
           with keywords = mexprExtendedKeywords } in
-    
-    let pos0 = { x = 0, y = 0 } in
 
-    type Arg = { acc: [String], includeSet: IncludeSet ParsingFile } in
+    log "Parsing ast";
 
-    recursive let work : Arg -> String -> Arg = lam arg. lam file.
-        log (join ["Assembling ast for the file ", file, "."]);
+    let ast = parseMCoreFile parseOpt file in
 
-        match arg with { acc = acc, includeSet = includeSet } in
+    log "Symbolizing final ast";
 
-        let removeMexpr : String -> String = lam s.
-            recursive let removeMexpr : String -> String -> String = lam s. lam acc.
-                match next s pos0 with { stream = stream, token = token } in
-                switch token
-                case TokenEof {} then acc
-                case TokenWord { content = "mexpr"} then removeMexpr stream (concat (reverse (join ["let #var\"\" = "])) acc)
-                case _ then removeMexpr stream (concat (reverse (lit token)) acc)
-                end
-            in
-            removeMexpr s ""
-        in        
+    let ast = symbolize ast in
 
-        match parsingOpenFile file with Some ({ includes = topIncludes, fileText = rest } & f) then
-            let includeSet = includeSetReplace includeSet file f in
-            let arg = { arg with includeSet = includeSet } in
+    log "Type checking final ast";
 
-            let rest = removeMexpr rest in
-    
-            let arg = foldl (lam arg. lam topInclude.
-                
-                match includeSetInsert arg.includeSet file topInclude parsingFileEmpty with -- We insert a dummy value because the actual insertion takes place after.
-                { includeSet = includeSet, inserted = inserted, path = path } in
-                if inserted then work { arg with includeSet = includeSet} path
-                else arg
-            ) arg topIncludes in
-    
-            { arg with acc = cons rest arg.acc }
-        else error (join ["Found an invalid path while assembling ast: ", file, "."])
+    let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
 
-    in
-
-    let includeSet = includeSetNew () in
-
-    let unit = TmSeq {
-      tms = [],
-      ty = TyUnknown { info = NoInfo () },
-      info = NoInfo ()
-    } in
-
-    match work { acc = [], includeSet = includeSet } file with { acc = code, includeSet = includeSet } in
-
-    let code = reverse (strJoin "\n" code) in
-    let tmpFile = sysTempFileMake () in
-    match fileWriteOpen tmpFile with Some wc then
-        fileWriteString wc code;
-        fileWriteFlush wc;
-
-        log "Parsing final ast";
-        let ast = parseMCoreFile parseOpt tmpFile in
-        log "Symbolizing final ast";
-        let ast = symbolize ast in
-
-        log "Type checking final ast";
-        let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
-
-        { expr = ast, includeSet = includeSet }
-    else error "Failed to create temporary file."
+    ast
