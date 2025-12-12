@@ -112,11 +112,7 @@ lang DeclTypeStream = TypeStreamInterface
                 let ctx = { ctx with stack = concat [body, inexpr] stack } in
                 checkAndEnd name ident tyBody body ctx
             case DeclUtest { test = test, expected = expected, tusing = tusing, tonfail = tonfail }  then
-                let arr = [inexpr] in
-                let arr = match tusing with Some tusing then cons tusing arr else arr in
-                let arr = match tusing with Some tonfail then cons tonfail arr else arr in
-                let arr = concat [test, expected] arr in
-                typeStreamNext name { stack = concat arr stack }
+                typeStreamNext name { stack = cons inexpr stack }
             case _ then typeStreamNext name { ctx with stack = cons inexpr stack }
             end
 

@@ -45,7 +45,8 @@ CLOSED: [2025-12-08 Mon 01:07]
 CLOSED: [2025-12-12 Fri 00:43]
 ** TODO Refactoring the extracting by adding a parse method in ObjectKind
 ** TODO Put all the shared api in global: objects, file-opener, ...
-** TODO Rename ObjectKinds familiy of items
+** DONE Rename ObjectKinds familiy of items
+CLOSED: [2025-12-12 Fri 00:57]
 ** TODO Clean all error/warning messages
 ** TODO If a link is incorrect in a comment, display a proper warning or error message
 ** TODO Refresh the whole documentation of the project
@@ -179,6 +180,8 @@ CLOSED: [2025-11-29 Sat 20:57]
 
 * Optimization
 ** TODO Simplify the mast-gen step, and optimise the labeling step.
+** DONE Skip mexpr and utest in labeling
+CLOSED: [2025-12-12 Fri 11:05]
 ** TODO Try to remove the prefix from the objects.
 ** TODO In rendering, keep track of what files we already rendered during previous steps
 ** TODO During naming, stop when the object should not be rendered anymore

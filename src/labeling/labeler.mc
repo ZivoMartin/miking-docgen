@@ -98,6 +98,7 @@ let label : Logger -> String -> ObjectTree -> MAst -> ObjectTree =
                 let langContext = Some { langName = name, semMap = hashmapEmpty () } in
                 match foldChildren children langContext ctx  with { ctx = ctx, children = children } in
                 buildRes obj ctx (None {}) children (None {})
+            case ObjUtest {} | ObjMexpr {} then default
             case ObjInclude { pathInFile = pathInFile } then
                 switch children
                 case [program] then    
