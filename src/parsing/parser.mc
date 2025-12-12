@@ -124,10 +124,7 @@ let parse : Logger -> String -> MAst -> DocTree =
         DocTreeNode {
             children = parseRes.tree,
             pos = { x = 1, y = 1 },
-            token = TokenProgram {
-                content = progName,
-                includeSet = parseRes.includeSet
-            },
+            token = TokenProgram { content = progName },
             state = StateProgram {}
         }
     in

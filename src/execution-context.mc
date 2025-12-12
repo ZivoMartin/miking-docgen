@@ -42,6 +42,7 @@ type ExecutionContext =  use TokenReader in {
     currentFile: String,
     files: [FileToProcess],
     longestPrefix: String,
+    renderedMap: RenderedMap,
 
     tokens: [Token],
     docTree : Option DocTree,
@@ -71,14 +72,14 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
 
         -- Creating search engine
         let log = buildLogger ctx "Rendering" in 
-        let ropt = getRenderingOption ctx.opt log (nameContextEmpty ()) in
+        let ropt = getRenderingOption ctx.opt log (nameContextEmpty ()) (hashmapEmpty ()) in
         let ropt = { ropt with outputFolder = ctx.userOutputFolder } in
         let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
                           (hashmap2seq ctx.searchDatas) in
         renderSearchFile searchDatas ropt;
 
         None {}
-
+        
 let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     
     let scanningOptions = getScanningOptions opt in
@@ -96,6 +97,8 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
         userOutputFolder = opt.outputFolder,
         longestPrefix = longestPrefix,
         files = files,
+        renderedMap = hashmapEmpty (),
+
         tokens = [],
         docTree = None {},
         object = None {},
@@ -150,7 +153,7 @@ let render : Step =  lam ctx.
     match ctx.nameContext with Some nameContext then
     
     let log = buildLogger ctx "Rendering" in 
-    let ropt = getRenderingOption ctx.opt log nameContext in
+    let ropt = getRenderingOption ctx.opt log nameContext ctx.renderedMap in
     let renderingRes = render ropt obj in
 
     let searchDatas = foldl (lam acc. lam arg.
@@ -178,7 +181,7 @@ let render : Step =  lam ctx.
         else ()
     else ());
 
-    { ctx with searchDatas = searchDatas }
+    { ctx with searchDatas = searchDatas, renderedMap = renderingRes.renderedMap }
     else crash "object" "render" "naming"
     else crash "name context" "render" "naming"
 
@@ -186,7 +189,7 @@ let serve : Step = use ObjectsRenderer in lam ctx.
     match ctx.object with Some obj then
     match ctx.nameContext with Some nameContext then
     let log = buildLogger ctx "Serving" in
-    let opt = getRenderingOption ctx.opt log nameContext in
+    let opt = getRenderingOption ctx.opt log nameContext (hashmapEmpty ()) in
     let link = objGetMyLink (objTreeObj obj) opt in
 
     let opt = getServeOption ctx.opt link in    

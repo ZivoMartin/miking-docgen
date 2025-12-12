@@ -44,7 +44,8 @@ let getExtractingOption : DocGenOptions -> Bool -> String -> Logger -> Extractin
 
 -- convert a global `DocGenOptions` record into a `RenderingOptions` record
 -- used by the rendering step.
-let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderingOptions = use FormatLanguages in lam opt. lam log. lam nameContext.
+let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderedMap -> RenderingOptions =
+    use FormatLanguages in lam opt. lam log. lam nameContext. lam renderedMap.
     {
         fmt = opt.fmt,
         stdlibFolder = opt.stdlibFolder,
@@ -55,7 +56,8 @@ let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderingOpti
         letDepth = opt.letDepth,
         nameContext = nameContext,
         log = log,
-        noCode = opt.noCode
+        noCode = opt.noCode,
+        renderedMap = renderedMap
     }
 
 let getNamingOption : DocGenOptions -> NamingOptions = lam opt.

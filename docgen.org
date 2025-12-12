@@ -179,18 +179,21 @@ CLOSED: [2025-11-16 Sun 02:17]
 CLOSED: [2025-11-29 Sat 20:57]
 
 * Optimization
-** TODO Simplify the mast-gen step, and optimise the labeling step.
+** DONE Simplify the mast-gen step, and optimise the labeling step.
+CLOSED: [2025-12-12 Fri 11:21]
 ** DONE Skip mexpr and utest in labeling
 CLOSED: [2025-12-12 Fri 11:05]
-** TODO Try to remove the prefix from the objects.
-** TODO In rendering, keep track of what files we already rendered during previous steps
+** DONE Try to remove the prefix from the objects.
+CLOSED: [2025-12-12 Fri 11:21]
+** DONE In rendering, keep track of what files we already rendered during previous steps
+CLOSED: [2025-12-12 Fri 16:42]
 ** TODO During naming, stop when the object should not be rendered anymore
 ** TODO Do not inject children from a SINGLE parent lang IF you don't already have it
 The idea is that if it comes from more than one parent then it is an assembling
 and so generate new information, but if it comes from a single parent
 and you don't add anything on it then you just duplicate informations and
 it is an exponential waste of time.
-** TODO Reword the hashmap API of the miking stdlib to have a non fixed amount of buckets.
+** TODO Rework the hashmap API of the miking stdlib to have a non fixed amount of buckets.
 ** DONE Replace the GetMyLink fetch by a construction for the object
 CLOSED: [2025-12-04 Thu 23:17]
 ** DONE Do not call the writing functions if we don't render at the end of the day

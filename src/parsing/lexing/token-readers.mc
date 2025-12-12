@@ -305,7 +305,7 @@ end
 -- This token is not readable but is at the root of a DocTree, the content is the name of the file and the includeSet a set will all the files.
 lang ProgramTokenReader = TokenReaderInterface
     syn Token =
-        | TokenProgram { content: String, includeSet: IncludeSet () }
+        | TokenProgram { content: String }
 
     sem lit =
         | TokenProgram {} -> ""

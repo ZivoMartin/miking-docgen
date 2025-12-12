@@ -53,7 +53,10 @@ include "../global/util.mc"
 include "../global/logger.mc"
 include "../global/format.mc"
 
-type RenderingResult = { searchDatas: [SearchDictObj] }
+type RenderingResult = {
+     renderedMap: HashMap String (),
+     searchDatas: [SearchDictObj]
+}
 
 -- ## render
 --
@@ -72,7 +75,8 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
     lam opt. lam obj.
     
     let log = opt.log in
-    let res = { searchDatas = objToJsDict opt obj } in
+    
+    let searchDatas = objToJsDict opt obj in
     
     preprocess obj opt;
     renderSetup obj opt;
@@ -80,12 +84,12 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
     log "Beginning of rendering stage.";
 
     recursive
-    let render: ObjectTree -> [RenderingData] -> RenderingData =
-        lam objTree. lam tests.
+    let render: RenderedMap -> ObjectTree -> [RenderingData] -> { datas: RenderingData, renderedMap: RenderedMap } =
+        lam renderedMap. lam objTree. lam tests.
     
         let emptyPreview = lam obj.
             let trees = reconstructSourceCode (objSourceCode obj) [] in
-            renderTreeSourceCode trees [] obj opt
+            { datas = renderTreeSourceCode trees [] obj opt, renderedMap = renderedMap }
         in
 
         objLog (objTreeObj objTree) opt;
@@ -93,12 +97,28 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
         switch objTree
         case ObjectNode { obj = { form = ObjUse {}} & obj, children = children } then emptyPreview obj
         case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [ p ] } then
-            let res = render p [] in
-            emptyPreview obj
+            let res = render renderedMap p [] in
+            { emptyPreview obj with renderedMap = res.renderedMap }
         case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [] } then emptyPreview obj
         case ObjectNode { obj = { form = ObjInclude {} } & obj } then
              renderingWarn "Include with more than one child detected"; emptyPreview obj
         case ObjectNode { obj = obj, children = children } then
+
+            let loc = objGetMyLocation obj opt in
+
+            let isProg = match objForm obj with ObjProgram {} then true else false in
+            let prune =
+                if isProg then hmMem loc renderedMap
+                else false
+            in
+
+            if prune then
+                printLn loc;            
+                let trees = reconstructSourceCode [] [] in
+                { datas = renderTreeSourceCode trees [] obj opt, renderedMap = renderedMap }
+            else
+
+            let renderedMap = if isProg then hmInsert loc () renderedMap else renderedMap in
 
             match fileOpenerOpen objTree opt with Some { wc = wc, write = write, path = path } then
                 (match path with "" then () else log (concat "Rendering file " path));
@@ -107,37 +127,42 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                 -- If the first children doesnt have any doc, we give it the doc of
                 -- the bloc, which is what the user wants in 99% of the cases.
                 -- The tests after the recursive bloc are the tests of the last child of the bloc
+                -- We can ignore the renderedMap since recursive blocs and tests are not using it anyway.
                 let recChildren = unwrapRecursives opt children in
                 let recDatas = map (
                     lam recChildren.
                         let children = reverse recChildren.children in
                         let tests = recChildren.tests in
                         let last = head children in
-                        let tests = map (lam test. render test []) tests in
-                        let last = render last tests in
-                        let children = map (lam child. render child []) (tail children) in
+                        let tests = map (lam test. (render renderedMap test []).datas) tests in
+                        let last = (render renderedMap last tests).datas in
+                        let children = map (lam child. (render renderedMap child []).datas) (tail children) in
                         reverse (cons last children)
                     ) recChildren in
 
 
                 -- Recursive calls: render all children
-                type Acc = { tests: [RenderingData], children: [RenderingData] } in
+                type Acc = { tests: [RenderingData], children: [RenderingData], renderedMap: RenderedMap } in
                 let acc = foldl
                     (lam acc: Acc. lam child.
                         let form = objTreeForm child in
                         match form with ObjUtest {} then 
-                            let datas = render child [] in
-                            { children = cons datas acc.children, tests = cons datas acc.tests }
+                            match render acc.renderedMap child [] with {renderedMap = renderedMap, datas = datas} in
+                            {
+                                children = cons datas acc.children,
+                                tests = cons datas acc.tests,
+                                renderedMap = renderedMap
+                            }
                         else
-                            let datas =
-                                if objFormHasTests form then render child acc.tests
-                                else render child []
-                            in
-                            { children = cons datas acc.children, tests = [] }
-                    ) { tests = [], children = [] } (reverse children)
+                            match
+                                if objFormHasTests form then render acc.renderedMap child acc.tests
+                                else render acc.renderedMap child []
+                            with { datas = datas, renderedMap = renderedMap } in
+                            { children = cons datas acc.children, tests = [], renderedMap = renderedMap }
+                    ) { tests = [], children = [], renderedMap = renderedMap } (reverse children)
                 in
 
-
+                let renderedMap = acc.renderedMap in
                 let children = acc.children in
 
                 -- Build source code for the current node
@@ -191,9 +216,14 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                     (match wc with Some wc then fileWriteClose wc else ())
                 else ());
 
-                -- Only preserving name-context embedded in options if accepted in the node.
-                data
+                { datas = data, renderedMap = renderedMap }
             else emptyPreview obj
         end
     in
-    let output = render obj [] in res
+
+    match render opt.renderedMap obj [] with { renderedMap = renderedMap } in
+    
+    {
+         renderedMap = renderedMap,
+         searchDatas = searchDatas
+    }
