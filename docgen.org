@@ -43,6 +43,8 @@ CLOSED: [2025-12-08 Mon 01:07]
 * Project health
 ** DONE See if we can remove the isRootStdlib flag.
 CLOSED: [2025-12-12 Fri 00:43]
+** DONE Factorise renderedMap logic inside the rendered map module and use custom functions
+CLOSED: [2025-12-12 Fri 23:59]
 ** TODO Refactoring the extracting by adding a parse method in ObjectKind
 ** TODO Put all the shared api in global: objects, file-opener, ...
 ** DONE Rename ObjectKinds familiy of items
@@ -187,7 +189,8 @@ CLOSED: [2025-12-12 Fri 11:05]
 CLOSED: [2025-12-12 Fri 11:21]
 ** DONE In rendering, keep track of what files we already rendered during previous steps
 CLOSED: [2025-12-12 Fri 16:42]
-** TODO During naming, stop when the object should not be rendered anymore
+** DONE During naming, stop when the object should not be rendered anymore
+CLOSED: [2025-12-13 Sat 00:07]
 ** TODO Do not inject children from a SINGLE parent lang IF you don't already have it
 The idea is that if it comes from more than one parent then it is an assembling
 and so generate new information, but if it comes from a single parent

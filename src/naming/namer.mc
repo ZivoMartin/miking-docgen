@@ -65,7 +65,11 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                         "id=", int2string entry.id, "\n",
                         "isNested=", bool2string entry.isNested, "\n"]);
 
-                    let nameMap = nameMapInsert ctx.nameMap name namespace entry in
+                    let nameMap =
+                        if objRenderIt obj then nameMapInsert ctx.nameMap name namespace entry
+                        else ctx.nameMap
+                    in
+
                     { ctx with nameMap = nameMap }
                 else ctx
             in            

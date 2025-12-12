@@ -104,21 +104,15 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
              renderingWarn "Include with more than one child detected"; emptyPreview obj
         case ObjectNode { obj = obj, children = children } then
 
+
             let loc = objGetMyLocation obj opt in
-
-            let isProg = match objForm obj with ObjProgram {} then true else false in
-            let prune =
-                if isProg then hmMem loc renderedMap
-                else false
-            in
-
+            match renderedMapInsert renderedMap obj loc with
+            { renderedMap = renderedMap, prune = prune } in
+            
             if prune then
-                printLn loc;            
                 let trees = reconstructSourceCode [] [] in
                 { datas = renderTreeSourceCode trees [] obj opt, renderedMap = renderedMap }
             else
-
-            let renderedMap = if isProg then hmInsert loc () renderedMap else renderedMap in
 
             match fileOpenerOpen objTree opt with Some { wc = wc, write = write, path = path } then
                 (match path with "" then () else log (concat "Rendering file " path));

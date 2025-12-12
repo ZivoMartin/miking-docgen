@@ -67,7 +67,7 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     srcFolder = "/",
     noWarn = false,
     urlPrefix = "",
-    letDepth = None {},
+    letDepth = Some 1,
     stdlibFolder = "Stdlib",
     noCode = false
 }

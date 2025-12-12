@@ -58,6 +58,7 @@ let buildLogger : ExecutionContext -> String -> Logger =
 
 let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in lam ctx.
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
+          printLn (join ["Processing file ", path, "..."]);
           Some { ctx with
               opt = { ctx.opt with outputFolder = outputFolder },
               currentFile = path,
@@ -77,7 +78,7 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
         let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
                           (hashmap2seq ctx.searchDatas) in
         renderSearchFile searchDatas ropt;
-
+        printLn "Done !";
         None {}
         
 let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
@@ -97,7 +98,7 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
         userOutputFolder = opt.outputFolder,
         longestPrefix = longestPrefix,
         files = files,
-        renderedMap = hashmapEmpty (),
+        renderedMap = renderedMapEmpty (),
 
         tokens = [],
         docTree = None {},
