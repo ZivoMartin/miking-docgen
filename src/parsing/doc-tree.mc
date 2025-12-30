@@ -17,7 +17,7 @@ include "../global/logger.mc"
 type DocTree
 
 -- A single token with its formatting state
-con DocTreeLeaf : use TokenReader in use BreakerChooser in { token: Token, state: State, pos: Pos } -> DocTree
+con DocTreeLeaf : use BreakerChooser in { token: Token, state: State, pos: Pos } -> DocTree
 
 -- A code block node, representing a structural block (e.g., a `let ... in`)
 con DocTreeNode : use TokenReader in use BreakerChooser in {

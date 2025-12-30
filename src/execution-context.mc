@@ -30,13 +30,15 @@ include "./options/cast-options.mc"
 include "./scanning/scanner.mc"
 include "./mast-gen/mast-generator.mc"
 include "./parsing/parser.mc"
+include "./new-parsing/weak-doctree.mc"
 include "./extracting/extracter.mc"
 include "./labeling/labeler.mc"
 include "./naming/namer.mc"
 include "./rendering/renderer.mc"
 include "./server/server.mc"
 
-type ExecutionContext =  use TokenReader in {    
+type ExecutionContext =
+    use TokenReader in use WeakDoctreeLang in {
     opt: DocGenOptions,
     userOutputFolder: String,
     currentFile: String,
@@ -46,6 +48,7 @@ type ExecutionContext =  use TokenReader in {
 
     tokens: [Token],
     docTree : Option DocTree,
+    weakDocTree : Option WeakDoctreeNode,
     ast: Option MAst,
     searchDatas: HashMap String String,
     object: Option ObjectTree,
@@ -65,6 +68,7 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
               files = files,
               tokens = [],
               docTree = None {},
+              weakDocTree = None {},              
               ast = None {},
               object = None {},
               nameContext = None {}
@@ -102,6 +106,7 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
 
         tokens = [],
         docTree = None {},
+        weakDocTree = None {},  
         object = None {},
         ast = None {},
         nameContext = None {},
@@ -122,7 +127,9 @@ let gen : Step = lam ctx.
 let parse : Step =  lam ctx.
     match ctx.ast with Some ast then
     let log = buildLogger ctx "Parsing" in
-    { ctx with docTree = Some (parse log ctx.currentFile ast ) }
+    let doctree = parse log ctx.currentFile ast in
+    let weak = doctree2weakDocTree doctree in
+    { ctx with docTree = Some doctree, weakDocTree = weak }
     else crash "ast" "parse" "gen"
     
 let extract : Step =  lam ctx.
