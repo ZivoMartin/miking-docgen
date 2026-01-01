@@ -5,7 +5,7 @@ only the top level items and the code source.
 We probably want to keep the source code as a token array (not as a raw string)
 since we still need to colorise it later.
 Comments should be part of the structure as well
-** TODO Create a function taking a DocTree and outputing a weak doctree
+** DONE Create a function taking a DocTree and outputing a weak doctree
 The idea is that we will use the doctree parser in a first time, modify the others
 step on top of this interface and then write the parser for the weak doctree (and remove the
 parser of the doctree).

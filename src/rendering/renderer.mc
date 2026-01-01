@@ -85,7 +85,7 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
 
     recursive
     let render: RenderedMap -> ObjectTree -> [RenderingData] -> { datas: RenderingData, renderedMap: RenderedMap } =
-        lam renderedMap. lam objTree. lam tests.
+        lam renderedMap. lam obj. lam tests.
     
         let emptyPreview = lam obj.
             let trees = reconstructSourceCode (objSourceCode obj) [] in
@@ -95,7 +95,6 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
         objLog (objTreeObj objTree) opt;
 
         switch objTree
-        case ObjectNode { obj = { form = ObjUse {}} & obj, children = children } then emptyPreview obj
         case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [ p ] } then
             let res = render renderedMap p [] in
             { emptyPreview obj with renderedMap = res.renderedMap }
@@ -103,7 +102,6 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
         case ObjectNode { obj = { form = ObjInclude {} } & obj } then
              renderingWarn "Include with more than one child detected"; emptyPreview obj
         case ObjectNode { obj = obj, children = children } then
-
 
             let loc = objGetMyLocation obj opt in
             match renderedMapInsert renderedMap obj loc with

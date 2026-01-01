@@ -61,7 +61,7 @@ include "./extracting-options.mc"
 -- Comment buffer tracks consecutive comments between tokens
 -- If a newline separator is hit, the buffer is cleared
 let extract : ExtractingOptions -> DocTree -> ObjectTree =
-    use TokenReader in use BreakerChooser in use ObjectForms in
+    use TokenReader in use BreakerChooser in use Objects in
     lam opt. lam tree.
 
     match opt with { log = log, rootIsStdlib = rootIsStdlib, depth = depth, longestPrefix = longestPrefix } in
@@ -111,7 +111,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
             let doc = buildDoc (reverse commentBuffer) in
 
             -- Process children nodes
-            let process : State -> [DocTree] -> String -> String -> String -> ObjectForm -> Int -> ExtractRecOutput =
+            let process : State -> [DocTree] -> String -> String -> String -> Object -> Int -> ExtractRecOutput =
                 lam state. lam children. lam name. lam namespace. lam doc. lam form. lam utestCount.
                 
                 let obj = { obj with name = name, form = form, doc = doc } in

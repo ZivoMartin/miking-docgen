@@ -14,7 +14,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
     let buildUrl = buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt in
 
     type WorkRes = { ctx: NameContext, nextId: Int, objTree: ObjectTree } in
-    recursive let work : ObjectTree -> NameContext -> Int -> WorkRes = use ObjectForms in
+    recursive let work : ObjectTree -> NameContext -> Int -> WorkRes = use Objects in
         lam objTree. lam ctx. lam nextId. 
 
 
@@ -147,7 +147,7 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                  namingWarn (join ["Failed to fetch the ", used, "lang."]);
                  { ctx = ctx, nextId = nextId, objTree = objTree}
         case ObjLang { parents = parents} then
-            let filterIt : (ObjectForm -> Bool) -> [Object] =
+            let filterIt : (Object -> Bool) -> [Object] =
                 lam keepIt.
                 mapOption (
                     lam child.

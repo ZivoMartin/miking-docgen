@@ -11,7 +11,8 @@ include "./rendering-types.mc"
 -- Reconstructs code by streaming tokens and inserting child blocks at separators.
 -- Returns a list of `TreeSourceCode` nodes preserving original order and structure.
 let reconstructSourceCode : SourceCode -> [RenderingData] -> [TreeSourceCode] = 
-    lam code. lam children. use ObjectForms in
+    lam code. lam children. use Object
+    s in
     
     let children = filter (lam s. match s.obj.form with ObjInclude {} then false else true) children in
     type Arg = {

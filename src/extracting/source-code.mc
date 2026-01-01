@@ -30,3 +30,5 @@ recursive let strToSourceCode : String -> SourceCode = use TokenReader in lam s.
     let word = Some (sourceCodeWordFormat token) in
     cons word (strToSourceCode stream)
 end
+
+let sourceCodeIsEmpty : SourceCode -> Bool = null

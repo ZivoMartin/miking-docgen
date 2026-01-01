@@ -8,7 +8,7 @@ include "../rendering-options.mc"
 include "./headers/search.mc"
 include "string.mc"
 
-lang ObjectsRenderer = ObjectForms + Formats
+lang ObjectsRenderer = Objects + Formats
     -- Return the object name only for named forms (let/type/sem/syn/lang/con).
     sem objNameIfHas : Object -> Option String
     sem objNameIfHas =

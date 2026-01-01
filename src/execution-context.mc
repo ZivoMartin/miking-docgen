@@ -198,7 +198,7 @@ let serve : Step = use ObjectsRenderer in lam ctx.
     match ctx.nameContext with Some nameContext then
     let log = buildLogger ctx "Serving" in
     let opt = getRenderingOption ctx.opt log nameContext (hashmapEmpty ()) in
-    let link = objGetMyLink (objTreeObj obj) opt in
+    let link = objGetMyLink obj opt in
 
     let opt = getServeOption ctx.opt link in    
     startServer opt; ctx

@@ -20,7 +20,7 @@ let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in l
     -- Map of all output paths (acts as a Set)
     type PathMap = HashMap String () in
     -- Recursively visit the ObjectTree and collect paths
-    recursive let preprocessRec : PathMap -> ObjectTree -> PathMap = use ObjectForms in
+    recursive let preprocessRec : PathMap -> ObjectTree -> PathMap = use Objects in
         lam pathMap. lam obj.
         let inner = objTreeObj obj in        
 

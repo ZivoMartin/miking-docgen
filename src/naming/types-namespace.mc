@@ -14,7 +14,7 @@ let typeNamespaceInsertNewType : TypeNamespaceSet -> Object -> TypeNamespaceSet 
     namespaceSetInsert set (objName obj) { typeObj = obj, constructors = [] }
 
 let typeNamespaceInsertNewCon : TypeNamespaceSet -> Object -> TypeNamespaceSet =
-    use ObjectForms in
+    use Objects in
     lam set. lam obj.
     let obj = objWithSourceCode obj (sourceCodeEmpty ()) in
 
@@ -27,7 +27,7 @@ let typeNamespaceInsertNewCon : TypeNamespaceSet -> Object -> TypeNamespaceSet =
     else namingWarn "typeNamespaceInsertNewCon only takes in parameter Con arguments."; set
 
 let typeNamespaceGetTypeConstructors : TypeNamespaceSet -> Object -> Option [Object] =
-    use ObjectForms in
+    use Objects in
     lam set. lam obj.
     match objForm obj with ObjType {} then
     let name = objName obj in
