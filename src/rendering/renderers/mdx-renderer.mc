@@ -40,7 +40,7 @@ lang MdxRenderer = RendererInterface
         renderFileOrWarn path content
 
     -- Create the MDX components file (TSX/JSX) in the output folder.
-    sem renderSetup obj =
+    sem renderSetup =
     | { fmt = Mdx {} } & opt ->
         let srcPath = renderingOptionsSrcPath opt in
         let path = getComponentPath opt.fmtLang srcPath componentFileName in
@@ -143,7 +143,7 @@ lang MdxRenderer = RendererInterface
     -- Render the full code (trim trailing comments/empties), escaped for MDX.
     sem renderCodeWithoutPreview (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
-        let split = strSplit "\n" data.raw in
+        let split = strSplit "\n" (renderingDataRaw data) in
         match splitOnR (lam l.
             let trimmed = strTrim l in
             not (or (strStartsWith "--" trimmed) (null trimmed))
@@ -168,7 +168,7 @@ lang MdxRenderer = RendererInterface
         let link = if objRenderIt data.obj then join [" link=\"", link, "\""] else "" in 
         
         let title = objTitle data.obj in
-        let form  = getFirstWord (objForm data.obj) in
+        let form  = objGetFirstWord data.obj in
     
         let left = join ["<DocBlock title=\"", title, "\" form=\"", form, "\"", link, ">\n"] in
         let right = "</DocBlock>\n\n" in

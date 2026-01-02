@@ -25,7 +25,7 @@ include "../util.mc"
 lang HtmlRenderer = RendererInterface
 
     -- Create the scripts and stylesheet in the output folder.
-    sem renderSetup obj =
+    sem renderSetup =
     | { fmt = Html {} } & opt ->
         let srcPath = renderingOptionsSrcPath opt in
         let openAndWrite = lam s. lam path.
@@ -118,7 +118,7 @@ lang HtmlRenderer = RendererInterface
 
     -- Top-of-page documentation wrapper
     sem renderTopPageDoc (data: RenderingData) =
-    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"    
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"
 
     sem renderSynVariants (obj: Object) (variants: [SynVariant]) =
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"syn-variants\">" (renderSynVariants obj) variants "</div>"

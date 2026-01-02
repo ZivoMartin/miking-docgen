@@ -24,7 +24,6 @@ let docgen : DocGenOptions -> () = lam opt.
             let execCtx = gen execCtx in
             let execCtx = parse execCtx in
             let execCtx = extract execCtx in
-            let execCtx = label execCtx in
             let execCtx = name execCtx in        
             let execCtx = render execCtx in
             optionMapOr execCtx process (execCtxNext execCtx)

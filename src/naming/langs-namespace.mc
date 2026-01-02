@@ -6,7 +6,7 @@ include "./generic-namespace-set.mc"
 type LangId = Int
 
 -- For now we only store the names.
-type LangNamespace = {
+type LangNamespace = use Objects in {
      objNamespace: String,
      objIsStdlib: Bool,
      
@@ -56,6 +56,7 @@ let langNamespaceSetBuildNamespace : LangNamespaceSet -> LangNamespace -> [Strin
 
 let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> LangNamespaceSet =
     lam set. lam name. lam namespace.
+    use Objects in
 
     let parents = map
         (lam parent.
@@ -160,5 +161,6 @@ let langNamespaceGetExplicitChildren : LangNamespaceSet -> String -> Option Lang
         (lam id. optionMap (lam d. d.explicit) (hmIntLookup id set.idMap))
         (namespaceSetNameToId set name))
 
-let langNamespaceCleanObj : Object -> Object =
-    lam obj. { obj with sourceCode = sourceCodeEmpty () }
+let langNamespaceCleanObj : use Objects in Object -> Object =
+    use Objects in
+    lam obj. objWithSourceCode obj (sourceCodeEmpty ()) 

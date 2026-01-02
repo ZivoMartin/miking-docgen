@@ -1,7 +1,7 @@
 include "mexpr/ast.mc"
 include "./syn-variant.mc"
 include "../global/logger.mc"
-include "./source-code-builder.mc"
+include "./source-code.mc"
 
 -- Interface declaring all semantics for Objects
 lang ObjectInterface = MExprAst
@@ -20,26 +20,44 @@ lang ObjectInterface = MExprAst
 
     syn Object =
 
-    sem objGetDatas : Object -> ObjectDatas
-    sem objGetChildren : Object -> ObjectChildren
-    sem objGetChildren =
+    sem objDatas : Object -> ObjectDatas
+    sem objChildren : Object -> ObjectChildren
+    sem objChildren =
     | obj -> []
 
     sem objSetDatas : Object -> ObjectDatas -> Object
-    sem objSetChildren : Object -> ObjectDatas -> Object
+
+    sem objSetChildren : Object -> ObjectChildren -> Object
     sem objSetChildren =
     | obj -> lam. obj
 
+    sem objMapChildren : Object -> (ObjectChildren -> ObjectChildren) -> Object
+    sem objMapChildren =
+    | obj -> lam f.
+      let children = objChildren obj in
+      let children = f children in
+      objSetChildren obj children
+
+    sem objWithoutChildren =
+    | obj -> objMapChildren obj (lam. [])
+
+    sem objAddChildren : Object -> Objet -> Object
+    sem objReverseChildren =
+    | obj -> lam child.
+      let children = objChildren obj in
+      let children = reverse children in
+      objSetChildren obj children
+
     sem objToString : Object -> String
-    sem getFirstWord : Object -> String
+    sem objGetFirstWord : Object -> String
     sem objHasUrl  : Object -> Bool
     sem objHasLink : Object -> Bool
     sem objHasTests : Object -> Bool    
     sem objHasTests =
     | _ -> false
 
-    sem objGetLangName : Object -> String
-    sem objGetLangName =
+    sem objLangName : Object -> String
+    sem objLangName =
     | _ -> ""
 
     sem objSetType : Object -> Option Type -> Object
@@ -58,20 +76,20 @@ lang ObjectInterface = MExprAst
 
     sem objPrettyPrint : Object -> String
     sem objPrettyPrint =
-    | obj -> join [getFirstWord obj, " ", objName obj]
+    | obj -> join [objGetFirstWord obj, " ", objName obj]
 
     sem objSetField : Object -> (ObjectDatas -> ObjectDatas) -> Object
     sem objSetField =
-    | obj -> lam setter. objSetDatas obj (setter (objGetDatas obj))
+    | obj -> lam setter. objSetDatas obj (setter (objDatas obj))
 
     -- Simple field accessors.
-    sem objName = | obj -> (objGetDatas obj).name
-    sem objDoc = | obj -> (objGetDatas obj).doc
-    sem objSourceCode = | obj -> (objGetDatas obj).sourceCode
-    sem objNamespace = | obj -> (objGetDatas obj).namespace
-    sem objIsStdlib = | obj -> (objGetDatas obj).isStdlib
-    sem objRenderIt = | obj -> (objGetDatas obj).renderIt
-    sem objId = | obj -> (objGetDatas obj).id
+    sem objName = | obj -> (objDatas obj).name
+    sem objDoc = | obj -> (objDatas obj).doc
+    sem objSourceCode = | obj -> (objDatas obj).sourceCode
+    sem objNamespace = | obj -> (objDatas obj).namespace
+    sem objIsStdlib = | obj -> (objDatas obj).isStdlib
+    sem objRenderIt = | obj -> (objDatas obj).renderIt
+    sem objId = | obj -> (objDatas obj).id
 
     -- Object updaters (immutable setters).
     sem objWithName =
@@ -145,8 +163,8 @@ lang ObjectInterface = MExprAst
     | _ -> "No documentation available here."
 
     -- Empty default object (neutral values).
-    sem defaultDatas : () -> ObjectDatas
-    sem defaultDatas =
+    sem objDefaultDatas : () -> ObjectDatas
+    sem objDefaultDatas =
     | () -> {
         name = "",
         doc = "",
@@ -163,6 +181,17 @@ lang ObjectInterface = MExprAst
         let doc = objDoc obj in
         if eqString doc (objDefaultDoc ()) then "" else doc
 
+
+    sem objNameIfHas : Object -> Option String
+    sem objNameIfHas =
+    | obj -> if objHasName then
+              Some (objName obj)
+           else None {}
+
+    sem objHasName : Object -> Bool
+    sem objHasName =
+    | _ -> true
+
     
 end
 
@@ -174,32 +203,40 @@ lang ObjProgram = ObjectInterface
     syn Object =
     | ObjProgram { children: ObjectChildren, datas: ObjectDatas}
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjProgram { datas = datas } -> datas
 
-    sem objGetChildren =
+    sem objChildren =
     | ObjProgram { children = children } -> children
 
     sem objSetDatas =
-    | ObjProgram f -> lam datas. { f with datas = datas }
+    | ObjProgram f -> lam datas. ObjProgram { f with datas = datas }
 
     sem objSetChildren =
-    | ObjProgram f -> lam children. { f with children = children }
+    | ObjProgram f -> lam children. ObjProgram{ f with children = children }
 
     sem objToString =
     | ObjProgram {} -> "ObjProgram"
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjProgram {} -> ""
 
     sem objHasUrl =
     | ObjProgram {} -> true
+
+    sem objSourceCode =
+    | ObjProgram { children = children } ->
+      join (map objSourceCode children)
+      
 
     sem objPrettyPrint =
     | ObjProgram {} -> ""
 
     sem objHasLink =
     | ObjProgram {} -> true
+
+    sem objHasName =
+    | ObjProgram {} -> false
 
 end
 
@@ -209,7 +246,7 @@ end
 lang ObjInclude = ObjectInterface
 
     syn Object =
-    | ObjInclude { pathInFile: String, datas: ObjectDatas, child: Object }
+    | ObjInclude { pathInFile: String, datas: ObjectDatas, child: Option Object }
 
     sem objSetDatas =
     | ObjInclude f -> lam datas. ObjInclude { f with datas = datas}
@@ -217,21 +254,25 @@ lang ObjInclude = ObjectInterface
     sem objSetChildren =
     | ObjInclude f & obj -> lam children.
       if neqi 1 (length children) then extractingWarn "Inlude nodes should only have one children"; obj
-      else ObjInclude { f with child = head children}
+      else ObjInclude { f with child = Some (head children)}
 
-    sem objGetChildren =
-    | ObjInclude { child = child } -> [child]
+    sem objChildren =
+    | ObjInclude { child = Some child } -> [child]
+    | ObjInclude { child = None {} } -> []    
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjInclude { datas = datas } -> datas
 
     sem objToString =
     | ObjInclude { pathInFile = p } -> join ["ObjInclude, path = ", p]
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjInclude {} -> "include"
 
     sem objHasUrl =
+    | ObjInclude {} -> false
+
+    sem objHasName =
     | ObjInclude {} -> false
 
     sem objHasLink =
@@ -247,7 +288,7 @@ lang ObjLet = ObjectInterface
     syn Object =
     | ObjLet { rec : Bool, args : [String], ty: Option Type, datas: ObjectDatas }
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjLet { datas = datas } -> datas
 
     sem objSetDatas =
@@ -263,7 +304,7 @@ lang ObjLet = ObjectInterface
                 "]"
             ]
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjLet {} -> "let"
 
     sem objHasUrl =
@@ -281,6 +322,7 @@ lang ObjLet = ObjectInterface
 
     sem objHasTests =
     | ObjLet {} -> true
+
 end
 
 ----------------------------------------------------------------------
@@ -295,19 +337,19 @@ lang ObjLang = ObjectInterface
     | ObjLang f -> lam datas. ObjLang { f with datas = datas}
 
     sem objSetChildren =
-    | ObjLang f -> lam children. { f with children = children }
+    | ObjLang f -> lam children. ObjLang { f with children = children }
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjLang { datas = datas } -> datas
 
-    sem objGetChildren =
+    sem objChildren =
     | ObjLang { children = children } -> children
 
     sem objToString =
     | ObjLang { parents = parents } ->
             join ["ObjLang, parents: ", strJoin ", " parents]
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjLang {} -> "lang"
 
     sem objHasUrl =
@@ -326,7 +368,7 @@ lang ObjType = ObjectInterface
     syn Object =
     | ObjType { t: Option String, datas: ObjectDatas }
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjType { datas = datas } -> datas
 
     sem objSetDatas =
@@ -336,7 +378,7 @@ lang ObjType = ObjectInterface
     | ObjType { t = t } ->
         join ["ObjType", match t with Some x then concat ", " x else ""]
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjType {} -> "type"
 
     sem objHasUrl =
@@ -370,13 +412,13 @@ lang ObjSem = ObjectInterface
     | ObjSem { langName = langName } ->
             join ["ObjSem, langName = ", langName]
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjSem { datas = datas } -> datas
 
     sem objSetDatas =
     | ObjSem f -> lam datas. ObjSem { f with datas = datas }
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjSem {} -> "sem"
 
     sem objHasUrl =
@@ -385,7 +427,7 @@ lang ObjSem = ObjectInterface
     sem objHasLink =
     | ObjSem {} -> true
 
-    sem objGetLangName =
+    sem objLangName =
     | ObjSem { langName = langName } -> langName
 
     sem objSetType =
@@ -407,7 +449,7 @@ lang ObjSyn = ObjectInterface
     syn Object =
     | ObjSyn { langName: String, variants: [SynVariant], datas: ObjectDatas }
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjSyn { datas = datas } -> datas
 
     sem objSetDatas =
@@ -417,13 +459,13 @@ lang ObjSyn = ObjectInterface
     | ObjSyn { langName = langName } ->
             join ["ObjSyn, langName = ", langName]
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjSyn {} -> "syn"
 
     sem objHasUrl =
     | ObjSyn {} -> true
 
-    sem objGetLangName =
+    sem objLangName =
     | ObjSyn { langName = langName } -> langName
 
     sem objHasLink =
@@ -445,7 +487,7 @@ lang ObjCon = ObjectInterface
     syn Object =
     | ObjCon { t: String, parentType: String, datas: ObjectDatas }
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjCon { datas = datas } -> datas
 
     sem objSetDatas =
@@ -454,7 +496,7 @@ lang ObjCon = ObjectInterface
     sem objToString =
     | ObjCon { t = t, parentType = parentType } -> join ["ObjCon: ", t, " with parent: ", parentType]
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjCon {} -> "con"
 
     sem objHasUrl =
@@ -482,7 +524,7 @@ lang ObjMexpr = ObjectInterface
     syn Object =
     | ObjMexpr ObjectDatas
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjMexpr datas -> datas
 
     sem objSetDatas =
@@ -491,7 +533,7 @@ lang ObjMexpr = ObjectInterface
     sem objToString =
     | ObjMexpr {} -> "ObjMexpr"
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjMexpr {} -> "mexpr"
 
     sem objHasUrl =
@@ -503,6 +545,9 @@ lang ObjMexpr = ObjectInterface
     sem objHasLink =
     | ObjMexpr {} -> true
 
+    sem objHasName =
+    | ObjMexpr {} -> false
+
 end
 
 ----------------------------------------------------------------------
@@ -513,7 +558,7 @@ lang ObjUtest = ObjectInterface
     syn Object =
     | ObjUtest ObjectDatas
 
-    sem objGetDatas =
+    sem objDatas =
     | ObjUtest datas -> datas
 
     sem objSetDatas =
@@ -522,7 +567,7 @@ lang ObjUtest = ObjectInterface
     sem objToString =
     | ObjUtest {} -> "ObjUtest"
 
-    sem getFirstWord =
+    sem objGetFirstWord =
     | ObjUtest {} -> "utest"
 
     sem objHasUrl =
@@ -530,6 +575,9 @@ lang ObjUtest = ObjectInterface
 
     sem objHasLink =
     | ObjUtest {} -> true
+
+    sem objHasName =
+    | ObjUtest {} -> false
 
 end
 

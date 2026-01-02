@@ -1,7 +1,6 @@
 include "./langs-namespace.mc"
 include "./name-map.mc"
 include "./types-namespace.mc"
-
 include "../extracting/objects.mc"
 
 let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String =
@@ -13,7 +12,8 @@ let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> St
     normalizePath link
 
 
-type NameMapValue = {
+-- TODO: Make sure that we do not copy children here
+type NameMapValue = use Objects in {
     url: String,
     obj: Object
 }
@@ -32,12 +32,13 @@ let nameContextEmpty : () -> NameContext = lam. {
     nameMap = nameMapEmpty ()
 }
 
-let nameContextFetch : NameContext -> Object -> String -> Option NameMapValue =
+let nameContextFetch : NameContext -> use Objects in Object -> String -> Option NameMapValue =
+    use Objects in
     lam ctx. lam obj. lam name.
     let namespace = objNamespace obj in
     nameMapFetch ctx.nameMap name (objId obj) namespace false
 
-let nameContextGetTypeConstructors : NameContext -> Object -> Option [Object] =
+let nameContextGetTypeConstructors : use Objects in NameContext -> Object -> Option [Object] =
     lam ctx.
     typeNamespaceGetTypeConstructors ctx.typeNamespaceSet
     

@@ -15,7 +15,7 @@ include "./renderer-interface.mc"
 lang RawRenderer = RendererInterface
 
     -- Runs before rendering all files (e.g., to generate global headers).
-    sem renderSetup obj =
+    sem renderSetup =
     | opt -> ()
     
     -- Default block renderer: composes signature, description, code, and tests.
@@ -25,9 +25,9 @@ lang RawRenderer = RendererInterface
         let opt = fixOptFormat opt in
         let signature = renderDocSignature obj opt in
 
-        let doc = objDoc data.obj in
+        let doc = objDoc obj in
         let doc = renderDocObjectParse doc opt in
-        let doc = renderFormattedDoc data.obj doc true opt in
+        let doc = renderFormattedDoc obj doc true opt in
         let doc = renderDocDescription doc opt in
 
         let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
@@ -38,29 +38,30 @@ lang RawRenderer = RendererInterface
     sem renderTopPageDoc (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         let nl = renderNewLine opt in
-
+        let obj = data.obj in
+        
         let renderStemFrom = lam obj. lam from.
             let link = renderSourceCodeStr from (Some obj) opt in -- Will cast into a single hook
             let sectionTitle = renderBold "From:" opt in
             strJoin nl [sectionTitle, link, ""]
         in
 
-        let details = switch data
-        case { obj = { form = ObjLang { parents = parents & ([_] ++ _) } } & obj } then
+        let details = switch obj
+        case ObjLang { parents = parents & ([_] ++ _) } then
             let parents = strJoin " + " (map (lam p. renderSourceCodeStr p (Some obj) opt) parents) in
             let sectionTitle = renderBold "Stem from:" opt in
             strJoin nl [sectionTitle, parents, ""]
-        case { obj = { form = ObjType {} } & obj } then
+        case ObjType {} then
              renderTypeConstructors obj opt
-        case { obj = { form = ObjCon { parentType = parentType } } & obj } then
+        case ObjCon { parentType = parentType } then
              renderStemFrom obj parentType
-        case { obj = { form = ObjSyn { variants = variants } } & obj } then
-             let stemFrom = renderStemFrom obj (objGetLangName obj) in
+        case ObjSyn { variants = variants } then
+             let stemFrom = renderStemFrom obj (objLangName obj) in
              let variants = renderSynVariants obj variants opt in
              join [variants, nl, stemFrom]
-        case { obj = { form = ObjSem { variants = variants } } & obj } then
-            renderStemFrom obj (objGetLangName obj)
-        case { obj = obj } then
+        case ObjSem { variants = variants } then
+            renderStemFrom obj (objLangName obj)
+        case _ then
             ""
         end in
         renderBlocDefault data opt "" "" details ""
@@ -90,7 +91,7 @@ lang RawRenderer = RendererInterface
         in
 
         let details =
-            switch objForm obj
+            switch obj
             case ObjSyn { variants = variants } then
                 let variants = renderSynVariants obj variants opt in
                 renderHidenCode "▶" "▼" variants true opt
@@ -111,8 +112,7 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         let type2str = lam t. type2str t in
         let name = objName obj in
-        let form = objForm obj in
-        switch obj.form
+        switch obj
         case ObjLet { ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
             join ["let ", name, " : ", t]
@@ -121,7 +121,7 @@ lang RawRenderer = RendererInterface
         case ObjCon { t = t } then
             join ["con ", name, " : ", t]
         case (ObjMexpr {} | ObjUtest {}) & form then
-            getFirstWord form
+            objGetFirstWord form
         case ObjLang {} then
             concat "lang " name
         case ObjProgram {} then ""
@@ -129,7 +129,7 @@ lang RawRenderer = RendererInterface
             let t = match ty with Some t then type2str t else "?" in
             join ["sem ", name, " : ", t]
         case form then
-            join [getFirstWord form, " ", name]
+            join [objGetFirstWord form, " ", name]
         end
 
     -- Renders the object signature as source code.
@@ -151,7 +151,7 @@ lang RawRenderer = RendererInterface
             strJoin (renderNewLine opt)
                 (map (lam cons.
                  let name = objName cons in
-                 match objForm cons with ObjCon { t = t } then
+                 match cons with ObjCon { t = t } then
                      let right = join [name, " ", t] in
                      let right = strToSourceCode right in
                      let right = renderSourceCode right (Some cons) opt in
@@ -221,15 +221,15 @@ lang RawRenderer = RendererInterface
     -- Renders code as a hidden, toggleable block (raw + preview-less).
     sem renderCodeWithoutPreview (data: RenderingData) = 
     | opt -> let opt = fixOptFormat opt in
-        renderHidenCode "Show Implementation" "Hide Implementation" (concat data.left data.right) true opt
+        renderHidenCode "Show Implementation" "Hide Implementation" (renderingDataRaw data) true opt
 
     -- Renders code with an optional preview section (uses renderHidenCode).
     sem renderCodeWithPreview (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
         match data.right with [] then
-            join [data.left, data.trimmed]
+            data.left
         else 
-            join [data.left, renderHidenCode "..." "..." data.right false opt, data.trimmed]
+            join [data.left, renderHidenCode "..." "..." data.right false opt]
 
     -- Default hidden-code renderer (no-op for raw).
     sem renderHidenCode (hidden: String) (shown: String) (code : String) (jumpLine: Bool) =
@@ -240,10 +240,10 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
          renderSourceCode (strToSourceCode code) obj opt
 
-    -- SourceCode → rendered string (maps each word with renderWord).
+    -- SourceCode -> rendered string (maps each word with renderWord).
     sem renderSourceCode (code: SourceCode) (obj: Option Object) =
     | opt -> let opt = fixOptFormat opt in
-        join (map (lam code. match code with Some code then renderWord code obj opt else "") code)
+        join (map (lam code. renderWord code obj opt) code)
     
     -- Renders a single token/word according to its form (with escaping).
     sem renderWord (word: SourceCodeWord) (obj: Option Object) =
@@ -282,78 +282,19 @@ lang RawRenderer = RendererInterface
             renderer word opt
         end
 
-    -- Top-level source code rendering: splits, renders, and aggregates.
-    -- If raw s length is length than 30, we concatenate everything in left.
-    sem renderTreeSourceCode (tree: [TreeSourceCode]) (tests: [RenderingData]) (obj : Object) =
+    sem renderCreateRenderingData (obj: Object) (tests: [RenderingData]) =
     | opt -> let opt = fixOptFormat opt in
-        match sourceCodeSplit tree with { left = left, right = right, trimmed = trimmed } in
-        let renderSourceCode = lam b. renderSourceCode (wordBufferToSourceCode b) (None {}) opt in
+        let split = sourceCodeSplit (objSourceCode obj) in
 
-        let integrateTests: RenderingData -> [RenderingData] -> RenderingData =
-            lam d. lam tests.
-            let testsStr: (String, String) =
-                let name = objName obj in
-                let tests = reverse tests in
-                let tests = filter (lam t.
-                    strContains name t.raw
-                 ) tests in
-                match tests with [last] ++ tests then
-                    let lastRaw = last.raw in
-                    recursive let trimRaw = lam raw.
-                      match raw with [h] ++ t then
-                            let l = strTrim h in
-                            if strStartsWith "--" l then
-                               trimRaw t
-                            else if eqString l "" then
-                               trimRaw t
-                            else strJoin "\n" (reverse raw)
-                      else []
-                    in
-                    let lastRaw = trimRaw (reverse (strSplit "\n" lastRaw)) in
-                    
-                    let raw: String = join (map (lam t. t.raw) (reverse tests)) in                            
-                    let tests: String = join (map (lam t. join [t.left, t.right, t.trimmed]) (reverse tests)) in
-                    (join [tests, last.left, last.right], concat raw lastRaw)
-                else ("", "")
-            in
-            { d with tests = testsStr.0, rawTests = testsStr.1 }
-        in
+        let renderSourceCode = lam b. renderSourceCode b (None {}) opt in
 
-        let getFormatedString : [TreeSourceCode] -> String = lam code.
-            foldl (lam s. lam node.
-                concat (switch node 
-                case TreeSourceCodeNode child then renderCodeWithPreview child opt
-                case TreeSourceCodeSnippet code then renderSourceCode code
-                end) s
-                ) "" (reverse code) in
-
-        let buildSourceCodeRaw = lam code. join (map (lam w. lit w.word) code) in
-        let raw = foldl (lam raw. lam tree.
-             concat (switch tree 
-                case TreeSourceCodeNode child then child.raw
-                case TreeSourceCodeSnippet code then buildSourceCodeRaw code
-                end) raw)
-                "" (reverse (concat left right)) in
-        let raw = concat raw (match trimmed with TrimmedNotFormated code then buildSourceCodeRaw code else "") in
-    
-        let res = {
+        {
             obj = obj,
-            left = getFormatedString left,
-            right = getFormatedString right,
-            trimmed = switch trimmed
-                case TrimmedFormated s then s
-                case TrimmedNotFormated b then renderSourceCode b
-                end,
-            tests = "",
-            rawTests = "",
-            raw = raw
-        } in
-        let res =
-            if gti 200 (length res.raw) then
-              { res with left = join [res.left, res.right, res.trimmed], right = "", trimmed = "" }
-            else res
-        in
-        integrateTests res tests
+            left = renderSourceCode split.left,
+            right = renderSourceCode split.right,
+
+            tests = strJoin "\n\n" (map renderingDataRaw tests)
+        }
 
     -- File-level wrappers
     sem renderHeader (obj : Object) =

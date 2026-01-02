@@ -1,4 +1,3 @@
--- # file-opener.mc
 -- This module provides an API to open documentation output
 -- files according to the renderIt field in the object.
 
@@ -16,9 +15,8 @@ type FileOpenerResult = {
 
 
 -- Attempts to open the output file for a given object.
-let fileOpenerOpen : ObjectTree -> RenderingOptions -> Option FileOpenerResult =
-    use ObjectsRenderer in lam tree. lam opt.
-    let obj = objTreeObj tree in
+let fileOpenerOpen : use Objects in Object -> RenderingOptions -> Option FileOpenerResult =
+    use ObjectsRenderer in lam obj. lam opt.
     
     if objRenderIt obj then
         let path = concat opt.outputFolder (objGetMyLocation obj opt) in

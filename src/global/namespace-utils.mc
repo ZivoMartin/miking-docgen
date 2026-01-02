@@ -72,13 +72,6 @@ utest namespaceGetDomain "/home/user/.local/lib/mcore/stdlib/bool.mc"
 utest namespaceGetDomain "/leading/slash/test"
   with "/leading/slash/"
 
-let namespaceIsNested : Namespace -> Bool =
-    lam namespace.
-    match namespaceSeparate namespace with Some { nesting = nesting } then
-        let split = namespaceSplit nesting in
-        match split with [_] | ["lang-" ++ _, _] then false else true
-    else false
-
 let namespaceLast : Namespace -> Option String =
     lam namespace.
     match namespaceSplit namespace with ([_] ++ _) & s then

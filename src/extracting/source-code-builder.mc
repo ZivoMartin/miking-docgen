@@ -1,5 +1,3 @@
--- # Code Source Reconstruction Utilities
---
 -- This module implements a minimalist system to reconstruct the source code
 -- associated with each `Object` in the documentation tree.
 -- 

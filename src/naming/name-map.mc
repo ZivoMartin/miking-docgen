@@ -1,7 +1,7 @@
 include "../global/logger.mc"
 include "../global/namespace-utils.mc"
 
-type NameMapEntry a = { entry: a, id: Int, namespace: String, isNested: Bool }
+type NameMapEntry a = { entry: a, id: Int, namespace: String }
 type NameMapBucket a = HashMap String [NameMapEntry a]
 
 type NameMap a = {
@@ -43,8 +43,6 @@ let nameMapFetch : all a. NameMap a -> String -> Int -> String -> Bool -> Option
     lam nameMap. lam name. lam callerId. lam callerNamespace. lam me.
     if null name then None {} else
 
-    let isCallerNested = namespaceIsNested callerNamespace in
-    let callerDomain = namespaceGetDomain callerNamespace in
     let idCmp = if me then leqi else lti in
 
     let lookup = lam predicate. lam bucket.
@@ -55,21 +53,10 @@ let nameMapFetch : all a. NameMap a -> String -> Int -> String -> Bool -> Option
         optionJoin res
     in
 
-    if isCallerNested then
-        let predicate =
-            lam entry.
-            let entryDomain = namespaceGetDomain entry.namespace in
-            or (not entry.isNested)
-               (and (idCmp entry.id callerId) (strStartsWith entryDomain callerDomain))
-        in
-        if isUpperAlpha (head name) then
-           lookup predicate nameMap.upper
-        else
-           lookup predicate nameMap.lower
+    let predicate = lam entry. idCmp entry.id callerId in
+    if isUpperAlpha (head name) then
+       lookup predicate nameMap.upper
     else
-        let predicate = lam entry. and (not entry.isNested) (idCmp entry.id callerId) in
-        if isUpperAlpha (head name) then
-           lookup predicate nameMap.upper
-        else
-           lookup predicate nameMap.lower
-        
+       lookup predicate nameMap.lower
+
+

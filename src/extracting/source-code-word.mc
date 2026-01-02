@@ -1,5 +1,3 @@
--- # SourceCodeWord Module
---
 -- This module defines the data structure used by the colorizer to represent a
 -- highlighted token from the source code. Each token is paired with a
 -- `SourceCodeWordKind` indicating how it should be rendered (keyword, name,
@@ -7,8 +5,6 @@
 
 include "../parsing/lexing/token-readers.mc"
 
--- ## SourceCodeWordKinds
---
 -- Visual categories used by the colorizer.
 lang SourceCodeWordKinds
 
@@ -21,8 +17,6 @@ lang SourceCodeWordKinds
     
 end
 
--- ## SourceCodeWord
---
 -- Represents a single token from the source code with its display category.
 type SourceCodeWord = use SourceCodeWordKinds in use TokenReader in  {
     word: Token,
@@ -37,11 +31,11 @@ let buildCodeWord : use SourceCodeWordKinds in use TokenReader in Token -> Sourc
     }
 
 -- Classifies a token without context:
--- 1. Literal keyword → CodeKeyword
--- 2. Integer literal → CodeNumber
--- 3. Starts with capital letter → CodeType
--- 4. Starts with letter or underscore → CodeName
--- 5. Otherwise → CodeDefault
+-- 1. Literal keyword -> CodeKeyword
+-- 2. Integer literal -> CodeNumber
+-- 3. Starts with capital letter -> CodeType
+-- 4. Starts with letter or underscore -> CodeName
+-- 5. Otherwise -> CodeDefault
 -- These rules match Miking syntax (e.g., types start with a capital letter).
 let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
     use TokenReader in use SourceCodeWordKinds in lam token.

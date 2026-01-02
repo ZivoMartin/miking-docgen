@@ -1,13 +1,3 @@
--- # Preprocess step: create output directories
---
--- This module implements the preprocessing step:
--- - Walks the ObjectTree
--- - Computes all the output directories needed to generate doc files
--- - Creates them using `mkdir -p`
---
--- It builds a PathMap and runs a system command at the end.
--- The preprocessor have to use the NameContext too generate all the folders correctly.
-
 include "../extracting/objects.mc"
 include "./renderers/objects-renderer.mc"
 include "../global/util.mc"
@@ -16,28 +6,20 @@ include "hashmap.mc"
 include "../options/docgen-options.mc"
 include "../global/format.mc"    
 
-let preprocess : ObjectTree -> RenderingOptions -> () = use ObjectsRenderer in lam obj. lam opt.
-    -- Map of all output paths (acts as a Set)
+let preprocess : use Objects in Object -> RenderingOptions -> () = use ObjectsRenderer in lam obj. lam opt.
     type PathMap = HashMap String () in
-    -- Recursively visit the ObjectTree and collect paths
-    recursive let preprocessRec : PathMap -> ObjectTree -> PathMap = use Objects in
-        lam pathMap. lam obj.
-        let inner = objTreeObj obj in        
 
-        switch obj
-        case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [ p ] } then
-            preprocessRec pathMap p
-        case ObjectNode { obj = { form = ObjRecursiveBloc {} }, children = children } then
-            foldl preprocessRec pathMap children
-        case ObjectNode { obj = obj, children = children } then
+    recursive let preprocessRec : PathMap -> Object -> PathMap = use Objects in
+        lam pathMap. lam obj.
+
+        match obj with ObjInclude { child = Some child } then
+            preprocessRec pathMap child
+        else
             if objRenderIt obj then 
                let path = dirname (join [opt.outputFolder, objGetMyLocation obj opt]) in
                let map = hmInsert path () pathMap in
-               foldl preprocessRec map children
+               foldl preprocessRec map (objChildren obj)
             else pathMap            
-        case _ then pathMap
-        end
-
     in
     let pathMap = preprocessRec (hashmapEmpty ()) obj in
     recursive let create = lam arr.

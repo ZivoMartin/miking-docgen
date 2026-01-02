@@ -1,14 +1,10 @@
--- # util.mc
---
 -- This module defines primitives used by the renderer to handle objects
 -- during the documentation generation process.
 
-include "./rendering-types.mc"
+include "./rendering-data.mc"
 include "../extracting/objects.mc"
 include "../global/util.mc"
 
--- ## removeDoubleNames
---
 -- During rendering, we generate one page and one documentation block per child.
 -- But what if two children have the same name and the same form?
 -- Since they share the same name, namespace and form, they will end up with the same URL.
@@ -39,7 +35,7 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         if not (objHasName obj) then
            { arg with doc = "", children = cons child children, prev = "" }
         else if eqString namespace prev then
-           let doc = if eqString objDefaultDoc doc then "" else doc in
+           let doc = if eqString (objDefaultDoc ()) doc then "" else doc in
            let newDoc = objTryGetDoc child.obj in
            let doc = concat doc newDoc in
            let child = { child with obj = objWithDoc child.obj doc } in
@@ -65,12 +61,9 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
     sanitized.children
         
 
--- ## RenderingDataSet
---
 -- Groups `RenderingData` nodes into categories by their form.
 -- This structure is useful for organizing sections in the documentation.
-type RenderingDataSet = {
-    sUse: [Object],
+type RenderingDataSet = use Objects in {
     sLet: [RenderingData],
     sLang: [RenderingData],
     sSem: [RenderingData],
@@ -86,66 +79,36 @@ type RenderingDataSet = {
 -- Constructs a `RenderingDataSet` from:
 -- - A list of rendered children (`children`).
 -- - Recursive block data (`recDatas`), extracted earlier.
-let buildSet: [RenderingData] -> [[RenderingData]] -> RenderingDataSet =
+let buildSet: [RenderingData] -> RenderingDataSet =
     use Objects in
-    lam children. lam recDatas.
+    lam children.
     recursive
-    let buildSet = lam set. lam children. lam recDatas.
+    let buildSet = lam set. lam children.
         switch children
         case [child] ++ children then
-            let switchRes = switch child.obj.form
-            case ObjUse {} then ({ set with sUse = cons child.obj set.sUse }, recDatas)
-            case ObjLet {} then ({ set with sLet = cons child set.sLet }, recDatas)
-            case ObjLang {} then ({ set with sLang = cons child set.sLang }, recDatas)
-            case ObjSem {} then ({ set with sSem = cons child set.sSem }, recDatas)
-            case ObjSyn {} then ({ set with sSyn = cons child set.sSyn }, recDatas)
-            case ObjCon {} then ({ set with sCon = cons child set.sCon }, recDatas)
-            case ObjMexpr {} then ({ set with sMexpr = cons child set.sMexpr }, recDatas)
-            case ObjType {} then ({ set with sType = cons child set.sType }, recDatas)
-            case ObjUtest {} then ({ set with sUtest = cons child set.sUtest }, recDatas)
+            let switchRes = switch child.obj
+            case ObjLet {} then { set with sLet = cons child set.sLet }
+            case ObjLang {} then { set with sLang = cons child set.sLang }
+            case ObjSem {} then { set with sSem = cons child set.sSem }
+            case ObjSyn {} then { set with sSyn = cons child set.sSyn }
+            case ObjCon {} then { set with sCon = cons child set.sCon }
+            case ObjMexpr {} then { set with sMexpr = cons child set.sMexpr }
+            case ObjType {} then { set with sType = cons child set.sType }
+            case ObjUtest {} then { set with sUtest = cons child set.sUtest }
             case ObjInclude {} then
                 let set = if objIsStdlib child.obj then
                     { set with sLibInclude = cons child.obj set.sLibInclude }
                   else
                     { set with sInclude = cons child.obj set.sInclude }
                 in
-                (set, recDatas)
-            case ObjRecursiveBloc {} then
-                match recDatas with [children] ++ recDatas then
-                    ({ set with sLet = concat children set.sLet }, recDatas)
-                else
-                   renderingWarn "Running out of recursive datas.";
-                   (set, recDatas)
+                set
             end in
-            match switchRes with (set, recDatas) in
-            buildSet set children recDatas
+            match switchRes with set in
+            buildSet set children
         case [] then set
         end
-    in buildSet { sUse = [], sLet = [], sLang = [],  sSem = [], sSyn = [], sCon = [], sMexpr = [], sInclude = [], sLibInclude = [], sType = [], sUtest = [] } (reverse children) (reverse recDatas)
+    in buildSet { sLet = [], sLang = [],  sSem = [], sSyn = [], sCon = [], sMexpr = [], sInclude = [], sLibInclude = [], sType = [], sUtest = [] } (reverse children)
 
-
-let unwrapRecursives : RenderingOptions -> [ObjectTree] -> [{ children: [ObjectTree], tests: [ObjectTree] }] =
-    use Objects in
-    lam opt. lam children.
-    let res = foldl (lam buffer. lam tree.
-        let obj = objTreeObj tree in
-        switch obj.form
-        case ObjRecursiveBloc {} then
-            let children = objTreeChildren tree in
-            match children with [first] ++ rest then
-                let firstObj = objTreeObj first in
-                let firstDoc = objTryGetDoc firstObj in
-                let firstObj = if null firstDoc then objWithDoc firstObj (objDoc obj) else firstObj in
-                let first = objTreeWithObj first firstObj in
-                let children = cons first rest in
-                let result = cons { children = children, tests = buffer.testBuffer } buffer.result in
-                { result = result, testBuffer = [] }
-            else buffer
-        case ObjUtest {} then { buffer with testBuffer = cons tree buffer.testBuffer }
-        case _  then { buffer with testBuffer = [] }
-        end) { result = [], testBuffer = [] } (reverse children)
-    in
-    res.result
 
 let renderFileOrWarn : String -> String -> () = lam path. lam content.
     match fileWriteOpen path with Some wc then

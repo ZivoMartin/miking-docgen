@@ -75,7 +75,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
     type CommentBuffer = [String] in
 
     -- Output of one extractRec step
-    type ExtractRecOutput = { obj: Option ObjectTree, commentBuffer: CommentBuffer, sourceCodeBuilder: SourceCodeBuilder, utestCount: Int } in
+    type ExtractRecOutput = { obj: Option Object, commentBuffer: CommentBuffer, sourceCodeBuilder: SourceCodeBuilder, utestCount: Int } in
 
     recursive
     let extractRec : (DocTree -> String -> CommentBuffer -> SourceCodeBuilder -> Bool -> Int -> Depth -> ExtractRecOutput ) =
@@ -90,9 +90,10 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
         let shouldClear : String -> Bool = lam content. gti (count (eqChar '\n') content) 1 in
         let sourceCodeBuilder = absorbWord sourceCodeBuilder tree in
         
-        let defaultObject = lam namespace. lam isStdlib.
-            let defaultObject = objWithIsStdlib defaultObject isStdlib in
-            objWithNamespace defaultObject namespace
+        let defaultObjectDatas = lam namespace. lam isStdlib.
+            let default = objDefaultDatas () in
+            let default = { default with isStdlib = isStdlib } in
+            { default with namespace = namespace }
         in
     
         switch tree 
@@ -107,7 +108,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                 let sourceCode = finish sourceCodeBuilder in
                 { obj = { obj with sourceCode = sourceCode.sourceCode }, builder = sourceCode.builder } in
 
-            let obj = objWithIsStdlib (defaultObject namespace inStdlib) inStdlib in
+            let datas = defaultObject namespace inStdlib in
             let doc = buildDoc (reverse commentBuffer) in
 
             -- Process children nodes
@@ -130,7 +131,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                     children in
                     
                 match finish obj foldResult.ctx.sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
-                let obj = ObjectNode { obj = obj, children = reverse foldResult.children } in
+                let obj = objSetChildren obj children in
                 { foldResult.ctx with obj = Some obj, sourceCodeBuilder = sourceCodeBuilder } in
 
             -- Dispatch by token type + state
@@ -157,13 +158,6 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
 
             case StateMexpr {} then
                 process state children "mexpr" (getNamespace namespace "mexpr" "") doc (ObjMexpr {}) utestCount
-
-            case (StateUse {} | StateTopUse {}) then
-                let name = getName children in
-                let obj = { obj with name = name.word, form = ObjUse {} } in
-                let sourceCodeBuilder = foldl absorbWord sourceCodeBuilder children in
-                match finish obj sourceCodeBuilder with { obj = obj, builder = sourceCodeBuilder } in
-                { obj = Some (ObjectNode { obj = obj, children = [] }), commentBuffer = [], sourceCodeBuilder = sourceCodeBuilder, utestCount = utestCount }
 
             case StateTopUtest {} | StateUtest {} then
                 let name = int2string utestCount in
@@ -224,7 +218,7 @@ let extract : ExtractingOptions -> DocTree -> ObjectTree =
                         ObjType { t = t }
 
                     end in
-                let namespace = getNamespace namespace name.word (getFirstWord form) in
+                let namespace = getNamespace namespace name.word (objGetFirstWord form) in
                 process state children name.word namespace doc form utestCount
                 end
             case _ then

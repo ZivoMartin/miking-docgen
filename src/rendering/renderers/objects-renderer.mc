@@ -9,16 +9,6 @@ include "./headers/search.mc"
 include "string.mc"
 
 lang ObjectsRenderer = Objects + Formats
-    -- Return the object name only for named forms (let/type/sem/syn/lang/con).
-    sem objNameIfHas : Object -> Option String
-    sem objNameIfHas =
-    | { form = ObjLet {} | ObjType {} | ObjSem {} | ObjSyn {} | ObjLang {} | ObjCon {} } & obj -> Some (objName obj)
-    | _ -> None {}
-
-    sem objHasName : Object -> Bool
-    sem objHasName =
-    | obj -> optionIsSome (objNameIfHas obj)
-
 
     sem objUrlFetchFailed =
     | obj -> lam name. lam my.
@@ -38,15 +28,14 @@ lang ObjectsRenderer = Objects + Formats
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
-      let form = objForm obj in
-      if not (objFormHasLink form) then ""
+      if not (objHasLink obj) then ""
       else match nameContextFetch opt.nameContext obj name with Some res then res.url
       else objUrlFetchFailed obj name false; ""
 
     sem objTryFetch : Object -> RenderingOptions -> String -> Option NameMapValue
     sem objTryFetch =
     | obj -> lam opt. lam name.
-      if not (objFormHasLink (objForm obj)) then None {}
+      if not (objHasLink obj) then None {}
       else nameContextFetch opt.nameContext obj name
 
     sem objGetMyLocation : Object -> RenderingOptions -> String
@@ -62,8 +51,7 @@ lang ObjectsRenderer = Objects + Formats
     sem objTitle =    
     | obj ->
         let name = head (reverse (strSplit "/" (objName obj))) in
-        let form = objForm obj in
-        switch form
+        switch obj
         case ObjInclude { pathInFile = pathInFile } then pathInFile
         case ObjUtest {} then "utest"
         case _ then name
@@ -74,29 +62,27 @@ lang ObjectsRenderer = Objects + Formats
     sem objLog =
     | obj -> lam opt. opt.log (join [
         "Object ", objName obj, ":\n",
-        "   form: ", objFormToString (objForm obj), "\n",
+        "   form: ", objToString obj, "\n",
         "   namespace: ", objNamespace obj, "\n",
         "   link: ", objGetMyLink obj opt, "\n",
         "   isStdlib: ", bool2string (objIsStdlib obj), "\n"
     ])
 
-    sem objToJsDict : RenderingOptions -> ObjectTree -> [SearchDictObj]
+    sem objToJsDict : RenderingOptions -> Object -> [SearchDictObj]
     sem objToJsDict opt = 
-    | tree ->
-      recursive let objToJsDict = lam tree. 
-          let obj = objTreeObj tree in
+    | obj ->
+      recursive let objToJsDict = lam obj.
           -- Recursive calls: render all children and transmit the name-context through the fold.
           let dicts =  foldl (lam dicts. lam child.
-              let obj = objTreeObj child in
-              match (objTreeChildren child, obj.form) with ([], ObjInclude {}) then dicts else
+              match (objChildren child, child) with ([], ObjInclude {}) then dicts else
               let newDicts = objToJsDict child in
               concat newDicts dicts
-              ) [] (objTreeChildren tree)
+              ) [] (objChildren obj)
           in
           let link = objGetMyLink obj opt in
           let link = if strEndsWith ".md" link then subsequence link 0 (subi (length link) 3) else link in 
           if objRenderIt obj then
              cons { name = objNamespace obj, link = link } dicts
           else dicts
-      in objToJsDict tree
+      in objToJsDict obj
 end

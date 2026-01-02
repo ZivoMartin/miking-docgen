@@ -8,7 +8,6 @@ include "./../global/format.mc"
 include "../naming/name-context.mc"
 
 include "./rendered-map.mc"
-include "./rendering-types.mc"
 
 -- ## RenderingOptions
 --
@@ -33,4 +32,3 @@ let renderingOptionsSrcPath : RenderingOptions -> String = lam opt. normalizePat
 
 -- Ensure RenderingOptions uses the wrapped (non-raw) format.
 let fixOptFormat : RenderingOptions -> RenderingOptions = lam opt. { opt with fmt = use Formats in unwrapRaw opt.fmt }
-

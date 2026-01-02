@@ -1,24 +1,25 @@
 include "../global/util.mc"
 include "../extracting/objects.mc"
 
-type TypeNamespace = {
+type TypeNamespace = use Objects in  {
     typeObj: Object,
     constructors: [Object]
 }
 
 type TypeNamespaceSet = NamespaceSet TypeNamespace
 
-let typeNamespaceInsertNewType : TypeNamespaceSet -> Object -> TypeNamespaceSet =
+let typeNamespaceInsertNewType : TypeNamespaceSet -> use Objects in Object -> TypeNamespaceSet =
     lam set. lam obj.
+    use Objects in 
     let obj = objWithSourceCode obj (sourceCodeEmpty ()) in
     namespaceSetInsert set (objName obj) { typeObj = obj, constructors = [] }
 
-let typeNamespaceInsertNewCon : TypeNamespaceSet -> Object -> TypeNamespaceSet =
+let typeNamespaceInsertNewCon : TypeNamespaceSet -> use Objects in Object -> TypeNamespaceSet =
     use Objects in
     lam set. lam obj.
     let obj = objWithSourceCode obj (sourceCodeEmpty ()) in
 
-    match objForm obj with ObjCon { parentType = parentType } then
+    match obj with ObjCon { parentType = parentType } then
         match namespaceSetGetByName set parentType with Some typedef then
             let typedef = { typedef with constructors = concat typedef.constructors [obj] } in
             namespaceSetUpdate set (objName typedef.typeObj) typedef
@@ -26,10 +27,10 @@ let typeNamespaceInsertNewCon : TypeNamespaceSet -> Object -> TypeNamespaceSet =
             namingWarn (join ["Type ", parentType, " is not registered in the type nameset."]); set
     else namingWarn "typeNamespaceInsertNewCon only takes in parameter Con arguments."; set
 
-let typeNamespaceGetTypeConstructors : TypeNamespaceSet -> Object -> Option [Object] =
+let typeNamespaceGetTypeConstructors : use Objects in TypeNamespaceSet -> Object -> Option [Object] =
     use Objects in
     lam set. lam obj.
-    match objForm obj with ObjType {} then
+    match obj with ObjType {} then
     let name = objName obj in
     match hmLookup name set.nameMap with Some ids then
         findMap (

@@ -25,7 +25,8 @@ include "../../extracting/objects.mc"
 include "../../global/format.mc"
 include "../../global/format-language.mc"
 include "../../extracting/source-code-word.mc"
-include "../rendering-types.mc"
+
+include "../rendering-data.mc"
 include "../rendering-options.mc"
 
 include "./objects-renderer.mc"
@@ -41,7 +42,7 @@ lang RendererInterface =
 
     -- Called before rendering starts for all files.
     -- Typically used to generate global headers.
-    sem renderSetup : ObjectTree -> RenderingOptions -> ()
+    sem renderSetup : RenderingOptions -> ()
 
     -- Called before rendering each file.
     -- Typically used to push file headers or includes.
@@ -137,9 +138,9 @@ lang RendererInterface =
     -- If an object is provided, the types will be clickable
     sem renderWord : SourceCodeWord -> Option Object -> RenderingOptions -> String
 
-    -- Renders top-level source code for an object.
-    -- Takes children TreeSourceCode (with eventual tests rendering datas) and produces RenderingData.
-    sem renderTreeSourceCode : [TreeSourceCode] -> [RenderingData] -> Object -> RenderingOptions -> RenderingData
+    -- Create The rendering data for the given object.
+    -- The list of rendering data are supposed to be the associated tests.
+    sem renderCreateRenderingData : Object -> [RenderingData] -> RenderingOptions -> RenderingData
 
     -- Render the variants from list of a syn.
     sem renderSynVariants : Object -> [SynVariant] -> RenderingOptions -> String

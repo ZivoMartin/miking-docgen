@@ -42,7 +42,7 @@
 
 include "./preprocessor.mc"
 include "./renderers/main-renderer.mc"
-include "./source-code-reconstruction.mc"
+include "./source-code-spliter.mc"
 include "./rendering-options.mc"
 include "./files-opener.mc"
 include "./util.mc"
@@ -58,87 +58,51 @@ type RenderingResult = {
      searchDatas: [SearchDictObj]
 }
 
--- ## render
---
--- Entrypoint to rendering. This function traverses the entire `ObjectTree` and writes
--- structured documentation for each object node.
---
--- ### Behavior:
--- - Preprocesses the object tree.
--- - Defines a recursive `render` function that:
---     - Preprocesses children: recursive unwrapping, test injection.
---     - Recursively renders them.
---     - Organizes them by type.
---     - Writes formatted output to file.
---     - Returns `RenderingData` and updated `RenderingOptions` for each node.
-let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
+let render : use Objects in RenderingOptions -> Object -> RenderingResult = use Renderer in
     lam opt. lam obj.
+    use Objects in
     
     let log = opt.log in
     
     let searchDatas = objToJsDict opt obj in
     
     preprocess obj opt;
-    renderSetup obj opt;
+    renderSetup opt;
 
     log "Beginning of rendering stage.";
 
     recursive
-    let render: RenderedMap -> ObjectTree -> [RenderingData] -> { datas: RenderingData, renderedMap: RenderedMap } =
+    let render: RenderedMap -> Object -> [RenderingData] -> { datas: RenderingData, renderedMap: RenderedMap } =
         lam renderedMap. lam obj. lam tests.
-    
+
         let emptyPreview = lam obj.
-            let trees = reconstructSourceCode (objSourceCode obj) [] in
-            { datas = renderTreeSourceCode trees [] obj opt, renderedMap = renderedMap }
+            { datas = renderCreateRenderingData obj tests opt, renderedMap = renderedMap }
         in
 
-        objLog (objTreeObj objTree) opt;
+        objLog obj opt;
 
-        switch objTree
-        case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [ p ] } then
-            let res = render renderedMap p [] in
+        switch obj
+        case ObjInclude { child = Some child } then
+            let res = render renderedMap child [] in
             { emptyPreview obj with renderedMap = res.renderedMap }
-        case ObjectNode { obj = { form = ObjInclude {} } & obj, children = [] } then emptyPreview obj
-        case ObjectNode { obj = { form = ObjInclude {} } & obj } then
-             renderingWarn "Include with more than one child detected"; emptyPreview obj
-        case ObjectNode { obj = obj, children = children } then
+        case ObjInclude { child = None {} } then emptyPreview obj
+        case _ then
 
             let loc = objGetMyLocation obj opt in
             match renderedMapInsert renderedMap obj loc with
             { renderedMap = renderedMap, prune = prune } in
             
             if prune then
-                let trees = reconstructSourceCode [] [] in
-                { datas = renderTreeSourceCode trees [] obj opt, renderedMap = renderedMap }
+                { datas = renderCreateRenderingData obj tests opt, renderedMap = renderedMap }
             else
 
-            match fileOpenerOpen objTree opt with Some { wc = wc, write = write, path = path } then
+            match fileOpenerOpen obj opt with Some { wc = wc, write = write, path = path } then
                 (match path with "" then () else log (concat "Rendering file " path));
 
-                -- Unwrapping the recursive blocks and rendering all the children.
-                -- If the first children doesnt have any doc, we give it the doc of
-                -- the bloc, which is what the user wants in 99% of the cases.
-                -- The tests after the recursive bloc are the tests of the last child of the bloc
-                -- We can ignore the renderedMap since recursive blocs and tests are not using it anyway.
-                let recChildren = unwrapRecursives opt children in
-                let recDatas = map (
-                    lam recChildren.
-                        let children = reverse recChildren.children in
-                        let tests = recChildren.tests in
-                        let last = head children in
-                        let tests = map (lam test. (render renderedMap test []).datas) tests in
-                        let last = (render renderedMap last tests).datas in
-                        let children = map (lam child. (render renderedMap child []).datas) (tail children) in
-                        reverse (cons last children)
-                    ) recChildren in
-
-
-                -- Recursive calls: render all children
                 type Acc = { tests: [RenderingData], children: [RenderingData], renderedMap: RenderedMap } in
                 let acc = foldl
                     (lam acc: Acc. lam child.
-                        let form = objTreeForm child in
-                        match form with ObjUtest {} then 
+                        match child with ObjUtest {} then 
                             match render acc.renderedMap child [] with {renderedMap = renderedMap, datas = datas} in
                             {
                                 children = cons datas acc.children,
@@ -147,35 +111,32 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                             }
                         else
                             match
-                                if objFormHasTests form then render acc.renderedMap child acc.tests
+                                if objHasTests obj then render acc.renderedMap child acc.tests
                                 else render acc.renderedMap child []
                             with { datas = datas, renderedMap = renderedMap } in
                             { children = cons datas acc.children, tests = [], renderedMap = renderedMap }
-                    ) { tests = [], children = [], renderedMap = renderedMap } (reverse children)
+                    ) { tests = [], children = [], renderedMap = renderedMap } (reverse (objChildren obj))
                 in
 
                 let renderedMap = acc.renderedMap in
                 let children = acc.children in
 
                 -- Build source code for the current node
-                let trees = reconstructSourceCode (objSourceCode obj) children in
-
-                -- From the source code tree, build the RenderingData
-                let data = renderTreeSourceCode trees tests obj opt in
+                let data = renderCreateRenderingData obj tests opt in
 
                 (if objRenderIt obj then                
 
                     write (renderHeader obj opt);
-                    write (renderObjTitle 1 data.obj opt);
+                    write (renderObjTitle 1 obj opt);
                     write (renderTopPageDoc data opt);
 
                     let children = removeDoubleNames children in
 
                     -- Order objects into a set
-                    let set = buildSet children recDatas in
+                    let set = buildSet children in
 
                      -- Display uses and includes
-                    let displayUseInclude = lam title. lam arr.
+                    let displayIncludes = lam title. lam arr.
                         let title = match arr with [] then "" else match title with "" then "" else
                                 renderSectionTitle title opt in
                         write title;
@@ -190,9 +151,8 @@ let render : RenderingOptions -> ObjectTree -> RenderingResult = use Renderer in
                         iter (lam u. write (renderDocBloc u opt)) arr
                     in
 
-                    iter (lam a. displayUseInclude a.0 a.1)
-                         [("Using", set.sUse),
-                         ("Includes", set.sInclude),
+                    iter (lam a. displayIncludes a.0 a.1)
+                         [("Includes", set.sInclude),
                          ("Stdlib Includes", set.sLibInclude)];
                     iter (lam a. displayDefault a.0 a.1)
                         [("Types", set.sType),

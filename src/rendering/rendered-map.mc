@@ -6,11 +6,11 @@ type RenderedMap = HashMap String ()
 
 let renderedMapEmpty : () -> RenderedMap = hashmapEmpty
 
-let renderedMapInsert : RenderedMap -> Object -> String -> { renderedMap: RenderedMap, prune: Bool } =
+let renderedMapInsert : RenderedMap -> use Objects in Object -> String -> { renderedMap: RenderedMap, prune: Bool } =
     use Objects in
     lam renderedMap. lam obj. lam loc.
  
-    let isProg = match objForm obj with ObjProgram {} then true else false in
+    let isProg = match obj with ObjProgram {} then true else false in
 
     let prune =
         if isProg then hmMem loc renderedMap

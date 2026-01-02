@@ -3,67 +3,59 @@ include "./name-map.mc"
 include "./name-context.mc"
 include "../extracting/objects.mc"
 
-type NamingRes = {
-     annotatedObjTree: ObjectTree,
+type NamingRes = use Objects in  {
+     annotatedObj: Object,
      nameContext: NameContext
 }
 
-let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
-    lam log. lam opt. lam objTree.
+let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
+    lam log. lam opt. lam obj.
+    use Objects in
 
     let buildUrl = buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt in
 
-    type WorkRes = { ctx: NameContext, nextId: Int, objTree: ObjectTree } in
-    recursive let work : ObjectTree -> NameContext -> Int -> WorkRes = use Objects in
-        lam objTree. lam ctx. lam nextId. 
+    type WorkRes = { ctx: NameContext, nextId: Int, obj: Object } in
 
+    recursive let work : Object -> NameContext -> Int -> WorkRes = use Objects in
+        lam obj. lam ctx. lam nextId. 
 
-        let obj = objTreeObj objTree in
-        let children = objTreeChildren objTree in
-        let form = objForm obj in
+        let originalChildren = objChildren obj in
 
-        let isNested = namespaceIsNested (objNamespace obj) in
+        let process : NameContext -> Object -> Int -> [Object] -> WorkRes =
+            lam ctx. lam obj. lam nextId. lam children.
 
-        let process : NameContext -> ObjectTree -> Int -> [ObjectTree] -> WorkRes =
-            lam ctx. lam objTree. lam nextId. lam children.
-            let obj = objTreeObj objTree in
-
-            let res = foldl (
+            let res = foldl(
                 lam acc. lam child.
-                let children = objTreeChildren acc.objTree in
                 let res = work child acc.ctx acc.nextId in
-                { res with ctx = res.ctx, objTree = ObjectNode { obj = obj, children = cons res.objTree children }}
-            ) { nextId = nextId, ctx = ctx, objTree = ObjectNode { children = [], obj = obj } } children
+                { res with obj = objMapChildren obj (cons res.obj)}
+            ) { nextId = nextId, ctx = ctx, obj = objWithoutChildren obj } children
             in
 
-            { res with objTree = ObjectNode { obj = obj, children = reverse (objTreeChildren res.objTree) } }
+            { res with obj = objMapChildren obj reverse }
         in
         
-        let annotate : NameContext -> ObjectTree -> Int -> WorkRes =
-            lam ctx. lam objTree. lam nextId.
+        let annotate : NameContext -> Object -> Int -> WorkRes =
+            lam ctx. lam obj. lam nextId.
 
-            let children = objTreeChildren objTree in
-            let obj = objTreeObj objTree in
+            let children = objChildren obj in
             let obj = objWithId obj nextId in
             let nextId = addi 1 nextId in
-            let objTree = ObjectNode { obj = obj, children = children } in
 
             let ctx = 
-                if objFormHasUrl form then
+                if objHasUrl obj then
                     let name = objName obj in
                     let namespace = objNamespace obj in
                     let isStdlib = objIsStdlib obj in
 
                     let url = buildUrl isStdlib namespace in
                     let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
-                    let entry = { entry = value, id = objId obj, namespace = namespace, isNested = isNested } in
+                    let entry = { entry = value, id = objId obj, namespace = namespace } in
 
                     log (join
                         ["Adding ", name, " in the name map.\n",
                         "namespace=", entry.namespace, "\n",
                         "url=", entry.entry.url, "\n",
-                        "id=", int2string entry.id, "\n",
-                        "isNested=", bool2string entry.isNested, "\n"]);
+                        "id=", int2string entry.id, "\n"]);
 
                     let nameMap =
                         if objRenderIt obj then nameMapInsert ctx.nameMap name namespace entry
@@ -73,90 +65,50 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                     { ctx with nameMap = nameMap }
                 else ctx
             in            
-            { ctx = ctx, nextId = nextId, objTree = objTree }
+            { ctx = ctx, nextId = nextId, obj = obj }
         in
 
-        let annotateAndProcess : ObjectTree -> NameContext -> Int -> [ObjectTree] -> WorkRes =
-            lam objTree. lam ctx. lam nextId. lam children.
-            match annotate ctx objTree nextId with
-            { ctx = ctx, nextId = nextId, objTree = objTree } in
-            process ctx objTree nextId children
+        let annotateAndProcess : Object -> NameContext -> Int -> [Object] -> WorkRes =
+            lam obj. lam ctx. lam nextId. lam children.
+            match annotate ctx obj nextId with
+            { ctx = ctx, nextId = nextId, obj = obj } in
+            process ctx obj nextId children
         in
 
-        let processAndAnnotate : ObjectTree -> NameContext -> Int -> [ObjectTree] -> WorkRes =
-            lam objTree. lam ctx. lam nextId. lam children.
-            match process ctx objTree nextId children with
-            { ctx = ctx, nextId = nextId, objTree = objTree } in
-            annotate ctx objTree nextId
+        let processAndAnnotate : Object -> NameContext -> Int -> [Object] -> WorkRes =
+            lam obj. lam ctx. lam nextId. lam children.
+            match process ctx obj nextId children with
+            { ctx = ctx, nextId = nextId, obj = obj } in
+            annotate ctx obj nextId
         in
 
         -- We first insert the direct children, then we call process. So direct children will be
-        -- inserted twice, which is absolutly fine and doesn t change correctness.
-        let nameDirectChildrenAndProcess : ObjectTree -> NameContext -> Int -> WorkRes =
-            lam objTree. lam ctx. lam nextId.
-            let children = objTreeChildren objTree in
+        -- inserted twice, which is absolutly fine and doesn't change correctness.
+        let nameDirectChildrenAndProcess : Object -> NameContext -> Int -> WorkRes =
+            lam obj. lam ctx. lam nextId.
+            let children = objChildren obj in
             match foldl (
                 lam acc. lam child.
-                let child = objTreeRemoveChildren child in
+                let child = objWithoutChildren child in
                 match work child acc.ctx acc.nextId with
                 { ctx = ctx, nextId = nextId } in -- We throw away the resulting direct child, but keep it in the nameMap
                 { ctx = ctx, nextId = nextId }
             ) { ctx = ctx, nextId = nextId } children 
             with { ctx = ctx, nextId = nextId } in
-            annotateAndProcess objTree ctx nextId children
+            annotateAndProcess obj ctx nextId children
         in
 
-        switch form
-        case ObjUse {} then
-             let used = objName obj in
-             match namespaceSetGetByName ctx.langNamespaceSet used with Some langNamespace then
-                 let langNamespace = langNamespace.full in
-
-                 let useThis : NameMap -> Int -> String -> [Object] -> { nameMap: NameMap, nextId: Int } =
-                     lam nameMap. lam nextId. lam form. lam objects.
-                     foldl (
-                         lam acc. lam obj.
-
-                         let name = objName obj in
-                         let namespace = join [objNamespace obj, "/", form, "-", name] in
-                         let url = buildUrl langNamespace.objIsStdlib namespace in
-                         let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
-
-                         let entry = { entry = value, id = acc.nextId, namespace = namespace, isNested = true } in
-
-                         log (join
-                             ["Adding ", name, " in the name map from the usage of ", used, ".\n",
-                             "namespace=", entry.namespace, "\n",
-                             "url=", entry.entry.url, "\n",
-                             "id=", int2string entry.id, "\n",
-                             "isNested=", bool2string entry.isNested, "\n"]);
-
-                         let nameMap = nameMapInsert acc.nameMap name namespace entry in
-                         { nameMap = nameMap, nextId = addi acc.nextId 1 }
-                     ) { nameMap = nameMap, nextId = nextId } objects
-                 in
-                 let nameMap = ctx.nameMap in
-                 match useThis nameMap nextId "syn" langNamespace.syns with { nameMap = nameMap, nextId = nextId } in
-                 match useThis nameMap nextId "sem" langNamespace.sems with { nameMap = nameMap, nextId = nextId } in
-                 match useThis nameMap nextId "con" langNamespace.cons with { nameMap = nameMap, nextId = nextId } in
-                 match useThis nameMap nextId "type" langNamespace.types with { nameMap = nameMap, nextId = nextId } in
-
-                 let ctx = { ctx with nameMap = nameMap } in
-                 annotateAndProcess objTree ctx nextId children
-             else
-                 namingWarn (join ["Failed to fetch the ", used, "lang."]);
-                 { ctx = ctx, nextId = nextId, objTree = objTree}
+        switch obj
         case ObjLang { parents = parents} then
             let filterIt : (Object -> Bool) -> [Object] =
                 lam keepIt.
                 mapOption (
                     lam child.
-                    let obj = objTreeObj child in
-                    if keepIt (objForm obj) then
-                       Some (langNamespaceCleanObj obj)
+                    if keepIt child then
+                       Some (langNamespaceCleanObj child)
                     else
                        None {}
-                ) children
+                ) originalChildren
             in
 
             let langNamespace = {
@@ -179,10 +131,10 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
            let langNamespaceSet = langNamespaceSetInsert ctx.langNamespaceSet name langNamespace in
            let ctx = { ctx with langNamespaceSet = langNamespaceSet } in
 
-           let updateChildren : [ObjectTree] -> (Object -> [ObjectTree]) -> LangNamespace -> [ObjectTree] =
+           let updateChildren : [Object] -> (Object -> [Object]) -> LangNamespace -> [Object] =
                lam children. lam cast. lam namespace.
 
-               let createChildren : [Object] -> [ObjectTree] =
+               let createChildren : [Object] -> [Object] =
                    lam updatedChildren: [Object].
                    join (map cast updatedChildren)
                in
@@ -204,46 +156,49 @@ let name : Logger -> NamingOptions -> ObjectTree -> NamingRes =
                        namingWarn (join ["Failed to fetch the implicit lang namespace of ", name, "."]); langNamespaceDefault
            in
 
+           -- TODO: Check if we are not injecting n square children here.
            let children = updateChildren [] (
                    lam obj.
-                   let filtered = filter (lam original. eqString (objTreeName original) (objName obj)) children in
+                   let filtered = filter (lam original. eqString (objName original) (objName obj)) originalChildren in
                    if null filtered then
                         namingWarn (join ["Explicit children of the lang namespace and actual children doesn't match for ", objName obj, "."]);
-                        [ObjectNode { children = [], obj = obj }]                        
+                        [objWithoutChildren obj]                        
                    else
                         let filtered = reverse filtered in
                         
                         let last = head filtered in
-                        let sourceCode = objSourceCode (objTreeObj last) in
-                        let lastObj = objWithSourceCode obj sourceCode in
-                        let lastChildren = objTreeChildren last in
-                        let last = ObjectNode { obj = lastObj, children = lastChildren } in
+                        let lastSourceCode = objSourceCode last in
+                        let lastChildren = objChildren last in
+
+                        let last = objWithSourceCode obj lastSourceCode in
+                        let last = objSetChildren last lastChildren in
+
                         let filtered = cons last (tail filtered) in
                         reverse filtered
               ) explicit
            in
 
-           let children = updateChildren children (lam obj. [ObjectNode { children = [], obj = obj }] ) implicit in
+           -- Not really necessary by the way
+           let children = updateChildren children (lam obj. [objWithoutChildren obj] ) implicit in
 
-           let objTree = ObjectNode { children = children, obj = objTreeObj objTree } in
+           let obj = objSetChildren obj children in
 
-           nameDirectChildrenAndProcess objTree ctx nextId
+           nameDirectChildrenAndProcess obj ctx nextId
            
-        case ObjRecursiveBloc {} then nameDirectChildrenAndProcess objTree ctx nextId
         case ObjCon {} then
-            let obj = objWithId obj nextId in
-            let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewCon ctx.typeNamespaceSet obj } in
-            annotateAndProcess objTree ctx nextId children
+            let namedObj = objWithId obj nextId in
+            let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewCon ctx.typeNamespaceSet namedObj } in
+            annotateAndProcess obj ctx nextId originalChildren
         case ObjType {} then
-            let obj = objWithId obj nextId in        
-            let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewType ctx.typeNamespaceSet obj } in
-            annotateAndProcess objTree ctx nextId children
-        case ObjInclude {} | ObjProgram {} then processAndAnnotate objTree ctx nextId children
+            let namedObj = objWithId obj nextId in        
+            let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewType ctx.typeNamespaceSet namedObj } in
+            annotateAndProcess obj ctx nextId originalChildren
+        case ObjInclude {} | ObjProgram {} then processAndAnnotate obj ctx nextId originalChildren
         case _ then
-             if objRenderIt obj then annotateAndProcess objTree ctx nextId children
-             else { ctx = ctx, nextId = nextId, objTree = objTree }
+             if objRenderIt obj then annotateAndProcess obj ctx nextId originalChildren
+             else { ctx = ctx, nextId = nextId, obj = obj }
         end
     in
 
-    match work objTree (nameContextEmpty ()) 1 with { ctx = nameContext, objTree = annotatedObjTree } in
-    { annotatedObjTree = annotatedObjTree, nameContext = nameContext }
+    match work obj (nameContextEmpty ()) 1 with { ctx = nameContext, obj = annotatedObj } in
+    { annotatedObj = annotatedObj, nameContext = nameContext }

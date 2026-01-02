@@ -16,7 +16,6 @@
 -- - `gen`     : Build MAst from the main file.
 -- - `parse`   : Build DocTree from MAst.
 -- - `extract` : Extract ObjectTree from DocTree.
--- - `label`   : Label ObjectTree with semantic metadata.
 -- - `name`    : Create a Namespace to lookup url of a name depending on the context.
 -- - `render`  : Generate documentation files.
 -- - `serve`   : Start preview server.
@@ -30,15 +29,12 @@ include "./options/cast-options.mc"
 include "./scanning/scanner.mc"
 include "./mast-gen/mast-generator.mc"
 include "./parsing/parser.mc"
-include "./new-parsing/weak-doctree.mc"
-include "./extracting/extracter.mc"
-include "./labeling/labeler.mc"
 include "./naming/namer.mc"
 include "./rendering/renderer.mc"
 include "./server/server.mc"
 
 type ExecutionContext =
-    use TokenReader in use WeakDoctreeLang in {
+    use TokenReader in use Objects in {
     opt: DocGenOptions,
     userOutputFolder: String,
     currentFile: String,
@@ -48,10 +44,9 @@ type ExecutionContext =
 
     tokens: [Token],
     docTree : Option DocTree,
-    weakDocTree : Option WeakDoctreeNode,
     ast: Option MAst,
     searchDatas: HashMap String String,
-    object: Option ObjectTree,
+    object: Option Object,
     nameContext: Option NameContext
 }
 
@@ -68,7 +63,6 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
               files = files,
               tokens = [],
               docTree = None {},
-              weakDocTree = None {},              
               ast = None {},
               object = None {},
               nameContext = None {}
@@ -106,7 +100,6 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
 
         tokens = [],
         docTree = None {},
-        weakDocTree = None {},  
         object = None {},
         ast = None {},
         nameContext = None {},
@@ -128,32 +121,23 @@ let parse : Step =  lam ctx.
     match ctx.ast with Some ast then
     let log = buildLogger ctx "Parsing" in
     let doctree = parse log ctx.currentFile ast in
-    let weak = doctree2weakDocTree doctree in
-    { ctx with docTree = Some doctree, weakDocTree = weak }
+    { ctx with docTree = Some doctree }
     else crash "ast" "parse" "gen"
     
-let extract : Step =  lam ctx.
+let extract : Step = use Objects in lam ctx.
     match ctx.docTree with Some docTree then
-    let log = buildLogger ctx "Extracting" in 
-    let opt = getExtractingOption ctx.opt (pathIsInStdlib ctx.currentFile) ctx.longestPrefix log in
-    { ctx with object = Some (extract opt docTree ) }
+    { ctx with object = Some (ObjUtest (objDefaultDatas ())) }
     else crash "doc tree" "extract" "parse"
-
-let label : Step =  lam ctx.
-    match (ctx.object, ctx.ast) with (Some object, Some ast) then
-    let log = buildLogger ctx "Labeling" in    
-    { ctx with object = Some (label log ctx.longestPrefix object ast) }
-    else crash "object" "label" "extract"
 
 let name : Step =  lam ctx.
     match ctx.object with Some object then
     let log = buildLogger ctx "Naming" in
     let opt = getNamingOption ctx.opt in
     match name log opt object with {
-        annotatedObjTree = annotatedObjTree,
+        annotatedObj = annotatedObj,
         nameContext = nameContext
     } in
-    { ctx with nameContext = Some nameContext, object = Some annotatedObjTree }
+    { ctx with nameContext = Some nameContext, object = Some annotatedObj }
     else crash "object" "name" "extract"
 
 let render : Step =  lam ctx.
