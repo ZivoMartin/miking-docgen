@@ -22,45 +22,32 @@ let changeExt : (String -> String -> String) = lam fileName. lam ext.
 
 utest changeExt "file.txt" "md" with "file.md"
 utest changeExt "noext" "md" with "noext.md"
-
--- Splits an array `arr` into { left, right } at the first element matching predicate `f`.
+      
+-- Splits an array `seq` into (left, right) at the first element matching predicate `f`.
 -- The matched element goes in `left`.
-let splitOnL : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. lam arr.
-    recursive let work = lam arr.
-        switch arr
-        case [] then { left = [], right = [] }
-        case [x] ++ rest then
-            if f x then
-                { left = [x], right = rest }      
-            else
-                let res = work rest in
-                { res with left = cons x res.left }
-        end in
-    work arr
+-- If nothing matches, the function returns ('seq', []).
+let splitOnL : all a. (a -> Bool) -> [a] -> ([a], [a])  = lam p. lam seq.
+    match findi p seq
+    with Some i then splitAt seq (addi i 1)
+    else (seq, [])
 
-utest splitOnL (lam x. eqi x 3) [1,2,3,4,5] with { left = [1,2,3], right = [4,5] }
-utest splitOnL (lam x. eqi x 9) [1,2,3] with { left = [1,2,3], right = [] }
-utest splitOnL (lam x. true) [1,2,3] with { left = [1], right = [2,3] }
+utest splitOnL (lam x. eqi x 3) [1,2,3,4,5] with ([1,2,3], [4,5])
+utest splitOnL (lam x. eqi x 3) [1,2,3] with ([1,2,3], [])
+utest splitOnL (lam x. eqi x 9) [1,2,3] with ([1,2,3], [])
+utest splitOnL (lam x. true) [1,2,3] with ([1], [2,3])
     
--- Splits an array `arr` into { left, right } just before the first element matching predicate `f`.
+-- Splits an array `arr` into (left, right) just before the first element matching predicate `f`.
 -- The matched element stays in `right`.
-let splitOnR : all a. (a -> Bool) -> [a] -> { left: [a], right: [a] } = lam f. lam arr.
-    recursive let work = lam arr.
-        switch arr
-        case [] then { left = [], right = [] }
-        case [x] ++ rest then
-            if f x then
-                { left = [], right = arr }      
-            else
-                let res = work rest in
-                { res with left = cons x res.left }
-        end in
-    work arr
+-- If nothing matches, the function returns ('seq', []).
+let splitOnR : all a. (a -> Bool) -> [a] -> ([a], [a]) = lam p. lam seq.
+    match findi p seq
+    with Some i then splitAt seq i
+    else (seq, [])
 
-utest splitOnR (lam x. eqi x 3) [1,2,3,4,5] with { left = [1,2], right = [3,4,5] }
-utest splitOnR (lam x. eqi x 9) [1,2,3] with { left = [1,2,3], right = [] }
-utest splitOnR (lam x. true) [1,2,3] with { left = [], right = [1,2,3] }
-
+utest splitOnR (lam x. eqi x 3) [1,2,3,4,5] with ([1,2], [3,4,5]) 
+utest splitOnR (lam x. eqi x 9) [1,2,3] with ([1,2,3], [])
+utest splitOnR (lam x. eqi x 3) [1,2,3] with ([1,2], [3])
+utest splitOnR (lam x. true) [1,2,3] with ([], [1,2,3])
 
 let hmTraits = hashmapStrTraits
 let hmInsert = lam x. hashmapInsert hmTraits x
@@ -110,6 +97,7 @@ utest normalizePath "../../repo2" with "../../repo2"
 utest normalizePath "./a/./b/../c" with "a/c"
 utest normalizePath "/a/b/../../c" with "/c"
 
+
 -- Resolves a path based on current location and target.
 -- If the target is absolute, it is returned normalized.
 -- If the file exists at the concatenated location, it s returned.
@@ -138,35 +126,23 @@ let readOrNever : String -> String = lam fileName.
     else
         error (join ["Failed to read a file: file ", fileName, " doesn't exists."])
 
--- Returns the longest common prefix between two strings.
-let strLongestCommonPrefix : String -> String -> String = lam a. lam b.
-    match a with "" then ""
-    else match b with "" then ""
-    else match findi (lam x. neqChar x.0 x.1) (zip a b) with Some i then subsequence a 0 i
-    else if gti (length a) (length b) then b
-    else a
-
-
 -- Concatenates two lists if the first one does not satisfy the given predicate.
 let concatIfNot : all a. [a] -> ([a] -> Bool) -> [a] -> [a] =
     lam x1. lam f. lam x2. if not (f x1) then concat x1 x2 else x1
-
 
 -- Counts how many elements of a list satisfy the given predicate.
 let count : all a. (a -> Bool) -> [a] -> Int = lam f. lam arr.
     foldl (lam counter. lam x. if f x then addi 1 counter else counter) 0 arr
 
-
 -- Trims whitespace and newlines at the beginning and end of a string.
 let strFullTrim = lam s.
   recursive
-  let work = lam s.
-    if eqString s ""
-    then s
-    else match head s with '\n' | ' ' | '\t' then work (tail s)
+  let trim = lam s.
+    if null s then s
+    else match head s with '\n' | ' ' | '\t' then trim (tail s)
     else s
   in
-  reverse (work (reverse s))
+  trim (reverse (trim (reverse s)))
 
 let pwd = sysGetCwd ()
 
@@ -207,9 +183,9 @@ let sysRemoveSrcFiles : String -> ReturnCode = lam dir.
   ]
     
 
-let strSplitOnce : all a. String -> Char -> Option { left: String, right: String } = lam s. lam mid.
+let strSplitOnce : all a. String -> Char -> Option (String, String)  = lam s. lam mid.
     optionMap (lam i.
-       { left = subsequence s 0 i, right = subsequence s (addi 1 i) (length s) }
+        (subsequence s 0 i, subsequence s (addi 1 i) (length s))
        ) (findi (eqChar mid) s)
 
 let strCount : String -> Char -> Int = lam s. lam c. length (filter (eqChar c) s)
@@ -235,7 +211,6 @@ let strContains : String -> String -> Bool = lam needle. lam haystack.
       then true
       else work (addi i 1)
     in work 0
-
 
 utest strContains "ell" "Hello" with true
 utest strContains "Hello" "Hello" with true
@@ -264,14 +239,43 @@ utest strContains "ana" "banana" with true
 utest strContains "nana" "banana" with true
 utest strContains "naan" "banana" with false
 
-
-let stripEndingNewlines =
+let strStripEndingNewlines =
   lam s.
   let reversed = reverse s in
-  match splitOnR (lam c. not (eqChar '\n' c)) reversed with { right = s} in
+  match splitOnR (lam c. not (eqChar '\n' c)) reversed with (_, s) in
   reverse s
+
+-- Returns the longest common prefix between two strings.
+let strLongestCommonPrefix : String -> String -> String = lam a. lam b.
+    match a with "" then ""
+    else match b with "" then ""
+    else match findi (lam x. neqChar x.0 x.1) (zip a b) with Some i then subsequence a 0 i
+    else if gti (length a) (length b) then b
+    else a
 
 let strLongestCommonPrefixArray : [String] -> String =
     lam s.
     if null s then "" else
     foldl strLongestCommonPrefix (head s) (tail s) 
+
+let strSkipLines : String -> Int -> Option (String, String) =
+    recursive let work =
+        lam skiped. lam s. lam n.
+
+        if eqi n 0 then Some (reverse skiped, s) else
+        if null s then None {} else
+        
+        let c = head s in
+        let updatedN = if eqChar c '\n' then (subi n 1) else n in
+        work (cons c skiped) (tail s) updatedN
+    in
+    work ""
+
+let strWalkTo : String -> Int -> Int -> Option (String, String) =
+    lam s. lam x. lam y.
+    optionBind (strSkipLines s y) (lam skipedLines.
+        match skipedLines with (skiped, rest) in
+        if lti x (length rest) then
+            match splitAt rest x with (skiped2, rest) in
+            Some (concat skiped skiped2, rest)
+        else None {})

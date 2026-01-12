@@ -12,7 +12,6 @@ lang ObjectInterface = MExprAst
         namespace: String,
         sourceCode: SourceCode,
         isStdlib: Bool,
-        renderIt: Bool,
         id: Int
     }
 
@@ -41,15 +40,19 @@ lang ObjectInterface = MExprAst
     sem objWithoutChildren =
     | obj -> objMapChildren obj (lam. [])
 
-    sem objAddChildren : Object -> Objet -> Object
+    sem objAddChild =
+    | obj -> lam child. objMapChildren obj (cons child)
+
+    sem objAddChildren =
+    | obj -> lam children. objMapChildren obj (concat children)    
+
     sem objReverseChildren =
-    | obj -> lam child.
-      let children = objChildren obj in
-      let children = reverse children in
-      objSetChildren obj children
+    | obj -> objMapChildren obj reverse
 
     sem objToString : Object -> String
     sem objGetFirstWord : Object -> String
+    
+    -- TODO: See if we can remove one of them
     sem objHasUrl  : Object -> Bool
     sem objHasLink : Object -> Bool
     sem objHasTests : Object -> Bool    
@@ -88,10 +91,8 @@ lang ObjectInterface = MExprAst
     sem objSourceCode = | obj -> (objDatas obj).sourceCode
     sem objNamespace = | obj -> (objDatas obj).namespace
     sem objIsStdlib = | obj -> (objDatas obj).isStdlib
-    sem objRenderIt = | obj -> (objDatas obj).renderIt
     sem objId = | obj -> (objDatas obj).id
 
-    -- Object updaters (immutable setters).
     sem objWithName =
     | obj -> lam name. objSetField obj (lam d. { d with name = name })
 
@@ -103,9 +104,6 @@ lang ObjectInterface = MExprAst
 
     sem objWithSourceCode =
     | obj -> lam sourceCode. objSetField obj (lam d. { d with sourceCode = sourceCode })
-
-    sem objWithRenderIt =
-    | obj -> lam renderIt. objSetField obj (lam d. { d with renderIt = renderIt })
 
     sem objWithId =
     | obj -> lam id. objSetField obj (lam d. { d with id = id })
@@ -167,9 +165,8 @@ lang ObjectInterface = MExprAst
     sem objDefaultDatas =
     | () -> {
         name = "",
-        doc = "",
+        doc = objDefaultDoc (),
         namespace = "",
-        renderIt = false,
         isStdlib = false,
         sourceCode = sourceCodeEmpty (),
         id = 0
@@ -224,11 +221,6 @@ lang ObjProgram = ObjectInterface
     sem objHasUrl =
     | ObjProgram {} -> true
 
-    sem objSourceCode =
-    | ObjProgram { children = children } ->
-      join (map objSourceCode children)
-      
-
     sem objPrettyPrint =
     | ObjProgram {} -> ""
 
@@ -253,8 +245,12 @@ lang ObjInclude = ObjectInterface
 
     sem objSetChildren =
     | ObjInclude f & obj -> lam children.
-      if neqi 1 (length children) then extractingWarn "Inlude nodes should only have one children"; obj
-      else ObjInclude { f with child = Some (head children)}
+      let l = length children in
+      switch l
+      case 0 then ObjInclude { f with child = None {} }
+      case 1 then ObjInclude { f with child = Some (head children) }
+      case _ then extractingWarn (join ["Inlude nodes should only have one or 0 children, received ", int2string l]) ; obj
+      end
 
     sem objChildren =
     | ObjInclude { child = Some child } -> [child]
@@ -286,7 +282,7 @@ end
 lang ObjLet = ObjectInterface
 
     syn Object =
-    | ObjLet { rec : Bool, args : [String], ty: Option Type, datas: ObjectDatas }
+    | ObjLet { ty: Option Type, datas: ObjectDatas }
 
     sem objDatas =
     | ObjLet { datas = datas } -> datas
@@ -295,14 +291,7 @@ lang ObjLet = ObjectInterface
     | ObjLet f -> lam datas. ObjLet { f with datas = datas}
 
     sem objToString =
-    | ObjLet { rec = rec, args = args, ty = ty } ->
-            join [
-                "ObjLet, recursive: ",
-                bool2string rec,
-                ", args: [",
-                strJoin ", " args,
-                "]"
-            ]
+    | ObjLet { ty = ty } -> "ObjLet"
 
     sem objGetFirstWord =
     | ObjLet {} -> "let"
@@ -318,7 +307,7 @@ lang ObjLet = ObjectInterface
 
     sem objPrettyPrint =
     | ObjLet { rec = rec, args = args } & obj ->
-      join [if rec then "recursive " else "", "let ", objName obj, " ", strJoin " " args]
+      join ["let ", objName obj]
 
     sem objHasTests =
     | ObjLet {} -> true
@@ -366,7 +355,7 @@ end
 lang ObjType = ObjectInterface
 
     syn Object =
-    | ObjType { t: Option String, datas: ObjectDatas }
+    | ObjType { t: Option Type, datas: ObjectDatas }
 
     sem objDatas =
     | ObjType { datas = datas } -> datas
@@ -375,8 +364,8 @@ lang ObjType = ObjectInterface
     | ObjType f -> lam datas. ObjType { f with datas = datas }
 
     sem objToString =
-    | ObjType { t = t } ->
-        join ["ObjType", match t with Some x then concat ", " x else ""]
+    | ObjType {} ->
+        "ObjType"
 
     sem objGetFirstWord =
     | ObjType {} -> "type"
@@ -485,7 +474,7 @@ end
 lang ObjCon = ObjectInterface
 
     syn Object =
-    | ObjCon { t: String, parentType: String, datas: ObjectDatas }
+    | ObjCon { t: Type, parentType: String, datas: ObjectDatas }
 
     sem objDatas =
     | ObjCon { datas = datas } -> datas
@@ -494,7 +483,7 @@ lang ObjCon = ObjectInterface
     | ObjCon f -> lam datas. ObjCon { f with datas = datas }
 
     sem objToString =
-    | ObjCon { t = t, parentType = parentType } -> join ["ObjCon: ", t, " with parent: ", parentType]
+    | ObjCon { t = t, parentType = parentType } -> join ["ObjCon with parent: ", parentType]
 
     sem objGetFirstWord =
     | ObjCon {} -> "con"
@@ -537,13 +526,13 @@ lang ObjMexpr = ObjectInterface
     | ObjMexpr {} -> "mexpr"
 
     sem objHasUrl =
-    | ObjMexpr {} -> true
+    | ObjMexpr {} -> false
 
     sem objPrettyPrint =
     | ObjMexpr {} -> "mexpr"
 
     sem objHasLink =
-    | ObjMexpr {} -> true
+    | ObjMexpr {} -> false
 
     sem objHasName =
     | ObjMexpr {} -> false
@@ -571,10 +560,10 @@ lang ObjUtest = ObjectInterface
     | ObjUtest {} -> "utest"
 
     sem objHasUrl =
-    | ObjUtest {} -> true
+    | ObjUtest {} -> false
 
     sem objHasLink =
-    | ObjUtest {} -> true
+    | ObjUtest {} -> false
 
     sem objHasName =
     | ObjUtest {} -> false
@@ -582,7 +571,7 @@ lang ObjUtest = ObjectInterface
 end
 
 ----------------------------------------------------------------------
--- Combine all object-kind languages
+-- Combine all object languages
 ----------------------------------------------------------------------
 lang Objects =
     ObjProgram +

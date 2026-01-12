@@ -31,7 +31,7 @@
 -- The entire system is composed at the bottom into a single `BreakerChooser`.
 
 
-include "./lexing/token-readers.mc"
+include "./token-readers.mc"
 
 
 -- Interface for a BreakerChooser; all choosers implement this contract.

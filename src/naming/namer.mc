@@ -27,11 +27,11 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
             let res = foldl(
                 lam acc. lam child.
                 let res = work child acc.ctx acc.nextId in
-                { res with obj = objMapChildren obj (cons res.obj)}
+                { res with obj = objAddChild acc.obj res.obj }
             ) { nextId = nextId, ctx = ctx, obj = objWithoutChildren obj } children
             in
 
-            { res with obj = objMapChildren obj reverse }
+            { res with obj = objReverseChildren res.obj }
         in
         
         let annotate : NameContext -> Object -> Int -> WorkRes =
@@ -42,7 +42,7 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
             let nextId = addi 1 nextId in
 
             let ctx = 
-                if objHasUrl obj then
+                if objHasLink obj then
                     let name = objName obj in
                     let namespace = objNamespace obj in
                     let isStdlib = objIsStdlib obj in
@@ -58,7 +58,7 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
                         "id=", int2string entry.id, "\n"]);
 
                     let nameMap =
-                        if objRenderIt obj then nameMapInsert ctx.nameMap name namespace entry
+                        if objHasUrl obj then nameMapInsert ctx.nameMap name namespace entry
                         else ctx.nameMap
                     in
 
@@ -194,9 +194,7 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
             let ctx = { ctx with typeNamespaceSet = typeNamespaceInsertNewType ctx.typeNamespaceSet namedObj } in
             annotateAndProcess obj ctx nextId originalChildren
         case ObjInclude {} | ObjProgram {} then processAndAnnotate obj ctx nextId originalChildren
-        case _ then
-             if objRenderIt obj then annotateAndProcess obj ctx nextId originalChildren
-             else { ctx = ctx, nextId = nextId, obj = obj }
+        case _ then annotateAndProcess obj ctx nextId originalChildren
         end
     in
 

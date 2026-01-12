@@ -147,7 +147,7 @@ lang MdxRenderer = RendererInterface
         match splitOnR (lam l.
             let trimmed = strTrim l in
             not (or (strStartsWith "--" trimmed) (null trimmed))
-        ) (reverse split) with { right = right } in
+        ) (reverse split) with (_, right)  in
         let code = strJoin "\n" (reverse right) in
         renderHidenCode "Show Implementation" "Hide Implementation" code true opt
 
@@ -165,7 +165,7 @@ lang MdxRenderer = RendererInterface
         let link = objGetMyLink data.obj opt in
         let linkLength = length link in
         let link = subsequence link 0 (subi linkLength 3) in -- remove extension for Docusaurus
-        let link = if objRenderIt data.obj then join [" link=\"", link, "\""] else "" in 
+        let link = if objHasUrl data.obj then join [" link=\"", link, "\""] else "" in 
         
         let title = objTitle data.obj in
         let form  = objGetFirstWord data.obj in

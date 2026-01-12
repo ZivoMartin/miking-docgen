@@ -1,29 +1,3 @@
--- # Execution Context
---
--- This module defines the `ExecutionContext`, the central state threaded through all
--- stages of the documentation generation pipeline.
---
--- ## ExecutionContext fields
--- - `opt`      : Parsed CLI options.
--- - `mainFile` : Path of the main input file.
--- - `tokens`   : Tokens from the lexer (not always used directly).
--- - `docTree`  : Parsed documentation tree, if available.
--- - `ast`      : The Miking AST, if generated.
--- - `object`   : The extracted object tree, if built.
---
--- ## Step functions
--- Each stage of the pipeline is a `Step = ExecutionContext -> ExecutionContext`.
--- - `gen`     : Build MAst from the main file.
--- - `parse`   : Build DocTree from MAst.
--- - `extract` : Extract ObjectTree from DocTree.
--- - `name`    : Create a Namespace to lookup url of a name depending on the context.
--- - `render`  : Generate documentation files.
--- - `serve`   : Start preview server.
---
--- If a step is called out of order, the `crash` function raises an error with details.
---
--- The ExecutionContext also provides a logger for each steps.
-
 include "./options/docgen-options.mc"
 include "./options/cast-options.mc"
 include "./scanning/scanner.mc"
@@ -43,11 +17,10 @@ type ExecutionContext =
     renderedMap: RenderedMap,
 
     tokens: [Token],
-    docTree : Option DocTree,
     ast: Option MAst,
-    searchDatas: HashMap String String,
     object: Option Object,
-    nameContext: Option NameContext
+    nameContext: Option NameContext,
+    searchDatas: HashMap String String
 }
 
 let buildLogger : ExecutionContext -> String -> Logger =
@@ -62,7 +35,6 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
               currentFile = path,
               files = files,
               tokens = [],
-              docTree = None {},
               ast = None {},
               object = None {},
               nameContext = None {}
@@ -76,7 +48,7 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
         let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
                           (hashmap2seq ctx.searchDatas) in
         renderSearchFile searchDatas ropt;
-        printLn "Done !";
+        printLn "Done!";
         None {}
         
 let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
@@ -99,7 +71,6 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
         renderedMap = renderedMapEmpty (),
 
         tokens = [],
-        docTree = None {},
         object = None {},
         ast = None {},
         nameContext = None {},
@@ -117,17 +88,13 @@ let gen : Step = lam ctx.
     let mast = buildMAstFromFile log ctx.currentFile in
     { ctx with ast = Some mast }
 
-let parse : Step =  lam ctx.
+let parse : Step = lam ctx.
     match ctx.ast with Some ast then
     let log = buildLogger ctx "Parsing" in
-    let doctree = parse log ctx.currentFile ast in
-    { ctx with docTree = Some doctree }
+    let opt = getParsingOptions log ctx.currentFile ctx.longestPrefix in
+    let obj = parse opt ast in
+    { ctx with object = Some obj }
     else crash "ast" "parse" "gen"
-    
-let extract : Step = use Objects in lam ctx.
-    match ctx.docTree with Some docTree then
-    { ctx with object = Some (ObjUtest (objDefaultDatas ())) }
-    else crash "doc tree" "extract" "parse"
 
 let name : Step =  lam ctx.
     match ctx.object with Some object then

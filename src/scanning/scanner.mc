@@ -8,6 +8,7 @@ let scan : ScanningOptions -> ScanningOutput =
     lam opt.
 
     if null opt.files then defaultScanningOutput () else
+    let first = normalizePath (join [pwd, "/", head opt.files]) in
 
     let files =
         foldl (lam files: [String]. lam file: String.
@@ -19,7 +20,8 @@ let scan : ScanningOptions -> ScanningOutput =
         ) [] opt.files
     in
 
-    let files = cons "string.mc" files in
+    -- TODO: Uncomment here
+    -- let files = cons "string.mc" files in
     
     let normalizeFiles : String -> [String] -> [String] = lam pos.
         map (lam f.
@@ -36,7 +38,6 @@ let scan : ScanningOptions -> ScanningOutput =
     type Visited = HashMap String () in
     type Ctx = { visited : Visited, set: InputFileSet } in
 
-
     recursive
 
     let go : Ctx -> [String] -> Ctx =
@@ -44,11 +45,12 @@ let scan : ScanningOptions -> ScanningOutput =
         foldl (
             lam ctx. lam f.
                 if hmMem f ctx.visited then ctx
-                else scanFile { ctx with visited = hmInsert f () ctx.visited } f
+                else scanFile ctx f
         ) ctx files
 
     let scanFile : Ctx -> String -> Ctx =
         lam ctx. lam pos.
+        let ctx = { ctx with visited = hmInsert pos () ctx.visited } in
         match parsingOpenFile pos with Some { includes = includes } then
             let pos = dirname pos in
             let includes = normalizeFiles pos includes in
@@ -77,7 +79,9 @@ let scan : ScanningOptions -> ScanningOutput =
         else join [opt.outputFolder, "/", opt.stdlibFolder]
     in
 
-    let files = if pathIsInStdlib (head files) then reverse files else files in
+    let originalLength = length files in
+    let files = filter (lam f. not (eqString first f)) files in
+    let files = if eqi (length files) originalLength then files else concat files [first] in
 
     let files =
         map (

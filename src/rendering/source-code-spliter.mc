@@ -1,4 +1,4 @@
-include "../parsing/lexing/token-readers.mc"
+include "../parsing/token-readers.mc"
 include "./rendering-data.mc"
 
 -- The result of a split operation.
@@ -18,7 +18,7 @@ let sourceCodeSplit : SourceCode -> SourceCodeSplit =
 
         let splitAndReturn = lam split: String.
             match splitOnL (lam w. match w with { word = word } in eqString (lit word) split) rest with
-                { left = left, right = right } in
+                (left, right) in
             finish (cons x1 left) right
         in
 
@@ -28,7 +28,7 @@ let sourceCodeSplit : SourceCode -> SourceCodeSplit =
         case "utest" | "mexpr" then finish [x1] rest
         case "lang" then
             match splitOnL (lam w. match w with { word = TokenWord {} } then true else false) rest with
-                { left = left, right = right } in
+                (left, right) in
             finish (cons x1 left) right
 
         case _ then finish [] arr

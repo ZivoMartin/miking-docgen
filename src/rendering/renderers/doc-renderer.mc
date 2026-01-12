@@ -61,7 +61,7 @@ lang DocContentArgHookLang = DocContentInterface
 
     sem docContentNext =
     | ['@'] ++ s ->
-      match splitOnR (lam c. not (isAlpha c)) s with { left = hook, right = stream } in
+      match splitOnR (lam c. not (isAlpha c)) s with (hook, stream) in
       { stream = stream, content = Some (DocContentArgHook hook)}
       
 
@@ -83,7 +83,7 @@ lang DocContentObjHookLang = DocContentInterface
 
     sem docContentNext =
     | ['#'] ++ s ->
-      match splitOnR (lam c. not (isAlpha c)) s with { left = hook, right = stream } in
+      match splitOnR (lam c. not (or (isAlpha c) (eqChar '.' c))) s with (hook, stream)  in
       { stream = stream, content = Some (DocContentObjHook hook)}
 
 end
@@ -175,7 +175,7 @@ lang DocObjectArgLang = DocObjectInterface
         match docObjectFetchDoc lines with { doc = doc, rest = rest } in
         
         match
-            match strSplitOnce arg ':' with Some { left = arg, right = t } then
+            match strSplitOnce arg ':' with Some (arg, t) then
                 let t = strTrim t in
                 { arg = arg, t = Some t }
             else { arg = arg, t = None {} }
@@ -213,7 +213,7 @@ lang DocObjectReturnLang = DocObjectInterface
       match
          if strStartsWith "[" line then
              let line = tail line in
-             match splitOnR (eqChar ']') line with { left = left, right = right } in
+             match splitOnR (eqChar ']') line with (left, right)  in
              { t = Some left, line = if strStartsWith "]" right then tail right else right }
          else { t = None {}, line = line }
       with { t = t, line = line } in
@@ -305,7 +305,7 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
                return = return
              } then
              let renderClean = lam obj. lam x. lam opt.
-               stripEndingNewlines (renderDocObject obj renderHooks x opt)
+               strStripEndingNewlines (renderDocObject obj renderHooks x opt)
              in
 
              let mkSection = lam title. lam content.

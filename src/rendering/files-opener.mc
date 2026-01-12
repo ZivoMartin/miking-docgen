@@ -18,7 +18,7 @@ type FileOpenerResult = {
 let fileOpenerOpen : use Objects in Object -> RenderingOptions -> Option FileOpenerResult =
     use ObjectsRenderer in lam obj. lam opt.
     
-    if objRenderIt obj then
+    if objHasUrl obj then
         let path = concat opt.outputFolder (objGetMyLocation obj opt) in
         match fileWriteOpen path with Some wc then
             Some {

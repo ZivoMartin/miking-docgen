@@ -15,7 +15,7 @@ let preprocess : use Objects in Object -> RenderingOptions -> () = use ObjectsRe
         match obj with ObjInclude { child = Some child } then
             preprocessRec pathMap child
         else
-            if objRenderIt obj then 
+            if objHasUrl obj then 
                let path = dirname (join [opt.outputFolder, objGetMyLocation obj opt]) in
                let map = hmInsert path () pathMap in
                foldl preprocessRec map (objChildren obj)

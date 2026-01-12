@@ -10,8 +10,8 @@
 
 include "./docgen-options.mc"
 include "../scanning/scanning-options.mc"
+include "../parsing/parsing-options.mc"
 include "../server/server-options.mc"
-include "../extracting/extracting-options.mc"
 include "../rendering/rendering-options.mc"
 include "../naming/naming-options.mc"
 
@@ -22,25 +22,20 @@ let getScanningOptions : DocGenOptions -> ScanningOptions = lam opt.
        stdlibFolder = opt.stdlibFolder
     }
 
--- Convert a global `DocGenOptions` record and a link string representing the URL of the opening file.
--- into a `ServerOptions` record used by the server.
-let getServeOption : DocGenOptions -> String -> ServerOptions  = lam opt. lam link.
+let getParsingOptions : Logger -> String -> String -> ParsingOptions =
+    lam log. lam basePath. lam longestPrefix.
     {
-        fmt = opt.fmt,
-        folder = opt.outputFolder,
-        noOpen = opt.noOpen,
-        link = link
-    }
-
-let getExtractingOption : DocGenOptions -> Bool -> String -> Logger -> ExtractingOptions =
-    lam opt. lam rootIsStdlib. lam longestPrefix. lam log.
-    {
-        depth = opt.letDepth,
-        rootIsStdlib = rootIsStdlib,
         log = log,
+        basePath = basePath,
         longestPrefix = longestPrefix
     }
 
+let getNamingOption : DocGenOptions -> NamingOptions = lam opt.
+    {
+        fmt = opt.fmt,
+        urlPrefix = opt.urlPrefix,
+        stdlibFolder = opt.stdlibFolder
+    }
 
 -- convert a global `DocGenOptions` record into a `RenderingOptions` record
 -- used by the rendering step.
@@ -60,9 +55,12 @@ let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderedMap -
         renderedMap = renderedMap
     }
 
-let getNamingOption : DocGenOptions -> NamingOptions = lam opt.
+-- Convert a global `DocGenOptions` record and a link string representing the URL of the opening file.
+-- into a `ServerOptions` record used by the server.
+let getServeOption : DocGenOptions -> String -> ServerOptions  = lam opt. lam link.
     {
         fmt = opt.fmt,
-        urlPrefix = opt.urlPrefix,
-        stdlibFolder = opt.stdlibFolder
+        folder = opt.outputFolder,
+        noOpen = opt.noOpen,
+        link = link
     }

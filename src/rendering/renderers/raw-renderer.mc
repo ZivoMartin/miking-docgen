@@ -83,7 +83,7 @@ lang RawRenderer = RendererInterface
     | opt -> let opt = fixOptFormat opt in
         match data with { obj = obj } in
         let link =
-            if objRenderIt obj then
+            if objHasUrl obj then
                 let link = objGetMyLink obj opt in
                 let link = concat (if strStartsWith "/" link then "" else "/") link in
                 renderGotoLink link opt
@@ -110,16 +110,16 @@ lang RawRenderer = RendererInterface
 
     sem renderPureDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
-        let type2str = lam t. type2str t in
         let name = objName obj in
         switch obj
         case ObjLet { ty = ty } then
             let t = match ty with Some t then type2str t else "?" in
             join ["let ", name, " : ", t]
         case ObjType { t = t } then
-            join ["type ", name, match t with Some t then concat " : " t else ""]
+            let t = match t with Some t then type2str t else "" in
+            join ["type ", name, if null t then "" else concat " : " t]
         case ObjCon { t = t } then
-            join ["con ", name, " : ", t]
+            join ["con ", name, " : ", type2str t]
         case (ObjMexpr {} | ObjUtest {}) & form then
             objGetFirstWord form
         case ObjLang {} then
@@ -152,7 +152,7 @@ lang RawRenderer = RendererInterface
                 (map (lam cons.
                  let name = objName cons in
                  match cons with ObjCon { t = t } then
-                     let right = join [name, " ", t] in
+                     let right = join [name, " ", type2str t] in
                      let right = strToSourceCode right in
                      let right = renderSourceCode right (Some cons) opt in
                      let doc = objTryGetDoc cons in
@@ -197,7 +197,7 @@ lang RawRenderer = RendererInterface
                      buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) subnamespace
                   else
                     let parentName =
-                        match strSplitOnce parentName '-' with Some { right = right } then right
+                        match strSplitOnce parentName '-' with Some (_, right) then right
                         else parentName
                     in
                     objGetLink obj opt parentName
@@ -252,35 +252,35 @@ lang RawRenderer = RendererInterface
             join (map (lam s. renderWord ( { word = s, kind = CodeDefault {} } ) obj opt) skiped)
         in
 
-        switch word
-        case { word = TokenInclude { content = content, skiped = skiped } } then
+        match word with { word = TokenInclude { content = content, skiped = skiped } } then
             join [renderKeyword "include" opt, renderSkiped skiped, renderString (join ["\"", (renderRemoveCodeForbidenChars content opt), "\""]) opt]    
-        case { word = word, kind = kind } then
-            let renderer = (
-            let lit = lit word in
-            switch word
-            case TokenStr {} then renderString
-            case TokenMultiLineComment {} then renderMultiLineComment
-            case TokenComment {} then renderComment
-            case _ then
-                switch kind
-                case CodeKeyword {} then renderKeyword
-                case CodeName {} then renderVar
-                case CodeType {} then (lam word.
-                                      let word = match strSplitOnce word '_' with Some { left = left, right = word } then word else word in
-                                      let word =
-                                          match obj with Some obj then renderHook obj word opt
-                                          else word
-                                      in
-                                      renderType word)
-                case CodeNumber {} then renderNumber
-                case CodeDefault {} then renderDefault
-                end       
-            end) in
+        else match word with { word = word, kind = kind } in
+            let renderer = 
+                let lit = lit word in
+                switch word
+                case TokenStr {} then renderString
+                case TokenMultiLineComment {} then renderMultiLineComment
+                case TokenComment {} then renderComment
+                case _ then
+                    switch kind
+                    case CodeKeyword {} then renderKeyword
+                    case CodeName {} then renderVar
+                    case CodeType {} then (lam word.
+                                          let word = match strSplitOnce word '_' with Some (left, word) then word else word in
+                                          let word =
+                                              match obj with Some obj then renderHook obj word opt
+                                              else word
+                                          in
+                                          renderType word)
+                    case CodeNumber {} then renderNumber
+                    case CodeDefault {} then renderDefault
+                    end       
+                end
+            in
+
             let word = lit word in
             let word = renderRemoveCodeForbidenChars word opt in
             renderer word opt
-        end
 
     sem renderCreateRenderingData (obj: Object) (tests: [RenderingData]) =
     | opt -> let opt = fixOptFormat opt in

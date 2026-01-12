@@ -5,7 +5,7 @@
 
 include "../global/util.mc"
 include "../global/logger.mc"
-include "../parsing/include-set.mc"
+include "./include-set.mc"
     
 include "hashmap.mc"
 
@@ -59,7 +59,10 @@ lang MultiLineCommentTokenReader = TokenReaderInterface
       | TokenMultiLineComment { content: String, lit: String }
 
     sem lit =
-        | TokenMultiLineComment { content = content, lit = lit } -> lit
+        | TokenMultiLineComment { lit = lit } -> lit
+
+    sem content =
+        | TokenMultiLineComment { content = content } -> content
 
     sem tokenToString =
         | TokenMultiLineComment {} -> "MultiLineComment"
@@ -99,6 +102,9 @@ lang CommentTokenReader = TokenReaderInterface
     sem lit =
         | TokenComment { lit = lit } -> lit        
 
+    sem content =
+        | TokenComment { content = content } -> content
+
     sem tokenToString =
         | TokenComment {} -> "Comment"
     
@@ -108,7 +114,7 @@ lang CommentTokenReader = TokenReaderInterface
             let extract =
             lam str.
                 match str with "\n" ++ xs then
-                    ("", str)                    
+                    ("\n", xs)
                 else match str with [x] ++ xs then
                     let extracted = extract xs in
                     (cons x extracted.0, extracted.1)

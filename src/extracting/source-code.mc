@@ -3,6 +3,8 @@ include "./source-code-word.mc"
 -- A linear buffer of words where `None` denotes a child-boundary placeholder.
 type SourceCode = [SourceCodeWord]
 
+let tokensToSourceCode : use TokenReader in [Token] -> SourceCode = map sourceCodeWordFormat
+
 -- Cast a string to a SourceCode by tokenizing the string until eof.
 recursive let strToSourceCode : String -> SourceCode = use TokenReader in lam s.
     match s with "" then [] else

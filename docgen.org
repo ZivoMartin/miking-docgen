@@ -9,43 +9,35 @@ Comments should be part of the structure as well
 The idea is that we will use the doctree parser in a first time, modify the others
 step on top of this interface and then write the parser for the weak doctree (and remove the
 parser of the doctree).
-** TODO Rewrite the extracter
+** DONE Rewrite the extracter
 We just want to simplify the code here I think. Also take a look to each component.
 We will keep in a first time the same object datastructure, later it will turn into
 a non-recursive datastructure.
-** TODO Rewrite the labeler
-** TODO Rewrite the namer
+** DONE Rewrite the labeler
+** DONE Rewrite the namer
 Here we will simplify the search engine a lot and the code in itself since the nested
 concept doesn't exists anymore.
-** TODO Rewrite the renderer
+** DONE Rewrite the renderer
 Big job here since the renderer highly lies on the fact that we are in a huge recursive context.
 Probably the biggest step to rework.
 We probably want to assume that nothing is recursive anymore here.
-** TODO Make sure everything works correctly with the weak DoecTree
-** TODO Simplify the Object type, we don't want it to be recursive anymore
+** DONE Simplify the Object type, we don't want it to be recursive anymore
 ** TODO Finally write the parser for the weak doctree
-** TODO Remove the old parser and rename weak doctree in doctree
+** DONE Remove the old parser and rename weak doctree in doctree
 ** TODO Make sure everything work correctly.
+** TODO Clean the whole code and remove useless parts.
 * DONE Path Managment
-CLOSED: [2025-12-07 Sun 17:12]
 ** DONE Allow providing multiple files/folders
-CLOSED: [2025-11-29 Sat 12:43]
 ** DONE Allow the user to specify where to put the stdlib files
-CLOSED: [2025-11-29 Sat 23:55]
 ** DONE Refuse Miking Docgen without any files in the arguments
-CLOSED: [2025-11-29 Sat 12:44]
 ** DONE If the first given file is part of the stdlib, do not consider any files as stdlib
-CLOSED: [2025-11-29 Sat 23:55]
 To complete the mechanisme, if the path of the root file is absolute, normalise it and
 check if it starts with stdlibLoc, otherwise, recreate the absolute path with the baseLoc
 and see if is stdlib.
 ** DONE Rewrite folder processing
-CLOSED: [2025-11-16 Sun 02:17]
 Move stdlib and non-MC files at the root, keep track of each search dataset.
 * DONE Scanning step
-CLOSED: [2025-12-09 Tue 15:59]
 ** DONE During the scanning, find all the degree 0 nodes in the include graph to reduce the amount of entry point
-CLOSED: [2025-12-08 Mon 01:06]
 This is very easy, we start with the list of all the requested files,
 then we can see the include graph as a cycle less oriented graph,
 which means that we only need to process nodes with degree 0 since
@@ -55,134 +47,78 @@ To get the degree 0 node, it's insanly easy, we read the header of each files
 to see what is imported and the 0 degree files are those that are never
 imported at any point.
 ** DONE During scaning, decide the real root of the output folder
-CLOSED: [2025-12-09 Tue 14:50]
 We basically can decide the root of the deepest file during the scanning
 since we process all the files to process. So from this information,
 when later processing a file we can guess it's final position in the
 output folder using url prefix relative to the actual root.
 ** DONE Use the longest common prefix to determine the real output folder of each file.
-CLOSED: [2025-12-09 Tue 14:50]
 ** DONE Remove the longest output prefix mechanism inside the actual processing (since we now do it beforehand)
-CLOSED: [2025-12-09 Tue 14:50]
 ** DONE Smoothly integrate the new prefix inside the processing using the prefix fields of the object
-CLOSED: [2025-12-09 Tue 14:50]
 ** DONE Integrate the scanning phase in the execution context
-CLOSED: [2025-12-08 Mon 01:07]
 * Project health
 ** DONE See if we can remove the isRootStdlib flag.
-CLOSED: [2025-12-12 Fri 00:43]
 ** DONE Factorise renderedMap logic inside the rendered map module and use custom functions
-CLOSED: [2025-12-12 Fri 23:59]
-** TODO Refactoring the extracting by adding a parse method in ObjectKind
+** DONE Refactoring the extracting by adding a parse method in ObjectKind
 ** TODO Put all the shared api in global: objects, file-opener, ...
 ** DONE Rename ObjectKinds familiy of items
-CLOSED: [2025-12-12 Fri 00:57]
 ** TODO Clean all error/warning messages
 ** TODO If a link is incorrect in a comment, display a proper warning or error message
 ** TODO Refresh the whole documentation of the project
 ** DONE Replace row by raw everywhere
-CLOSED: [2025-12-12 Fri 00:46]
 ** DONE Use strictly-lower instead of lower-or-equal in the name map (for correctness)
-CLOSED: [2025-11-26 Wed 11:35]
 ** DONE Clean “use in process” of the namer (for correctness)
-CLOSED: [2025-11-26 Wed 11:18]
 ** DONE Do not insert new lines in the documentation if a component is missing
-CLOSED: [2025-11-26 Wed 11:47]
-
 * UI Features
 ** TODO Support Markdown formatting with a flag
 ** DONE Mouse-over on hooks
-CLOSED: [2025-12-06 Sat 01:33]
 ** DONE Keep the doc formatted in the tooltip
-CLOSED: [2025-12-06 Sat 01:33]
 ** DONE Allow escaping for the # in the doc
-CLOSED: [2025-12-06 Sat 12:42]
 ** DONE For tests, only consider a test if it contains at least once the name of the tested object
-CLOSED: [2025-12-04 Thu 16:25]
 ** DONE Add keyboard shortcuts in the HTML renderer
-CLOSED: [2025-12-02 Tue 23:22]
 ** DONE Add a button to access the parent page
-CLOSED: [2025-12-03 Wed 13:21]
 ** DONE Add tests of each object on its top-level page
-CLOSED: [2025-12-04 Thu 16:25]
 ** DONE Make sure that a recursive block has acces to it's test
-CLOSED: [2025-12-04 Thu 17:06]
 ** DONE Integrate the documentation of the fields of each variants
-CLOSED: [2025-12-03 Wed 00:35]
 ** DONE Integrate the constructors of the type on the page
-CLOSED: [2025-12-04 Thu 01:16]
 ** DONE Types annotation in documentation
-CLOSED: [2025-12-06 Sat 17:03]
 ** TODO For MDX, merge the fodler name with the md description of the namespace
 ** DONE Add show/hide in HTML renderer
-CLOSED: [2025-11-21 Fri 19:13]
 ** DONE Fix test button design to match implementation
-CLOSED: [2025-11-21 Fri 19:13]
 ** DONE Refactor MDX renderer
-CLOSED: [2025-11-14 Fri 01:58]
 ** DONE Rewrite doc-renderer output processing
-CLOSED: [2025-11-21 Fri 12:22]
 ** DONE No-code flag
-CLOSED: [2025-11-15 Sat 02:21]
 * Design
 ** TODO Give a better design to the hooks that do not have any colorisation.
 ** DONE The frame of the tooltip
-CLOSED: [2025-12-07 Sun 01:19]
 ** DONE Improve the design the design of the syn-variants (especially for the top page doc)
-CLOSED: [2025-12-07 Sun 01:19]
 ** DONE Improve the design the design of the constructors (especially for the top page doc)
-CLOSED: [2025-12-07 Sun 01:19]
 ** DONE Make a great design for the kind links
-CLOSED: [2025-12-07 Sun 01:08]
 ** DONE Make a great design for the parent link
-CLOSED: [2025-12-07 Sun 01:08]
 ** DONE Fix minor ui bug
-CLOSED: [2025-12-02 Tue 23:22]
 When we click on the page make sure to close the search bar even if the focus is not on it
 ** DONE Fix the background color of the description.
-CLOSED: [2025-12-02 Tue 15:36]
 * DONE Objects strengthening
-CLOSED: [2025-12-05 Fri 17:37]
 ** DONE Keep track of all the available variant of a syntax
-CLOSED: [2025-12-01 Mon 16:34]
 ** DONE Create a real variant type which contains the name of the variant with it's type along with the documentation
-CLOSED: [2025-12-03 Wed 00:35]
 ** DONE Keep track of all the constructors of a type
-CLOSED: [2025-12-04 Thu 01:15]
 New data structure which maps name and id with objects
 ** DONE Instead of just storing the name, store the whole object in the lang namespace, with updated informations.
-CLOSED: [2025-12-01 Mon 13:01]
 ** DONE Add children to languages based on the langNamespace, probably during naming
-CLOSED: [2025-12-01 Mon 01:38]
 ** DONE Parse int.mc and bool.mc before starting, so we can correctly redirect Int, Bool, etc.
-CLOSED: [2025-11-29 Sat 16:54]
 ** DONE Build a language namespace map
-CLOSED: [2025-11-23 Sun 19:14]
 We create a map binding each language ID to its own namespace.  
 When encountering a top-level element (sem, type, con, or syn) we add it to the namespace.  
 We also parse the parent language and merge namespaces.  
 Some elements may have no associated pages — we track them and generate a new page for completeness.
-
 ** DONE Keep track of all currently used language namespaces
-CLOSED: [2025-11-23 Sun 19:14]
 Push/pop the current language usage. When pushing, fetch the language (guaranteed to exist if compilation succeeded) and add its ID to the active set.
-
 ** DONE Integrate name-context API
-CLOSED: [2025-11-25 Tue 23:55]
-
 ** DONE the documentation of a recursive block should be given to the first element of the bloc
-CLOSED: [2025-11-30 Sun 13:56]
 ** DONE Rewrite doc-renderer
-CLOSED: [2025-11-19 Wed 15:43]
 ** DONE Recover name-context
-CLOSED: [2025-11-19 Wed 15:42]
 ** DONE Cick on hooks
-CLOSED: [2025-11-24 Mon 20:58]
 ** DONE Being able to click on any subtypes
-CLOSED: [2025-11-29 Sat 12:11]
 ** DONE Being able to click on primitive subtypes
-CLOSED: [2025-11-29 Sat 12:11]   ; (merged conceptually but kept explicitly)
-
 * Follow up in MDX
 ** TODO Tooltip support.
 ** TODO Support for syntax variants visualisation
@@ -190,48 +126,39 @@ CLOSED: [2025-11-29 Sat 12:11]   ; (merged conceptually but kept explicitly)
 ** TODO Check that the JS version is still working
 ** TODO Parent link support
 * TOFIX
+** TODO We cannot alias a file because . is banned
+** TODO Handle the case where the documentation of the first object is the one of the program.
+The first object should be prioritary.
 ** TODO When a nested stdlib file is provide we get incorrect output folder.
+** TODO Make sure that the first comments are not part of the header
+If it is the case the higher object will not have it's documentation.
+** TODO Make sure that if we give an stdlib file in input the output is not considered as inStdlib.
 ** DONE Parent link is down
-CLOSED: [2025-12-06 Sat 01:33]
 ** DONE Fix the submit handling
-CLOSED: [2025-12-03 Wed 01:25]
 ** DONE The test on rec.mc fails, we should see all the rec variables.
-CLOSED: [2025-12-03 Wed 01:26]
-** TODO Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
+** DONE Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
 ** DONE Lang A has now an empty source code, which is not normal.
-CLOSED: [2025-12-03 Wed 01:25]
 ** DONE Recover doc-renderer
-CLOSED: [2025-11-19 Wed 15:43]
 ** DONE Fix folder input of outer files (covered by rewrite)
-CLOSED: [2025-11-16 Sun 02:17]
-
 ** DONE Fix the urlPrefix issue 
-CLOSED: [2025-11-29 Sat 20:57]
-
 * Optimization
+** TODO Rework the file-opener api
+We do not really need the mechanism who returns one part of the file, just read the includes
+list and return it.
 ** DONE Simplify the mast-gen step, and optimise the labeling step.
-CLOSED: [2025-12-12 Fri 11:21]
 ** DONE Skip mexpr and utest in labeling
-CLOSED: [2025-12-12 Fri 11:05]
 ** DONE Try to remove the prefix from the objects.
-CLOSED: [2025-12-12 Fri 11:21]
 ** DONE In rendering, keep track of what files we already rendered during previous steps
-CLOSED: [2025-12-12 Fri 16:42]
 ** DONE During naming, stop when the object should not be rendered anymore
-CLOSED: [2025-12-13 Sat 00:07]
 ** TODO Do not inject children from a SINGLE parent lang IF you don't already have it
 The idea is that if it comes from more than one parent then it is an assembling
 and so generate new information, but if it comes from a single parent
-and you don't add anything on it then you just duplicate informations and
+and you don't add anything on it then you just duplicate informations then
 it is an exponential waste of time.
 ** TODO Rework the hashmap API of the miking stdlib to have a non fixed amount of buckets.
 ** DONE Replace the GetMyLink fetch by a construction for the object
-CLOSED: [2025-12-04 Thu 23:17]
 ** DONE Do not call the writing functions if we don't render at the end of the day
-CLOSED: [2025-12-04 Thu 23:17]
 ** DONE Do not register objects that are not rendered during naming
-CLOSED: [2025-12-04 Thu 23:07]
 ** DONE Create buckets in the name-map
-CLOSED: [2025-12-07 Sun 14:46]
 Separate objects starting with capital letters, thoses that are nested which makes 4 buckets
 

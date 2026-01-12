@@ -124,7 +124,7 @@ let render : use Objects in RenderingOptions -> Object -> RenderingResult = use 
                 -- Build source code for the current node
                 let data = renderCreateRenderingData obj tests opt in
 
-                (if objRenderIt obj then                
+                (if objHasUrl obj then                
 
                     write (renderHeader obj opt);
                     write (renderObjTitle 1 obj opt);
