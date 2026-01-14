@@ -8,7 +8,7 @@ include "../extracting/objects.mc"
 
 lang AstStreamInterface = MExprAst + MExprPrettyPrint + Objects
 
-    type AstStreamContext = { stack: [Expr] }
+    type AstStreamContext = Expr 
 
     type AstStreamNextResult = {
         ctx: AstStreamContext,
@@ -19,15 +19,15 @@ lang AstStreamInterface = MExprAst + MExprPrettyPrint + Objects
 
     sem typeStreamHandleDecl : Decl -> AstStreamContext -> AstStreamNextResult
 
+    sem getNextInfo : AstStreamContext -> Info
+    sem getNextInfo =
+    | TmDecl ({ info = info } & tm) -> info
+    | _ -> NoInfo ()
+
     sem typeStreamNext : AstStreamContext -> Option AstStreamNextResult
     sem typeStreamNext =
-    | { stack = [TmDecl ({ decl = decl, inexpr = inexpr } & tm)] ++ stack } & ctx ->
-        let ctx = { ctx with stack = stack } in
-        let res = typeStreamHandleDecl decl ctx in
-        Some { res with ctx = { res.ctx with stack = concat res.ctx.stack [inexpr] } }
-    | { stack = [_] ++ stack } ->
-        typeStreamNext { stack = stack }
-    | { stack = [] } & ctx -> None {}
+    | TmDecl { decl = decl, inexpr = inexpr } -> Some (typeStreamHandleDecl decl inexpr)
+    | _ -> None {}
 
 end
 
@@ -37,7 +37,7 @@ lang LetAstStream = AstStreamInterface
   | DeclLet { ident = ident, body = body, tyBody = tyBody, info = info } & decl ->
       lam ctx.
       let obj = ObjLet { ty = Some tyBody, datas = objDefaultDatas () } in
-      let info = concatInfos info (infoTm (getLastNode body)) in
+      let info = concatInfos info (getNextInfo ctx) in
       { ctx = ctx, name = ident.0, info = info, obj = obj }
 
 end
@@ -49,6 +49,7 @@ lang TypeAstStream = AstStreamInterface
       lam ctx.
       let t = if eqString "<>" (type2str tyIdent) then None {} else Some tyIdent in
       let obj = ObjType { t = t, datas = objDefaultDatas () } in
+      let info = concatInfos info (getNextInfo ctx) in      
       { ctx = ctx, name = ident.0, info = info, obj = obj }
 
 end
@@ -60,7 +61,7 @@ lang ConAstStream = AstStreamInterface
       lam ctx.      
       let parentType = type2str (getReturnType tyIdent) in
       let obj = ObjCon { t = tyIdent, parentType = parentType , datas = objDefaultDatas () } in
-      let info = concatInfos info (infoTy tyIdent) in
+      let info = concatInfos info (getNextInfo ctx) in      
       { ctx = ctx, name = ident.0, info = info, obj = obj }
 end
 
@@ -70,6 +71,7 @@ lang UtestAstStream = AstStreamInterface
   | DeclUtest { info = info } ->
       lam ctx.      
       let obj = ObjUtest (objDefaultDatas ()) in
+      let info = concatInfos info (getNextInfo ctx) in
       { ctx = ctx, name = "utest", info = info, obj = obj }
 end
 
@@ -78,20 +80,25 @@ lang RecursiveAstStream = AstStreamInterface
   sem typeStreamHandleDecl =
   | DeclRecLets { bindings = bindings, info = info } ->
       lam ctx.
-      
-      let dummyNode = TmNever { ty = TyUnknown { info = NoInfo () }, info = NoInfo () } in
-      let decls = map (lam binding.
-          let decl = DeclLet binding in
-          TmDecl { decl = decl, inexpr = dummyNode , info = infoDecl decl, ty = binding.tyBody }          
-          ) bindings
+      recursive let createDecl =
+          lam bindings.
+          match bindings with [binding] ++ bindings then
+              let decl = DeclLet binding in
+              TmDecl {
+                  decl = decl,
+                  inexpr = createDecl bindings,
+                  info = infoDecl decl,
+                  ty = binding.tyBody
+              }
+          else ctx
       in
 
-      let ctx = { ctx with stack = concat decls ctx.stack } in
+      let ctx = createDecl bindings in
       optionGetOrElse
           (lam.
               parsingWarn "Parsing the first recursive binding failed.";
               let dummyObject = ObjUtest (objDefaultDatas ()) in
-              { ctx = ctx, name = "", info = info, obj = dummyObject })
+              { ctx = ctx, name = "", info = NoInfo (), obj = dummyObject })
           (typeStreamNext ctx)
 end
 
@@ -121,7 +128,7 @@ lang AstStream =
 
     sem typeStreamFromExpr : Expr -> AstStreamContext 
     sem typeStreamFromExpr =
-        | ast -> { stack = [ast] }
+    | ast -> ast
 
     -- Builds a AstStream, creates an AST via the compiler's parser. Then types this AST via compiler's typer.
     -- Note that meta vars are not removed here    

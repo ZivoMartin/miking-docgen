@@ -24,7 +24,7 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
         let process : NameContext -> Object -> Int -> [Object] -> WorkRes =
             lam ctx. lam obj. lam nextId. lam children.
 
-            let res = foldl(
+            let res = foldl (
                 lam acc. lam child.
                 let res = work child acc.ctx acc.nextId in
                 { res with obj = objAddChild acc.obj res.obj }

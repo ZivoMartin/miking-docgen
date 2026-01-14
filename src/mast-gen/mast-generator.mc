@@ -56,8 +56,6 @@ let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
           with eliminateDeadCode = false }
           with keywords = mexprExtendedKeywords } in
     
-    let pos0 = { x = 0, y = 0 } in
-
     type Arg = { acc: [String], includeSet: IncludeSet ParsingFile } in
 
     recursive let work : Arg -> String -> Arg = lam arg. lam file.

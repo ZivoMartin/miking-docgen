@@ -39,13 +39,12 @@ lang TokenReaderInterface
     sem content : Token -> String
     sem content =
     | t -> lit t
-
     
     -- Produces the next token from the input stream
     sem next : String -> Pos -> NextResult
 
     -- Utility function to build a NextResult
-    sem buildResult : Token -> Pos -> String -> NextResult 
+    sem buildResult : Token -> Pos -> String -> NextResult
     sem buildResult token pos = | stream ->  { token = token, pos = actualisePos pos token, stream = stream }
     
     -- Converts the token to a human-readable string
@@ -185,8 +184,8 @@ lang WordTokenReader = TokenReaderInterface
          | str -> lam pos.
             match str with [x] then
                 let token = TokenWord { content = [x] } in
-                { token = token, stream = "", pos = actualisePos pos token } else
-            if isSep [head str] then
+                { token = token, stream = "", pos = actualisePos pos token }
+            else if isSep [head str] then
                 let token = TokenWord { content = [head str] } in
                 { token = token, stream = tail str, pos = actualisePos pos token }
             else let arr = [head str, head (tail str)] in if isSep arr then
@@ -320,7 +319,7 @@ lang ProgramTokenReader = TokenReaderInterface
         | TokenProgram {} -> "Program"
 end
 
-let pos0 = { x = 0, y = 0 }
+let pos0 = { x = 1, y = 1 }
 
 -- Reader combining recursive, include, and program tokens
 lang ComposedWordTokenReader = IncludeTokenReader + ProgramTokenReader end

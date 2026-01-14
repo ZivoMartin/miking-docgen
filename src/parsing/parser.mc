@@ -58,41 +58,71 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
                 let obj = objWithPrefix obj longestPrefix in
 
                 match info with Info { row1 = row1, col1 = col1, row2 = row2, col2 = col2 } then
-                    -- printLn (int2string row1);
-                    -- printLn (int2string col1);
-                    -- printLn (int2string row2);
-                    -- printLn (int2string col2);
                     match pos with { x = posX, y = posY } in
-                    
                     recursive let gotoFirstWord : String -> [Token] -> Pos -> Option ([Token], Pos, String) =
                         lam rest. lam acc. lam pos.
                         switch next rest pos
-                        case { token = TokenWord {} } then Some (reverse acc, pos, rest)
                         case { token = TokenEof {} } then None {}
+                        case { token = TokenWord { content = !("recursive" | "end") } } then Some (reverse acc, pos, rest)
+                        case { token = TokenWord {}, pos = pos, stream = rest } then
+                            let rest = if null rest then rest else tail rest in -- We consume the separator before the let.
+                            gotoFirstWord rest acc pos
                         case { token = token, pos = pos, stream = rest } then gotoFirstWord rest (cons token acc) pos
                         end
                     in
-
-                    match gotoFirstWord content [] pos with Some (doc, newPos, rest) then
+                    match gotoFirstWord content [] pos with Some (doc, pos, rest) then
                         
                         let obj = match parseDoc doc with Some doc then objWithDoc obj doc else obj in
 
-                        let dx = subi col2 col1 in
+                        let dx = subi col2 (if eqi row2 row1 then col1 else 0) in
                         let dy = subi row2 row1 in
 
-                        let newPos = { x = addi newPos.x dx, y = addi newPos.y dy } in
+                        match strWalkTo rest dx dy with Some (code, _) then
+                            printLn "-------------------------------------";
+                            printLn code;
 
-                        match strWalkTo rest dx dy with Some (code, rest) then
+                            recursive let lex : String -> Pos -> [(Token, Pos)] =
+                                lam s. lam pos.
+                                match next s pos with { token = token, stream = s, pos = newPos } in
+                                match token with TokenEof {} then [] else cons (token, pos) (lex s newPos)
+                            in
+                            
+                            let tokens = lex code pos in
+
+                            match splitOnR (
+                                lam token.
+                                match token.0 with
+                                TokenWord { content = !("recursive" | "end") & content} 
+                                then true else false
+                            ) (reverse tokens) with (trimmed, tokens) in
+                            let lastTrimmed =  last trimmed in
+                            printLn "===";
+                            printLn (lit lastTrimmed.0);
+                            printLn "===";
+                            let newPos = lastTrimmed.1 in
+                            printLn (int2string newPos.x);
+                            printLn (int2string newPos.y);
+
+                            let dx = subi newPos.x (if eqi newPos.y pos.y then pos.x else 0) in
+                            let dy = subi newPos.y pos.y in
+                            match strWalkTo rest dx dy with Some (code, rest) in
+                            let code = strFullTrim code in
+                            printLn "+++++++++++++++++++++++++++++++++++++";
+                            printLn code;
+                            printLn "*************************************";
+                            printLn rest;
+
                             let code = strToSourceCode code in
                             let obj = objWithSourceCode obj code in
                             { obj = Some obj, astStream = astStream, rest = rest, newPos = newPos }
-                        else default
+                        else
+                            parsingWarn "Failed to process a node, unexpected eof.";
+                            default
                     else default
                 else
-                    parsingWarn "No info on the node, we can't create any object.";
+                    parsingWarn "No info on the node, we cant create any object.";
                     default
             else default
-                
         in
 
         match collectOneNode content with { obj = Some obj, astStream = astStream, rest = rest, newPos = newPos } then
@@ -124,7 +154,7 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
             ""
         in
 
-        let tokens = lex fileContent{ x = 0, y = 0 } in
+        let tokens = lex fileContent{ x = 1, y = 1 } in
 
         let getProgName : String -> String =
             lam loc.
@@ -157,13 +187,14 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
             match token with TokenInclude { content = content } then
                 match includeSetInsert includeSet loc content () with
                 { includeSet = includeSet, inserted = inserted, path = path } in
-                
+
                 let insertResult = if inserted then
                     match parse includeSet astStream pos path with
                     { includeSet = includeSet, obj = obj, astStream = astStream, newPos = newPos } in
                     ({ arg with includeSet = includeSet, astStream = astStream, newPos = newPos }, Some obj)
                 else
                     (arg, None {}) in
+
                 match insertResult with (arg, obj) in
                 let child = ObjInclude { datas = objDefaultDatas (), pathInFile = content, child = obj } in
                 let child = objWithIsStdlib child fileIsStdlib in
@@ -198,7 +229,7 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
 
     match includeSetInsert includeSet "." basePath () with { includeSet = includeSet } in    
 
-    match parse includeSet (buildAstStream ast) pos0 basePath with { includeSet = includeSet, obj = obj } in
+    match parse includeSet (buildAstStream ast) { x = 1, y = 1 } basePath with { includeSet = includeSet, obj = obj } in
 
     log "Parsing is over.";
     obj

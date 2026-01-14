@@ -20,7 +20,6 @@ let scan : ScanningOptions -> ScanningOutput =
         ) [] opt.files
     in
 
-    -- TODO: Uncomment here
     -- let files = cons "string.mc" files in
     
     let normalizeFiles : String -> [String] -> [String] = lam pos.
