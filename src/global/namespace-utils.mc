@@ -82,7 +82,7 @@ let namespaceGetName : Namespace -> Option String =
     lam namespace.
     match namespaceLast namespace with Some name then
         if strEndsWith ".mc" name then Some name
-        else match strSplitOnce name '-' with Some { right = right } then Some right
+        else match strSplitOnce name '-' with Some (_, right) then Some right
         else None {}
     else None {}
 

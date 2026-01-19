@@ -6,13 +6,13 @@
 include "../global/util.mc"
 include "../global/logger.mc"
 include "./include-set.mc"
+include "./pos.mc"
     
 include "hashmap.mc"
 
 -- Interface definition for a generic TokenReader
 lang TokenReaderInterface
     
-    type Pos = { x: Int, y: Int }
     type NextResult = { token : Token, stream : String, pos: Pos }
     
     -- Abstract token type to be implemented by concrete readers
@@ -25,8 +25,7 @@ lang TokenReaderInterface
         recursive let work : String -> Pos -> Pos = lam s. lam pos.
             switch s 
             case "" then pos
-            case ['\n'] ++ s then work s { x = 1, y = addi pos.y 1 }
-            case ['\t'] ++ s then work s { pos with x = addi pos.x 4 }
+            case ['\n'] ++ s then work s { pos0 with y = addi pos.y 1 }
             case [_] ++ s then work s { pos with x = addi pos.x 1 }
             end
         in work (lit token) pos
@@ -267,7 +266,7 @@ lang CommAndSepSkiper = SimpleWordTokenReader
     sem skip : String -> String -> { skiped: [Token], stream: String, newToken: Token }
     sem skip =
     | str -> lam first.
-        let pos = { x = 1, y = 1 } in
+        let pos = pos0 in
         let firstSkiped = match first with "" then [] else [TokenSeparator { content = first }] in
         switch next str pos 
             case { token = (TokenSeparator {} | TokenComment {} | TokenMultiLineComment {}) & token, stream = stream } then
@@ -319,26 +318,6 @@ lang ProgramTokenReader = TokenReaderInterface
         | TokenProgram {} -> "Program"
 end
 
-let pos0 = { x = 1, y = 1 }
-
 -- Reader combining recursive, include, and program tokens
-lang ComposedWordTokenReader = IncludeTokenReader + ProgramTokenReader end
-
--- Reader for synthetic tokens marking the end of recursive blocks
-lang RecursiveEnderReader = TokenReaderInterface
-     syn Token =
-        | TokenRecursiveEnder { ender: String }
-
-     sem content =
-        | TokenRecursiveEnder { ender = ender } -> cons '#' ender
-
-     sem lit =
-        | TokenRecursiveEnder { ender = ender } -> ender
-
-    sem tokenToString =
-        | TokenRecursiveEnder {} -> "RecursiveEnder"
-end
-
--- Combine all token readers into a single TokenReader
-lang TokenReader = ComposedWordTokenReader + RecursiveEnderReader end
+lang TokenReader = IncludeTokenReader + ProgramTokenReader end
 

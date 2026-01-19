@@ -27,7 +27,8 @@ type RenderingOptions = use Formats in use FormatLanguages in
         log: Logger
     }
 
-let renderingOptionsSrcPath : RenderingOptions -> String = lam opt. normalizePath (join [opt.outputFolder, "/", opt.srcFolder])
+let renderingOptionsSrcPath : RenderingOptions -> String =
+    lam opt. normalizePath (join [opt.outputFolder, "/", opt.srcFolder])
 
 
 -- Ensure RenderingOptions uses the wrapped (non-raw) format.

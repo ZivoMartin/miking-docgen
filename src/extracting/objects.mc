@@ -77,10 +77,6 @@ lang ObjectInterface = MExprAst
     sem objMerge =
     | obj1 -> lam obj2. objMergeFailed obj1 obj2
 
-    sem objPrettyPrint : Object -> String
-    sem objPrettyPrint =
-    | obj -> join [objGetFirstWord obj, " ", objName obj]
-
     sem objSetField : Object -> (ObjectDatas -> ObjectDatas) -> Object
     sem objSetField =
     | obj -> lam setter. objSetDatas obj (setter (objDatas obj))
@@ -181,7 +177,7 @@ lang ObjectInterface = MExprAst
 
     sem objNameIfHas : Object -> Option String
     sem objNameIfHas =
-    | obj -> if objHasName then
+    | obj -> if objHasName obj then
               Some (objName obj)
            else None {}
 
@@ -220,9 +216,6 @@ lang ObjProgram = ObjectInterface
 
     sem objHasUrl =
     | ObjProgram {} -> true
-
-    sem objPrettyPrint =
-    | ObjProgram {} -> ""
 
     sem objHasLink =
     | ObjProgram {} -> true
@@ -305,10 +298,6 @@ lang ObjLet = ObjectInterface
     sem objSetType =
     | ObjLet d -> lam ty. ObjLet { d with ty = ty }
 
-    sem objPrettyPrint =
-    | ObjLet { rec = rec, args = args } & obj ->
-      join ["let ", objName obj]
-
     sem objHasTests =
     | ObjLet {} -> true
 
@@ -376,16 +365,10 @@ lang ObjType = ObjectInterface
     sem objHasLink =
     | ObjType {} -> true
 
-
-    sem objPrettyPrint =
-    | ObjType { t = t } & obj ->
-      join ["type ", objName obj, match t with Some t then concat " : " t else ""]
-
     sem objMerge =
     | ObjType {} & obj1 -> lam obj2.
             match obj2 with ObjType {} then obj1
             else objMergeFailed obj1 obj2
-
 
 end
 
@@ -395,7 +378,7 @@ end
 lang ObjSem = ObjectInterface
 
     syn Object =
-    | ObjSem { langName: String, variants: [String], ty: Option Type, datas: ObjectDatas }
+    | ObjSem { langName: String, ty: Option Type, datas: ObjectDatas }
 
     sem objToString =
     | ObjSem { langName = langName } ->
@@ -423,10 +406,7 @@ lang ObjSem = ObjectInterface
     | ObjSem d -> lam ty. ObjSem { d with ty = ty }    
 
     sem objMerge =
-    | (ObjSem d1) & obj1 -> lam obj2.
-            match obj2 with ObjSem d2 then
-                ObjSem { d1 with variants = concat d1.variants d2.variants }
-            else objMergeFailed obj1 obj2
+    | (ObjSem d1) & obj1 -> lam. obj1
 
 end
 
@@ -435,8 +415,14 @@ end
 ----------------------------------------------------------------------
 lang ObjSyn = ObjectInterface
 
+    type SynVariant = {
+        name: String,
+        vtype: String,
+        doc: String
+    }
+
     syn Object =
-    | ObjSyn { langName: String, variants: [SynVariant], datas: ObjectDatas }
+    | ObjSyn { langName: String, variants: [SynVariant], datas: ObjectDatas }    
 
     sem objDatas =
     | ObjSyn { datas = datas } -> datas
@@ -494,10 +480,6 @@ lang ObjCon = ObjectInterface
     sem objHasLink =
     | ObjCon {} -> true
 
-
-    sem objPrettyPrint =
-    | ObjCon { t = t } & obj -> join ["con ", objName obj, " : ", t]
-
     sem objMerge =
     | ObjCon {} & obj1 -> lam obj2.
             match obj2 with ObjCon {} then obj1
@@ -527,9 +509,6 @@ lang ObjMexpr = ObjectInterface
 
     sem objHasUrl =
     | ObjMexpr {} -> false
-
-    sem objPrettyPrint =
-    | ObjMexpr {} -> "mexpr"
 
     sem objHasLink =
     | ObjMexpr {} -> false

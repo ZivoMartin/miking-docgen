@@ -124,6 +124,7 @@ let render : Step =  lam ctx.
         
         let link = normalizePath (join [prefix, "/", arg.link]) in
         let name = normalizePath (join [prefix, "/", arg.name]) in
+
         hmInsert name link acc
     ) ctx.searchDatas renderingRes.searchDatas in
     

@@ -22,9 +22,8 @@ Big job here since the renderer highly lies on the fact that we are in a huge re
 Probably the biggest step to rework.
 We probably want to assume that nothing is recursive anymore here.
 ** DONE Simplify the Object type, we don't want it to be recursive anymore
-** TODO Finally write the parser for the weak doctree
+** DONE Finally write the parser for the weak doctree
 ** DONE Remove the old parser and rename weak doctree in doctree
-** TODO Make sure everything work correctly.
 ** TODO Clean the whole code and remove useless parts.
 * DONE Path Managment
 ** DONE Allow providing multiple files/folders
@@ -126,22 +125,28 @@ Push/pop the current language usage. When pushing, fetch the language (guarantee
 ** TODO Check that the JS version is still working
 ** TODO Parent link support
 * TOFIX
-** TODO We cannot alias a file because . is banned
+** TODO Doc not appears on double elements
+** TODO The order of the declaration is incorrect.
+** TODO Cannot provide a nested file
+** DONE Tests are missing
+** TODO Failed to give src in argument
+** TODO Fix the type constructor shadowing
 ** TODO Handle the case where the documentation of the first object is the one of the program.
 The first object should be prioritary.
 ** TODO When a nested stdlib file is provide we get incorrect output folder.
 ** TODO Make sure that the first comments are not part of the header
 If it is the case the higher object will not have it's documentation.
 ** TODO Make sure that if we give an stdlib file in input the output is not considered as inStdlib.
-** DONE Parent link is down
-** DONE Fix the submit handling
-** DONE The test on rec.mc fails, we should see all the rec variables.
-** DONE Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
-** DONE Lang A has now an empty source code, which is not normal.
-** DONE Recover doc-renderer
-** DONE Fix folder input of outer files (covered by rewrite)
-** DONE Fix the urlPrefix issue 
-* Optimization
+** DONE We cannot alias a file because . is banned
+ ** DONE Parent link is down
+ ** DONE Fix the submit handling
+ ** DONE The test on rec.mc fails, we should see all the rec variables.
+ ** DONE Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
+ ** DONE Lang A has now an empty source code, which is not normal.
+ ** DONE Recover doc-renderer
+ ** DONE Fix folder input of outer files (covered by rewrite)
+ ** DONE Fix the urlPrefix issue 
+ * Optimization
 ** TODO Rework the file-opener api
 We do not really need the mechanism who returns one part of the file, just read the includes
 list and return it.

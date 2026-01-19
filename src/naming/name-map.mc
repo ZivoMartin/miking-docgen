@@ -16,7 +16,7 @@ let nameMapGetBucket : all a. NameMap a -> String ->  String -> { bucket: NameMa
     let upper = { bucket = nameMap.upper, update = lam m. { nameMap with upper = m } } in
     let lower = { bucket = nameMap.lower, update = lam m. { nameMap with lower = m } } in
 
-    if null name then namingWarn "Name map can't handle empty name."; upper
+    if null name then namingWarn (join ["Name map can't handle empty name. Namespace: ", namespace]); upper
     else if isUpperAlpha (head name) then upper
     else lower
 

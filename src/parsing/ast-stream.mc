@@ -6,9 +6,10 @@ include "../global/logger.mc"
 include "../global/util.mc"
 include "../extracting/objects.mc"
 
-lang AstStreamInterface = MExprAst + MExprPrettyPrint + Objects
+lang AstStreamInterface = MExprPrettyPrint  + Objects
 
     type AstStreamContext = Expr 
+    type LangDatabase = HashMap String Object
 
     type AstStreamNextResult = {
         ctx: AstStreamContext,
@@ -19,6 +20,10 @@ lang AstStreamInterface = MExprAst + MExprPrettyPrint + Objects
 
     sem typeStreamHandleDecl : Decl -> AstStreamContext -> AstStreamNextResult
 
+    sem typeStreamCreateLangDatabase : AstStreamContext -> String -> { database: LangDatabase, ctx: AstStreamContext }
+    sem typeStreamCreateLangDatabase =
+    | ctx -> lam. { database = hashmapEmpty (), ctx = ctx }
+
     sem getNextInfo : AstStreamContext -> Info
     sem getNextInfo =
     | TmDecl ({ info = info } & tm) -> info
@@ -28,6 +33,17 @@ lang AstStreamInterface = MExprAst + MExprPrettyPrint + Objects
     sem typeStreamNext =
     | TmDecl { decl = decl, inexpr = inexpr } -> Some (typeStreamHandleDecl decl inexpr)
     | _ -> None {}
+
+end
+
+lang ExternalAstStream = AstStreamInterface
+
+  sem typeStreamHandleDecl =
+  | DeclExt {ident = ident, tyIdent = tyIdent, info = info} ->
+      lam ctx.
+      let obj = ObjLet { ty = Some tyIdent, datas = objDefaultDatas () } in
+      let info = concatInfos info (getNextInfo ctx) in
+      { ctx = ctx, name = ident.0, info = info, obj = obj }
 
 end
 
@@ -44,10 +60,31 @@ end
 
 lang TypeAstStream = AstStreamInterface
 
+  sem getOptionalType : Type -> Option Type
+  sem getOptionalType =
+  | t -> if eqString "<>" (type2str t) then
+         None {} else Some t
+
+  sem typeStreamCreateLangDatabase =
+  | TmDecl { decl = DeclType { tyIdent = tyIdent, ident = ident }, inexpr = inexpr } & ctx ->
+      lam langName.
+      if not (belongToTheLang langName ident.0) then { database = hashmapEmpty (), ctx = ctx } else
+      
+      match decomposeLangItemName ident.0 with Some (actualLangName, itemName) in
+
+      let obj =
+          match getOptionalType tyIdent
+          with Some t then ObjType { t = Some t, datas = objDefaultDatas () } 
+          else ObjSyn { langName = langName, variants = [], datas = objDefaultDatas () }
+      in
+
+      let res = typeStreamCreateLangDatabase inexpr langName in
+      { res with database = hmInsert itemName obj res.database }
+
   sem typeStreamHandleDecl =
-  | DeclType { ident = ident, params = params, tyIdent = tyIdent, info = info } ->
+  | DeclType { ident = ident, tyIdent = tyIdent, info = info } ->
       lam ctx.
-      let t = if eqString "<>" (type2str tyIdent) then None {} else Some tyIdent in
+      let t = getOptionalType tyIdent in
       let obj = ObjType { t = t, datas = objDefaultDatas () } in
       let info = concatInfos info (getNextInfo ctx) in      
       { ctx = ctx, name = ident.0, info = info, obj = obj }
@@ -56,10 +93,19 @@ end
 
 lang ConAstStream = AstStreamInterface
 
+  sem typeStreamCreateLangDatabase =
+  | TmDecl { decl = DeclConDef { ident = ident, tyIdent = tyIdent }, inexpr = inexpr } & ctx ->
+      lam langName.
+
+      if not (belongToTheLang langName ident.0) then { database = hashmapEmpty (), ctx = ctx } else
+    
+      match decomposeLangItemName ident.0 with Some (actualLangName, itemName) in
+      typeStreamCreateLangDatabase inexpr langName
+      
   sem typeStreamHandleDecl =
   | DeclConDef { ident = ident, tyIdent = tyIdent, info = info } ->
       lam ctx.      
-      let parentType = type2str (getReturnType tyIdent) in
+      let parentType = getParentType tyIdent in
       let obj = ObjCon { t = tyIdent, parentType = parentType , datas = objDefaultDatas () } in
       let info = concatInfos info (getNextInfo ctx) in      
       { ctx = ctx, name = ident.0, info = info, obj = obj }
@@ -76,6 +122,26 @@ lang UtestAstStream = AstStreamInterface
 end
 
 lang RecursiveAstStream = AstStreamInterface
+
+
+  sem typeStreamCreateLangDatabase =
+  | TmDecl { decl = DeclRecLets { bindings = bindings, info = info }, inexpr = inexpr } & ctx ->
+      lam langName.
+      let ident = tail (head bindings).ident.0 in -- sem name always start with a v, so we remove it.
+
+      if not (belongToTheLang langName ident) then { database = hashmapEmpty (), ctx = ctx } else
+      match decomposeLangItemName ident with Some (actualLangName, itemName) in
+  
+      let database = foldl (
+          lam acc. lam binding.
+             match decomposeLangItemName binding.ident.0 with Some (langName, itemName) in
+             let obj = ObjSem { langName = langName, ty = Some binding.tyBody, datas = objDefaultDatas () } in
+             hmInsert itemName obj acc
+         ) (hashmapEmpty ()) bindings
+      in
+      { database = database, ctx = inexpr }
+      
+
 
   sem typeStreamHandleDecl =
   | DeclRecLets { bindings = bindings, info = info } ->
@@ -102,29 +168,8 @@ lang RecursiveAstStream = AstStreamInterface
           (typeStreamNext ctx)
 end
 
-
--- lang DeclAstStream = AstStreamInterface
-    
---   sem typeStreamNext name =
---   | { stack = [TmDecl ({ decl = decl, inexpr = inexpr } & tm)] ++ stack } & ctx ->
---             switch decl
---             case DeclRecLets { bindings = [] } then
---                 typeStreamNext name { stack = cons inexpr stack }
---             case DeclRecLets ({ bindings = [b] ++ bindings } & dl) then
---                 let ctx = { ctx with stack = concat [b.body, TmDecl { tm with decl = DeclRecLets { dl with bindings = bindings } } ] stack } in
---                 checkAndEnd name b.ident (b.tyBody) b.body ctx
---             case DeclLet { ident = ident, body = body, tyBody = tyBody } then
---                 let ctx = { ctx with stack = concat [body, inexpr] stack } in
---                 checkAndEnd name ident tyBody body ctx
---             case DeclUtest { test = test, expected = expected, tusing = tusing, tonfail = tonfail }  then
---                 typeStreamNext name { stack = cons inexpr stack }
---             case _ then typeStreamNext name { ctx with stack = cons inexpr stack }
---             end
-
--- end
-
 lang AstStream =
-    LetAstStream + TypeAstStream + ConAstStream + UtestAstStream + RecursiveAstStream
+    LetAstStream + TypeAstStream + ConAstStream + UtestAstStream + RecursiveAstStream + ExternalAstStream
 
     sem typeStreamFromExpr : Expr -> AstStreamContext 
     sem typeStreamFromExpr =
@@ -133,5 +178,6 @@ lang AstStream =
     -- Builds a AstStream, creates an AST via the compiler's parser. Then types this AST via compiler's typer.
     -- Note that meta vars are not removed here    
     sem buildAstStream : MAst -> AstStreamContext
-    sem buildAstStream = | ast -> typeStreamFromExpr ast
+    sem buildAstStream = | ast ->
+        typeStreamFromExpr ast
 end

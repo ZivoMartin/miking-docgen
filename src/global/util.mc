@@ -150,11 +150,11 @@ let pwd = sysGetCwd ()
 let isFolder : String -> Bool = lam path.
   if eqi (_commandList ["test", "-d", path]) 0 then true else false
 
-let folderFetchMcFiles : String -> [String] = lam dir.
-  let res = sysRunCommand ["find", dir, "-type", "f", "-name", "*.mc*"] "" "." in
+let folderFetchMcFiles : String -> Option [String] = lam dir.
+  let res = sysRunCommand ["find", dir, "-type", "f", "-name", "'*.mc*'"] "" "." in
+  if neqi res.returncode 0 then None {} else
   let out = strTrim res.stdout in
-  if null out then []
-  else strSplit "\n" out
+  Some (if null out then [] else strSplit "\n" out)
 
 
 let sysMoveDirContents : String -> String -> ReturnCode = lam p1. lam p2.
@@ -271,11 +271,12 @@ let strSkipLines : String -> Int -> Option (String, String) =
     in
     work ""
 
-let strWalkTo : String -> Int -> Int -> Option (String, String) =
+let strWalkTo : String -> Int -> Int -> (String, String) =
     lam s. lam x. lam y.
-    optionBind (strSkipLines s y) (lam skipedLines.
+    optionGetOr (s, "")
+    (optionBind (strSkipLines s y) (lam skipedLines.
         match skipedLines with (skiped, rest) in
         if lti x (length rest) then
             match splitAt rest x with (skiped2, rest) in
             Some (concat skiped skiped2, rest)
-        else None {})
+        else None {}))

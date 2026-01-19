@@ -51,12 +51,6 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
                     let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
                     let entry = { entry = value, id = objId obj, namespace = namespace } in
 
-                    log (join
-                        ["Adding ", name, " in the name map.\n",
-                        "namespace=", entry.namespace, "\n",
-                        "url=", entry.entry.url, "\n",
-                        "id=", int2string entry.id, "\n"]);
-
                     let nameMap =
                         if objHasUrl obj then nameMapInsert ctx.nameMap name namespace entry
                         else ctx.nameMap

@@ -32,6 +32,7 @@ lang HtmlRenderer = RendererInterface
             let path = normalizePath (join [srcPath, "/", path]) in
             renderFileOrWarn path s 
         in
+        
         openAndWrite htmlStyle htmlStylePath;
         openAndWrite htmlScript htmlScriptPath
         

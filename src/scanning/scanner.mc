@@ -13,14 +13,15 @@ let scan : ScanningOptions -> ScanningOutput =
     let files =
         foldl (lam files: [String]. lam file: String.
             if isFolder file then
-               let newFiles = folderFetchMcFiles file in
-               concat newFiles files
+               match folderFetchMcFiles file
+               with Some newFiles then concat newFiles files
+               else error (join ["Failed to get access to ", file, "."])
             else if sysFileExists file then cons file files
             else error (join ["The file ", file, "doesn't exist."])
         ) [] opt.files
     in
 
-    -- let files = cons "string.mc" files in
+    let files = cons "string.mc" files in
     
     let normalizeFiles : String -> [String] -> [String] = lam pos.
         map (lam f.
@@ -102,5 +103,4 @@ let scan : ScanningOptions -> ScanningOutput =
             { path = path, outputFolder = dirname outputFolder }
         ) files
     in
-
     { inputs = files, longestPrefix = commonPrefix, onlyStdlib = onlyStdlib }

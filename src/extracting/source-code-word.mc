@@ -54,6 +54,5 @@ let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
         else CodeDefault {}
         in
         build kind
-    case TokenRecursiveEnder {} then build (CodeKeyword {})
     case _ then build (CodeDefault {})
     end

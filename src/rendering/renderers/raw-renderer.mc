@@ -59,7 +59,7 @@ lang RawRenderer = RendererInterface
              let stemFrom = renderStemFrom obj (objLangName obj) in
              let variants = renderSynVariants obj variants opt in
              join [variants, nl, stemFrom]
-        case ObjSem { variants = variants } then
+        case ObjSem {} then
             renderStemFrom obj (objLangName obj)
         case _ then
             ""

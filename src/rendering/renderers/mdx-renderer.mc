@@ -151,9 +151,6 @@ lang MdxRenderer = RendererInterface
         let code = strJoin "\n" (reverse right) in
         renderHidenCode "Show Implementation" "Hide Implementation" code true opt
 
-    sem renderCodeWithPreview (data: RenderingData) =
-    | { fmt = Mdx {} } -> join [data.left, data.right, data.trimmed]
-
     -- Render tests as raw text if available (panels are added by the caller).
     sem renderDocTests (data: RenderingData) =
     | { fmt = Mdx {} } & opt ->
