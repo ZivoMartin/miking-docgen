@@ -1,4 +1,4 @@
-* Simplification
+* DONE Simplification
 ** DONE Define a data structure weaker than the DocTree
 This structure is not recursive and represents the new version of the code,
 only the top level items and the code source.
@@ -24,7 +24,6 @@ We probably want to assume that nothing is recursive anymore here.
 ** DONE Simplify the Object type, we don't want it to be recursive anymore
 ** DONE Finally write the parser for the weak doctree
 ** DONE Remove the old parser and rename weak doctree in doctree
-** TODO Clean the whole code and remove useless parts.
 * DONE Path Managment
 ** DONE Allow providing multiple files/folders
 ** DONE Allow the user to specify where to put the stdlib files
@@ -58,7 +57,8 @@ output folder using url prefix relative to the actual root.
 ** DONE See if we can remove the isRootStdlib flag.
 ** DONE Factorise renderedMap logic inside the rendered map module and use custom functions
 ** DONE Refactoring the extracting by adding a parse method in ObjectKind
-** TODO Put all the shared api in global: objects, file-opener, ...
+** DONE Remove the dead code
+** DONE Put all the shared api in global: objects, file-opener, ...
 ** DONE Rename ObjectKinds familiy of items
 ** TODO Clean all error/warning messages
 ** TODO If a link is incorrect in a comment, display a proper warning or error message
@@ -68,6 +68,7 @@ output folder using url prefix relative to the actual root.
 ** DONE Clean “use in process” of the namer (for correctness)
 ** DONE Do not insert new lines in the documentation if a component is missing
 * UI Features
+** DONE Reduce the padding around the doc
 ** TODO Support Markdown formatting with a flag
 ** DONE Mouse-over on hooks
 ** DONE Keep the doc formatted in the tooltip
@@ -125,31 +126,28 @@ Push/pop the current language usage. When pushing, fetch the language (guarantee
 ** TODO Check that the JS version is still working
 ** TODO Parent link support
 * TOFIX
-** TODO Doc not appears on double elements
+** DONE Doc not appears on double elements
 ** TODO The order of the declaration is incorrect.
-** TODO Cannot provide a nested file
+** DONE From is not rendering a link
+** DONE Bad come back link
+** DONE Cannot provide a nested file
 ** DONE Tests are missing
-** TODO Failed to give src in argument
-** TODO Fix the type constructor shadowing
-** TODO Handle the case where the documentation of the first object is the one of the program.
+** DONE Failed to give src in argument
+** DONE Handle the case where the documentation of the first object is the one of the program.
 The first object should be prioritary.
-** TODO When a nested stdlib file is provide we get incorrect output folder.
-** TODO Make sure that the first comments are not part of the header
-If it is the case the higher object will not have it's documentation.
-** TODO Make sure that if we give an stdlib file in input the output is not considered as inStdlib.
+** DONE Fix the type constructor shadowing
+** TODO When a nested stdlib file is provided we get incorrect output folder.
+** DONE Make sure that if we give an stdlib file in input the output is not considered as inStdlib.
 ** DONE We cannot alias a file because . is banned
- ** DONE Parent link is down
- ** DONE Fix the submit handling
- ** DONE The test on rec.mc fails, we should see all the rec variables.
- ** DONE Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
- ** DONE Lang A has now an empty source code, which is not normal.
- ** DONE Recover doc-renderer
- ** DONE Fix folder input of outer files (covered by rewrite)
- ** DONE Fix the urlPrefix issue 
- * Optimization
-** TODO Rework the file-opener api
-We do not really need the mechanism who returns one part of the file, just read the includes
-list and return it.
+** DONE Parent link is down
+** DONE Fix the submit handling
+** DONE The test on rec.mc fails, we should see all the rec variables.
+** DONE Fix trimming for bool.mc/someb tests (there is a comment at the end that is not trimmed)
+** DONE Lang A has now an empty source code, which is not normal.
+** DONE Recover doc-renderer
+** DONE Fix folder input of outer files (covered by rewrite)
+** DONE Fix the urlPrefix issue 
+* Optimization
 ** DONE Simplify the mast-gen step, and optimise the labeling step.
 ** DONE Skip mexpr and utest in labeling
 ** DONE Try to remove the prefix from the objects.
@@ -160,7 +158,8 @@ The idea is that if it comes from more than one parent then it is an assembling
 and so generate new information, but if it comes from a single parent
 and you don't add anything on it then you just duplicate informations then
 it is an exponential waste of time.
-** TODO Rework the hashmap API of the miking stdlib to have a non fixed amount of buckets.
+** DONE Add a function to setup the amount of bucket in the hashmap API
+Use this function everywhere there is a huge amount of elements
 ** DONE Replace the GetMyLink fetch by a construction for the object
 ** DONE Do not call the writing functions if we don't render at the end of the day
 ** DONE Do not register objects that are not rendered during naming

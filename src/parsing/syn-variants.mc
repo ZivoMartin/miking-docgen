@@ -3,8 +3,9 @@ include "./utils.mc"
 
 -- Extracts variant names from a stream of syntax tree nodes starting with '|'.
 -- Returns a list of the variants.
-let synVariantParse : use TokenReader in [Token] -> [SynVariant] = lam stream.
+let synVariantParse : use TokenReader in use Objects in [Token] -> [SynVariant] = lam stream.
     use TokenReader in
+    use Objects in
     recursive let work : [Token] -> Option [String] -> String -> [String] -> [SynVariant] =
     
         lam stream. lam typeAcc. lam nextDoc. lam commentBuffer.

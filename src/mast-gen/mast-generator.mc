@@ -31,7 +31,7 @@ include "sys.mc"
 include "ext/file-ext.mc"
 
 include "../parsing/include-set.mc"
-include "../parsing/file-opener.mc"
+include "../global/file-opener.mc"
 include "./mast.mc"
 
 include "../global/util.mc"

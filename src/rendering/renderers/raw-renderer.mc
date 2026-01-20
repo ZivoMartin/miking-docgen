@@ -41,7 +41,7 @@ lang RawRenderer = RendererInterface
         let obj = data.obj in
         
         let renderStemFrom = lam obj. lam from.
-            let link = renderSourceCodeStr from (Some obj) opt in -- Will cast into a single hook
+            let link = renderSourceCodeStr from (Some obj) opt in
             let sectionTitle = renderBold "From:" opt in
             strJoin nl [sectionTitle, link, ""]
         in
@@ -105,8 +105,7 @@ lang RawRenderer = RendererInterface
     
     -- Renders the description text of an object (from obj.doc).
     sem renderDocDescription (desc: String) =
-    | opt -> let opt = fixOptFormat opt in
-        concat desc (renderNewLine opt)
+    | opt -> let opt = fixOptFormat opt in desc
 
     sem renderPureDocSignature (obj : Object) =
     | opt -> let opt = fixOptFormat opt in
@@ -194,7 +193,13 @@ lang RawRenderer = RendererInterface
         else match namespaceLast subnamespace with Some parentName then
               let link =
                   if strEndsWith ".mc" parentName then
-                     buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) subnamespace
+                     buildUrl
+                         opt.stdlibFolder
+                         opt.urlPrefix
+                         opt.fmt
+                         (objIsStdlib obj)
+                         subnamespace
+                         ""
                   else
                     let parentName =
                         match strSplitOnce parentName '-' with Some (_, right) then right
@@ -293,7 +298,7 @@ lang RawRenderer = RendererInterface
             left = renderSourceCode split.left,
             right = renderSourceCode split.right,
 
-            tests = strJoin "\n\n" (map renderingDataRaw tests)
+            tests = strJoin "\n" (map renderingDataRaw tests)
         }
 
     -- File-level wrappers
@@ -364,7 +369,7 @@ lang RawRenderer = RendererInterface
              let doc = renderFormattedDoc obj doc false opt in
              let sign = renderPureDocSignature obj opt in
              let sign = renderSourceCodeStr sign (None {}) opt in
-             let doc = join [sign, if null doc then "" else "\n\n", doc] in
+             let doc = join [sign, if or (null sign) (null doc) then "" else "\n\n", doc] in
              renderTooltip link doc opt
          else link
 

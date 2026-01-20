@@ -6,10 +6,6 @@ let htmlStylePath = "styles.css"
 let htmlStyle: String = 
 join [
 themeVariables, "
-/* =========================
-   GENERIC STYLES (use vars)
-   ========================= */
-
 body {
   font-family: 'Segoe UI', Roboto, sans-serif;
   background-color: var(--bodyBGColor);
@@ -57,13 +53,7 @@ pre {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
 }
 
-.top-doc pre {
-  margin-top: 0.5em;
-  margin-bottom: 0.5em;
-}
-
 .top-doc code {
-  padding: 0.2em 0.4em;
   border-radius: 3px;
   font-family: monospace;
   font-size: 0.95em;
@@ -105,7 +95,7 @@ pre {
   border: 1px solid var(--codeBlockBorderColor);
   border-radius: 4px;
   padding: 0.5em 0.8em;
-  margin-top: 1.1em;
+  margin-top: 1.05em;
   font-family: monospace;
   font-size: 0.9em;
 }

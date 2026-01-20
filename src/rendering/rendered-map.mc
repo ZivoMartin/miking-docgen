@@ -1,6 +1,6 @@
 include "hashmap.mc"
 
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 
 type RenderedMap = HashMap String ()
 

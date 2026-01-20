@@ -3,7 +3,7 @@
 -- `SourceCodeWordKind` indicating how it should be rendered (keyword, name,
 -- type, number, or default).
 
-include "../parsing/token-readers.mc"
+include "../../parsing/token-readers.mc"
 
 -- Visual categories used by the colorizer.
 lang SourceCodeWordKinds
@@ -43,7 +43,7 @@ let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
     switch token
     case TokenWord { content = content } then
         let kind = match content with "" then
-            extractingWarn "Detected an empty word in formatterNext";
+            warn "Detected an empty word in formatterNext";
             CodeDefault {}
         else match content with "mexpr" | "utest" | "with" | "recursive" | "match" | "end" |
              "switch" | "in" | "include" | "case" | "if" | "else" | "type" | "con" |

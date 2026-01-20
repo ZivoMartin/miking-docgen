@@ -21,10 +21,10 @@
 -- Functions here are called by ../renderer.mc. They form the contract for rendering
 -- headers, footers, documentation, code, links, and text formatting.
 
-include "../../extracting/objects.mc"
+include "../../global/objects.mc"
 include "../../global/format.mc"
 include "../../global/format-language.mc"
-include "../../extracting/source-code-word.mc"
+include "../../global/source-code/source-code-word.mc"
 
 include "../rendering-data.mc"
 include "../rendering-options.mc"

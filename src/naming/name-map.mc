@@ -20,11 +20,18 @@ let nameMapGetBucket : all a. NameMap a -> String ->  String -> { bucket: NameMa
     else if isUpperAlpha (head name) then upper
     else lower
 
-let nameMapEmpty : all a. () -> NameMap a = lam.
+let nameMapWithCapacity : all a. Int -> NameMap a = lam n.
+{
+    upper = hashmapWithCapacity n,
+    lower = hashmapWithCapacity n
+}
+
+let nameMapEmpty : all a. () -> NameMap a = lam n.
 {
     upper = hashmapEmpty (),
     lower = hashmapEmpty ()
 }
+
 
 let nameMapInsert : all a. NameMap a -> String -> String -> NameMapEntry a -> NameMap a =
     lam nameMap. lam name. lam namespace. lam entry.

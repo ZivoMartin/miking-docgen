@@ -1,22 +1,3 @@
--- # HTML Renderer for mi-doc-gen
---
--- This module implements the **HtmlRenderer**, an instance of `RendererInterface`.
--- It generates HTML pages from the extracted ObjectTree.
---
--- ## Design
--- - The HTML renderer wraps the **raw** renderer: whenever we need to render inner
---   parts (titles, doc strings, code, …) as plain text, we temporarily switch
---   the format to `Raw { fmt = Html {} }` and call the corresponding raw function.
---   This ensures consistent escaping and avoids recursion issues.
--- - `htmlRenderWrapper` centralizes this pattern: it calls a raw-rendered function
---   and, if the result is non-empty, wraps it with provided HTML tags.
--- - Syntax coloring is implemented with `<span class="...">` using short CSS class
---   names: `tp`, `var`, `kw`, `comment`, `string`, `multi`, `number`.
--- - Newlines in HTML are rendered as `<br>` (see `renderNewLine`), whereas blocks
---   such as documentation and code are wrapped in `<pre>` for whitespace fidelity.
--- - `renderHidenCode` (sic) provides a simple toggle button + collapsible container.
---   The actual JS/CSS hooks are assumed to be present in the page header.
-
 include "./renderer-interface.mc"
 include "./headers/html-header.mc"
 include "../util.mc"

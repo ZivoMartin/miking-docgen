@@ -280,3 +280,7 @@ let strWalkTo : String -> Int -> Int -> (String, String) =
             match splitAt rest x with (skiped2, rest) in
             Some (concat skiped skiped2, rest)
         else None {}))
+
+let hashmapWithCapacity : all k. all v. Int -> HashMap k v = lam n.
+  {buckets = make n [],
+   nelems = 0}

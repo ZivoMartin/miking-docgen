@@ -1,7 +1,7 @@
 include "./langs-namespace.mc"
 include "./name-map.mc"
 include "./name-context.mc"
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 
 type NamingRes = use Objects in  {
      annotatedObj: Object,
@@ -46,8 +46,9 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
                     let name = objName obj in
                     let namespace = objNamespace obj in
                     let isStdlib = objIsStdlib obj in
+                    let kind = objGetFirstWord obj in
 
-                    let url = buildUrl isStdlib namespace in
+                    let url = buildUrl isStdlib namespace kind in
                     let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
                     let entry = { entry = value, id = objId obj, namespace = namespace } in
 
@@ -192,5 +193,16 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
         end
     in
 
-    match work obj (nameContextEmpty ()) 1 with { ctx = nameContext, obj = annotatedObj } in
+    let amountOfChildren = objCountChildren obj in
+    let cap = divi amountOfChildren 20 in
+    let cap = if gti cap 100 then cap else 100 in
+
+    log (join ["Got ", int2string amountOfChildren, " children before naming."]);
+    match work obj (nameContextWithCapacity cap) 1 with { ctx = nameContext, obj = annotatedObj } in
+
+    (if opt.debug then    
+        let amountOfChildren = objCountChildren annotatedObj in
+        log (join ["Got ", int2string amountOfChildren, " children after naming."])
+    else ()); -- We don't want to compute objCountChildren if there is no debug.
+
     { annotatedObj = annotatedObj, nameContext = nameContext }

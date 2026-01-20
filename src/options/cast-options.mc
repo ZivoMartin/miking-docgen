@@ -33,6 +33,7 @@ let getParsingOptions : Logger -> String -> String -> ParsingOptions =
 let getNamingOption : DocGenOptions -> NamingOptions = lam opt.
     {
         fmt = opt.fmt,
+        debug = opt.debug,
         urlPrefix = opt.urlPrefix,
         stdlibFolder = opt.stdlibFolder
     }

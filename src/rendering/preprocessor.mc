@@ -1,4 +1,4 @@
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 include "./renderers/objects-renderer.mc"
 include "../global/util.mc"
 include "fileutils.mc"

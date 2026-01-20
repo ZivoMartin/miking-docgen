@@ -1,7 +1,6 @@
 include "mexpr/ast.mc"
-include "./syn-variant.mc"
-include "../global/logger.mc"
-include "./source-code.mc"
+include "./logger.mc"
+include "./source-code/source-code.mc"
 
 -- Interface declaring all semantics for Objects
 lang ObjectInterface = MExprAst
@@ -20,9 +19,14 @@ lang ObjectInterface = MExprAst
     syn Object =
 
     sem objDatas : Object -> ObjectDatas
+
     sem objChildren : Object -> ObjectChildren
     sem objChildren =
     | obj -> []
+
+    sem objHasChildren : Object -> Bool
+    sem objHasChildren =
+    | obj -> not (null (objChildren obj))
 
     sem objSetDatas : Object -> ObjectDatas -> Object
 
@@ -70,7 +74,7 @@ lang ObjectInterface = MExprAst
     sem objMergeFailed : Object -> Object -> Object
     sem objMergeFailed =
     | obj1 -> lam obj2.
-            extractingWarn (join ["You cannot merge ", objToString obj1, " and ", objToString obj2, "."]);
+            warn (join ["You cannot merge ", objToString obj1, " and ", objToString obj2, "."]);
             obj1
 
     sem objMerge : Object -> Object -> Object
@@ -93,7 +97,9 @@ lang ObjectInterface = MExprAst
     | obj -> lam name. objSetField obj (lam d. { d with name = name })
 
     sem objWithDoc =
-    | obj -> lam doc. objSetField obj (lam d. { d with doc = doc })
+    | obj -> lam doc.
+        let doc = strFullTrim doc in
+        objSetField obj (lam d. { d with doc = doc })
 
     sem objWithIsStdlib =
     | obj -> lam isStdlib. objSetField obj (lam d. { d with isStdlib = isStdlib })
@@ -185,6 +191,10 @@ lang ObjectInterface = MExprAst
     sem objHasName =
     | _ -> true
 
+    sem objCountChildren : Object -> Int
+    sem objCountChildren =
+    | obj -> foldl addi 0 (map (lam obj. if objHasChildren obj then objCountChildren obj else 1) (objChildren obj))
+    
     
 end
 
@@ -242,7 +252,7 @@ lang ObjInclude = ObjectInterface
       switch l
       case 0 then ObjInclude { f with child = None {} }
       case 1 then ObjInclude { f with child = Some (head children) }
-      case _ then extractingWarn (join ["Inlude nodes should only have one or 0 children, received ", int2string l]) ; obj
+      case _ then warn (join ["Inlude nodes should only have one or 0 children, received ", int2string l]) ; obj
       end
 
     sem objChildren =

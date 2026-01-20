@@ -2,10 +2,9 @@ include "./preprocessor.mc"
 include "./renderers/main-renderer.mc"
 include "./source-code-spliter.mc"
 include "./rendering-options.mc"
-include "./files-opener.mc"
 include "./util.mc"
 
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 
 include "../global/util.mc"
 include "../global/logger.mc"
@@ -54,7 +53,7 @@ let render : use Objects in RenderingOptions -> Object -> RenderingResult = use 
                 { datas = renderCreateRenderingData obj tests opt, renderedMap = renderedMap }
             else
 
-            match fileOpenerOpen obj opt with Some { wc = wc, write = write, path = path } then
+            match openIfShouldBeRendered obj opt with Some { wc = wc, write = write, path = path } then
                 (match path with "" then () else log (concat "Rendering file " path));
 
                 type Acc = { tests: [RenderingData], children: [RenderingData], renderedMap: RenderedMap } in
@@ -88,7 +87,7 @@ let render : use Objects in RenderingOptions -> Object -> RenderingResult = use 
                     write (renderObjTitle 1 obj opt);
                     write (renderTopPageDoc data opt);
 
-                    let children = removeDoubleNames children in
+                    let children = removeDoubleNames opt children in
 
                     -- Order objects into a set
                     let set = buildSet children in

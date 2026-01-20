@@ -7,7 +7,7 @@
 -- This file provides a function that takes a file name and returns a data
 -- structure representing the file and its includes.
 
-include "./token-readers.mc"
+include "../parsing/token-readers.mc"
 include "sys.mc"
 
 -- Represents a parsed file header, including its `include`s, header tokens, and full text.

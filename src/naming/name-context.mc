@@ -1,14 +1,15 @@
 include "./langs-namespace.mc"
 include "./name-map.mc"
 include "./types-namespace.mc"
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 
-let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String =
+let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String -> String =
     use Formats in
-    lam stdlibFolder. lam urlPrefix. lam fmt. lam isStdlib. lam namespace. 
+    lam stdlibFolder. lam urlPrefix. lam fmt. lam isStdlib. lam namespace. lam kind.
     let ext = concat "." (formatGetExtension fmt) in
     let prefix = if isStdlib then stdlibFolder  else "" in
-    let link =  strJoin "/" [urlPrefix, prefix, concat namespace ext] in
+    let name = join [namespace, if null kind then "" else concat "-" kind, ext] in
+    let link =  strJoin "/" [urlPrefix, prefix, name] in
     normalizePath link
 
 
@@ -30,6 +31,12 @@ let nameContextEmpty : () -> NameContext = lam. {
     langNamespaceSet = namespaceSetEmpty (),
     typeNamespaceSet = namespaceSetEmpty (),
     nameMap = nameMapEmpty ()
+}
+
+let nameContextWithCapacity : Int -> NameContext = lam n. {
+    langNamespaceSet = namespaceSetEmpty (),
+    typeNamespaceSet = namespaceSetEmpty (),
+    nameMap = nameMapWithCapacity n
 }
 
 let nameContextFetch : NameContext -> use Objects in Object -> String -> Option NameMapValue =

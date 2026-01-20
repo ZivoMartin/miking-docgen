@@ -112,20 +112,11 @@ let render : Step =  lam ctx.
     match ctx.nameContext with Some nameContext then
     
     let log = buildLogger ctx "Rendering" in 
-    let ropt = getRenderingOption ctx.opt log nameContext ctx.renderedMap in
+    let ropt = getRenderingOption { ctx.opt with outputFolder = ctx.userOutputFolder } log nameContext ctx.renderedMap in
     let renderingRes = render ropt obj in
 
     let searchDatas = foldl (lam acc. lam arg.
-        let prefix = normalizePath (join [ctx.opt.urlPrefix, "/", ctx.opt.stdlibFolder]) in
-        let isStdlib = strStartsWith prefix arg.link in
-
-        let prefix = tail (strSplit ctx.userOutputFolder ctx.opt.outputFolder) in
-        let prefix = if isStdlib then "" else join prefix in
-        
-        let link = normalizePath (join [prefix, "/", arg.link]) in
-        let name = normalizePath (join [prefix, "/", arg.name]) in
-
-        hmInsert name link acc
+        hmInsert arg.name arg.link acc
     ) ctx.searchDatas renderingRes.searchDatas in
     
     (if neqString ctx.opt.outputFolder ctx.userOutputFolder then    
@@ -152,7 +143,7 @@ let serve : Step = use ObjectsRenderer in lam ctx.
     let opt = getRenderingOption ctx.opt log nameContext (hashmapEmpty ()) in
     let link = objGetMyLink obj opt in
 
-    let opt = getServeOption ctx.opt link in    
+    let opt = getServeOption { ctx.opt with outputFolder = ctx.userOutputFolder } link in    
     startServer opt; ctx
     else crash "object" "serve" "render"
     else crash "name context" "serve" "name"    

@@ -2,7 +2,7 @@
 -- during the documentation generation process.
 
 include "./rendering-data.mc"
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 include "../global/util.mc"
 
 -- During rendering, we generate one page and one documentation block per child.
@@ -21,7 +21,7 @@ include "../global/util.mc"
 -- sem semX = | x -> addi x 1
 --
 -- Since only the last sem remains, the previous documentation would be lost.
-let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
+let removeDoubleNames : RenderingOptions -> [RenderingData] -> [RenderingData] = lam opt. lam children.
     use ObjectsRenderer in
 
     type MergeFoldArg = { doc: String, prev: String, children: [RenderingData] } in
@@ -31,17 +31,17 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
         lam arg. lam child.
         match arg with { doc = doc, prev = prev, children = children } in
         let obj = child.obj in
-        let namespace = objNamespace obj in
+        let url = objGetMyLink obj opt in
         if not (objHasName obj) then
            { arg with doc = "", children = cons child children, prev = "" }
-        else if eqString namespace prev then
+        else if eqString url prev then
            let doc = if eqString (objDefaultDoc ()) doc then "" else doc in
            let newDoc = objTryGetDoc child.obj in
            let doc = concat doc newDoc in
            let child = { child with obj = objWithDoc child.obj doc } in
            { arg with doc = doc, children = cons child children }
         else
-           { arg with doc = objDoc child.obj, children = cons child children, prev = namespace }
+           { arg with doc = objDoc child.obj, children = cons child children, prev = url }
         
     ) { doc = "", prev = "", children = [] } children in
 
@@ -51,11 +51,11 @@ let removeDoubleNames : [RenderingData] -> [RenderingData] = lam children.
     (
         lam arg. lam child.
         match arg with { saw = saw, children = children } in
-        let namespace = objNamespace child.obj in
+        let url = objGetMyLink child.obj opt in
         
         if objHasName child.obj then
-           match hmLookup namespace saw with Some _ then arg
-           else { children = cons child children, saw = hmInsert namespace () saw }
+           match hmLookup url saw with Some _ then arg
+           else { children = cons child children, saw = hmInsert url () saw }
         else { arg with children = cons child children }
     ) { children = [], saw = hashmapEmpty () } merged.children in
     sanitized.children
@@ -116,3 +116,26 @@ let renderFileOrWarn : String -> String -> () = lam path. lam content.
           fileWriteClose wc
     else
           renderingWarn (concat "Failed to create search file: " path)
+
+-- Attempts to open the output file for a given object.
+let openIfShouldBeRendered : use Objects in Object -> RenderingOptions -> Option { wc: Option WriteChannel, write: String -> (), path: String } =
+    use ObjectsRenderer in lam obj. lam opt.
+    
+    if objHasUrl obj then
+        
+        let path = concat opt.outputFolder (objGetMyLocation obj opt) in
+        match fileWriteOpen path with Some wc then
+            Some {
+                wc = Some wc,
+                write = fileWriteString wc,
+                path = path
+            }
+        else
+            renderingWarn (concat "Failed to open " path); None {}
+
+    else
+        Some {
+             wc = None {},
+             write = lam. (),
+             path = ""
+         } 

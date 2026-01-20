@@ -1,6 +1,6 @@
 include "../global/util.mc"
 include "../global/logger.mc"
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 include "./generic-namespace-set.mc"
 
 type LangId = Int

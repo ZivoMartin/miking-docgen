@@ -1,4 +1,4 @@
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 include "./ast-stream.mc"
 include "./syn-variants.mc"
 
@@ -131,6 +131,7 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
             let obj = objWithIsStdlib obj isStdlib in
             let obj = objWithNamespace obj (namespaceAdd namespace name) in
             let obj = objWithPrefix obj longestPrefix in
+            let obj = objWithDoc obj doc in
 
             -- We consume one position, since the end position is the start position
             -- of the next node

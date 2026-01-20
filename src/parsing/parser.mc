@@ -6,8 +6,8 @@ include "./lang-parser.mc"
 include "../global/util.mc"
 include "../global/namespace-utils.mc"
 include "../options/docgen-options.mc"
-include "../extracting/objects.mc"
-include "../extracting/source-code.mc"
+include "../global/objects.mc"
+include "../global/source-code/source-code.mc"
 
 include "seq.mc"
 include "hashmap.mc"
@@ -50,11 +50,10 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
             in
 
             let assignObject =
-                lam obj. lam namespace. lam doc.
+                lam obj. lam namespace.
                 let obj = objWithIsStdlib obj isStdlib in
                 let obj = objWithNamespace obj namespace in
                 let obj = objWithPrefix obj longestPrefix in
-                let obj = objWithDoc obj doc in
                 obj
             in
 
@@ -66,7 +65,7 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
                     match parseLang rest pos database longestPrefix isStdlib namespace with { obj = obj, stream = rest, newPos = newPos } in
 
                     let namespace = namespaceAdd namespace (objName obj) in
-                    let obj = assignObject obj namespace doc in
+                    let obj = assignObject obj namespace in
 
                     { obj = Some obj, astStream = astStream, rest = rest, newPos = newPos }
                 else match typeStreamNext astStream with Some {
@@ -78,8 +77,9 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
                     let namespace = namespaceAdd namespace name in
                     let lastPos = strGetLastPos rest pos in
 
-                    let obj = assignObject obj namespace doc in
+                    let obj = assignObject obj namespace in
                     let obj = objWithName obj name in
+                    let obj = objWithDoc obj doc in
 
                     let info = match info with Info {} then info else
                         Info { filename = "", row1 = pos.y, col1 = pos.x, row2 = lastPos.y, col2 = lastPos.x }

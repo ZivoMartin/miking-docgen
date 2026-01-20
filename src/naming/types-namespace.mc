@@ -1,5 +1,5 @@
 include "../global/util.mc"
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 
 type TypeNamespace = use Objects in  {
     typeObj: Object,

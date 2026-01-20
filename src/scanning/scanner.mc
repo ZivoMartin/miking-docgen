@@ -1,4 +1,4 @@
-include "../parsing/file-opener.mc"
+include "../global/file-opener.mc"
 include "../global/util.mc"
 
 include "./scanning-options.mc"

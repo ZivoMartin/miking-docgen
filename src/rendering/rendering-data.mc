@@ -1,4 +1,4 @@
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 
 type RenderingData = use Objects in {
     obj: Object,

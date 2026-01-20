@@ -3,7 +3,7 @@
 -- Helpers to compute rendering-related data derived from extracted objects.
 -- Provides link building, display titles, and optional name handling.
 
-include "../../extracting/objects.mc"
+include "../../global/objects.mc"
 include "../rendering-options.mc"
 include "./headers/search.mc"
 include "string.mc"
@@ -23,7 +23,7 @@ lang ObjectsRenderer = Objects + Formats
     sem objGetMyLink : Object -> RenderingOptions -> String
     sem objGetMyLink =
     | obj -> lam opt.
-      buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) (objNamespace obj)
+      buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) (objNamespace obj) (objGetFirstWord obj)
 
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =

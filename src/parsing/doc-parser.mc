@@ -11,13 +11,16 @@ let parseProgramDoc : String -> Option String =
         lam acc. lam noDoc. lam s.
         match next s pos0 with { token = token, stream = rest } in
 
-        match token with
-             TokenMultiLineComment { content = content }
+        switch token
+        case TokenMultiLineComment { content = content }
            | TokenComment { content = content } then
              let newAcc = concat (reverse content) acc in
              work newAcc false rest
-        else if noDoc then None {}
-        else Some (reverse acc)
+        case TokenWord {} then None {}
+        case _ then
+            if noDoc then None {}
+            else Some (reverse acc)
+        end
     in
     work "" true
 
@@ -32,16 +35,19 @@ let parseDoc : use TokenReader in [Token] -> Option String =
         match stream with [token] ++ rest then
             let reset = lam allow. work rest [] allow in
             let keep = lam allow. work rest (cons token acc) allow in
-            let skip = lam allow. work rest acc allow in            
+            let skip = lam allow. work rest acc allow in
 
             switch token 
             case TokenMultiLineComment {} then keep true
             case TokenComment {} then keep false
             case TokenSeparator { content = content } then
-                if lti (strCount content '\n') 2  then
+                switch strCount content '\n'
+                case 0 then skip false
+                case 1 then
                     if allowNewLine then skip false
                     else reset false
-                else reset false
+                case _ then reset false
+                end
             case _ then reset false
             end
         else if null acc then None {}

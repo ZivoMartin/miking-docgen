@@ -4,7 +4,7 @@ include "./utils.mc"
 
 include "../global/logger.mc"
 include "../global/util.mc"
-include "../extracting/objects.mc"
+include "../global/objects.mc"
 
 lang AstStreamInterface = MExprPrettyPrint  + Objects
 
@@ -134,7 +134,7 @@ lang RecursiveAstStream = AstStreamInterface
   
       let database = foldl (
           lam acc. lam binding.
-             match decomposeLangItemName binding.ident.0 with Some (langName, itemName) in
+             match decomposeLangItemName binding.ident.0 with Some (_, itemName) in
              let obj = ObjSem { langName = langName, ty = Some binding.tyBody, datas = objDefaultDatas () } in
              hmInsert itemName obj acc
          ) (hashmapEmpty ()) bindings
