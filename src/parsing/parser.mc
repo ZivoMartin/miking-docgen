@@ -7,7 +7,7 @@ include "../global/util.mc"
 include "../global/namespace-utils.mc"
 include "../options/docgen-options.mc"
 include "../global/objects.mc"
-include "../global/source-code/source-code.mc"
+include "../global/source-code.mc"
 
 include "seq.mc"
 include "hashmap.mc"
@@ -98,7 +98,7 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
                     let obj = objWithSourceCode obj code in
                     { obj = Some obj, astStream = astStream, rest = rest, newPos = newPos }
                 else
-                    parsingWarn "Running out of nodes.";
+                    parsingWarn (join ["AstStream ended unexpectedly while parsing. Current position: ", namespace, "."]);
                     default
             else
                 let lastPos = strGetLastPos content pos in
@@ -130,7 +130,7 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
             fileReadClose rc;
             s
         else
-            parsingWarn (join ["Failed to open ", loc, "."]);
+            parsingWarn (join ["Failed to open file: ", loc, "."]);
             ""
         in
 
@@ -139,7 +139,9 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
 
         let getProgName : String -> String =
             lam loc.
-            optionGetOrElse (lam. parsingWarn "Namespace is empty."; "") (namespaceLast loc)
+            optionGetOrElse
+                (lam. parsingWarn "Failed to determine namespace from file path."; "")
+                (namespaceLast loc)
         in
         let progName = getProgName loc in
         let progSourceCode = tokensToSourceCode tokens in
@@ -201,7 +203,7 @@ let parse : use Objects in ParsingOptions -> MAst -> Object =
 
         { includeSet = includeSet, astStream = astStream, obj = obj, newPos = newPos }
         else
-            error (join ["Found an invalid path during parsing: ", loc, "."])
+            error (join ["Invalid file path encountered during parsing: ", loc, "."])
     in
     
     match goHere pwd basePath with { path = basePos } in

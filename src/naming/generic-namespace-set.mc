@@ -32,7 +32,7 @@ let namespaceSetGetByName : all a. NamespaceSet a -> String -> Option a =
         match namespaceSetGetById set id with Some namespace then
             Some namespace
         else
-            namingWarn (join ["The element ", name, " exists in the name map but not in the id map."]);
+            namingWarn (join ["Inconsistent namespace state: ", name, " exists in name map but not in id map."]);
             None {}
     ) (namespaceSetNameToId set name))
 
@@ -57,5 +57,5 @@ let namespaceSetUpdate : all a. NamespaceSet a -> String -> a -> NamespaceSet a 
     lam set. lam name. lam namespace.
     match hmLookup name set.nameMap with Some ([id] ++ rest) then
          { set with idMap = hmIntInsert id namespace set.idMap }
-    else namingWarn (join ["Updating a non existing entry: ", name, "."]);
+    else namingWarn (join ["Updating a non-existent namespace entry: ", name, "."]);
          namespaceSetInsert set name namespace

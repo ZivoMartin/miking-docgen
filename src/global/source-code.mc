@@ -1,9 +1,5 @@
--- This module defines the data structure used by the colorizer to represent a
--- highlighted token from the source code. Each token is paired with a
--- `SourceCodeWordKind` indicating how it should be rendered (keyword, name,
--- type, number, or default).
+include "../parsing/token-readers.mc"
 
-include "../../parsing/token-readers.mc"
 
 -- Visual categories used by the colorizer.
 lang SourceCodeWordKinds
@@ -43,7 +39,7 @@ let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
     switch token
     case TokenWord { content = content } then
         let kind = match content with "" then
-            warn "Detected an empty word in formatterNext";
+            warn "Encountered empty token content during source code formatting.";
             CodeDefault {}
         else match content with "mexpr" | "utest" | "with" | "recursive" | "match" | "end" |
              "switch" | "in" | "include" | "case" | "if" | "else" | "type" | "con" |
@@ -56,3 +52,20 @@ let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
         build kind
     case _ then build (CodeDefault {})
     end
+
+-- A linear buffer of words where `None` denotes a child-boundary placeholder.
+type SourceCode = [SourceCodeWord]
+
+let tokensToSourceCode : use TokenReader in [Token] -> SourceCode = map sourceCodeWordFormat
+
+-- Cast a string to a SourceCode by tokenizing the string until eof.
+recursive let strToSourceCode : String -> SourceCode = use TokenReader in lam s.
+    match s with "" then [] else
+    match next s pos0 with { token = token, stream = stream } in
+    let word = sourceCodeWordFormat token in
+    cons word (strToSourceCode stream)
+end
+
+let sourceCodeIsEmpty : SourceCode -> Bool = null
+
+let sourceCodeEmpty : () -> SourceCode = lam . []

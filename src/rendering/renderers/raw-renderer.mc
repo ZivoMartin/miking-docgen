@@ -73,7 +73,7 @@ lang RawRenderer = RendererInterface
               fileWriteString wc (searchReact searchDatas);
               fileWriteClose wc
         else
-              renderingWarn (concat "Failed to create search file: " path)
+              renderingWarn (join ["Failed to write file: ", path, "."])
     
     sem renderGetSearchPath =
     | opt -> ""
@@ -157,9 +157,9 @@ lang RawRenderer = RendererInterface
                      let doc = objTryGetDoc cons in
                      let doc = strTrim doc in
                      if null doc then right else join [right, ": ", doc]
-                 else renderingWarn "A constructor were expected here."; "")
+                 else renderingWarn "Constructor expected here (internal error)."; "")
                  constructors)
-        else renderingWarn (join ["Failed to render constructors of ", objName obj, "."]); ""
+        else renderingWarn (join ["Failed to retrieve constructors for type ", objName obj, "."]); ""
 
     sem renderSynVariants (obj: Object) (variants: [SynVariant]) =
     | opt -> let opt = fixOptFormat opt in

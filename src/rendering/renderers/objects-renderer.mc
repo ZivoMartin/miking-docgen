@@ -13,11 +13,11 @@ lang ObjectsRenderer = Objects + Formats
     sem objUrlFetchFailed =
     | obj -> lam name. lam my.
       renderingWarn (join [
-          "Failed to fetch ", if my then "my" else "the", " url with the name ", name, ".\n",
-          "Here are the details of the fetcher object:\n",
-          "namespace=", objNamespace obj, "\n",
-          "name=", objName obj, "\n",
-          "id=", int2string (objId obj), "\n"
+          "Failed to resolve ", if my then "my" else "the", " url for name ", name, ".\n",
+          "Object details:\n",
+          "    namespace: ", objNamespace obj, "\n",
+          "    name: ", objName obj, "\n",
+          "    id: ", int2string (objId obj), "\n"
       ])
 
     sem objGetMyLink : Object -> RenderingOptions -> String

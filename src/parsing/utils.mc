@@ -51,6 +51,10 @@ let computeObjectSpanning : use TokenReader in String -> Pos -> Pos -> Pos -> { 
 
     { code = code, rest = rest, newPos = newPos }
 
+let isValidBlockOpener : String -> Bool =
+    lam s.
+    match s with "syn" | "sem" | "let" | "type" | "con" | "utest" | "mexpr" then true else false
+
 type GotoFirstWordRes = { doc: String, doc: [use TokenReader in Token], pos: Pos, rest: String, isLang: Bool }
 recursive let gotoFirstWord : use TokenReader in String -> [Token] -> Pos -> Option GotoFirstWordRes =
     lam rest. lam acc. lam pos.
@@ -59,7 +63,11 @@ recursive let gotoFirstWord : use TokenReader in String -> [Token] -> Pos -> Opt
     case { token = TokenEof {} } then None {}
     case { token = TokenWord { content = !("recursive" | "end") & content } } then
         Some { doc = reverse acc, pos = pos, rest = rest, isLang = eqString "lang" content }
-    case { token = TokenWord {}, pos = pos, stream = rest } then
+    case { token = TokenWord { content = content }, pos = pos, stream = rest } then
+        (if (not (isValidBlockOpener content)) then
+            parsingWarn (join ["Wrong block opener detected: ", content, "."])            
+        else ());
+
         let rest = if null rest then rest else tail rest in -- We consume the separator before the let.
         gotoFirstWord rest acc pos
     case { token = token, pos = pos, stream = rest } then gotoFirstWord rest (cons token acc) pos
@@ -94,17 +102,16 @@ recursive let strGetLastPos : String -> Pos -> Pos =
     end
 end
 
-let decomposeLangItemName : String -> Option (String, String) =
-    lam name.
-    match strSplitOnce name '_'
-    with Some (langName, itemName) then Some (langName, itemName)
+let belongToTheLang : String -> String -> Bool =
+    lam langName.
+    strStartsWith (concat langName "_")
+
+let extractItemName : String -> String -> Option String =
+    lam langName. lam itemName.
+    if belongToTheLang langName itemName then
+        Some (subsequence itemName (addi 1 (length langName)) (length itemName))
     else None {}
 
-let belongToTheLang : String -> String -> Bool =
-    lam langName. lam itemName.
-    match decomposeLangItemName itemName
-    with Some (actualLangName, _) then eqString actualLangName langName
-    else false
 
 recursive let getNextWord : String -> Option { stream: String, word: String } =
     lam stream.

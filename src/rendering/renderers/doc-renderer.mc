@@ -19,7 +19,7 @@ lang DocContentInterface = RendererInterface
 
     sem renderDocContent : Object -> Bool -> DocContent -> RenderingOptions -> String
     sem renderDocContent (obj: Object) (renderHooks: Bool) =
-    | _ -> lam opt. renderingWarn "docContentStr is not fully implemented."; ""
+    | _ -> lam opt. renderingWarn "Doc content rendering is not fully implemented (fallback used)."; ""
 
 end
 
@@ -124,7 +124,7 @@ lang DocObjectInterface = DocContentLang
 
     sem renderDocObject : Object -> Bool -> DocObject -> RenderingOptions -> String
     sem renderDocObject (obj: Object) (renderHooks: Bool) =
-    | _ -> lam str. renderingWarn "One of the doc object does not implement docObjToStr."; ""
+    | _ -> lam str. renderingWarn "A documentation object does not implement rendering (internal error)."; ""
 
     sem docObjectFetchDocLines : [String] -> { doc: [String], rest: [String] }
     sem docObjectFetchDocLines =
@@ -183,7 +183,7 @@ lang DocObjectArgLang = DocObjectInterface
 
         { stream = rest, obj = Some (DocObjectArg { doc = doc, arg = arg, t = t }) }
       else
-        renderingWarn "You have an incorrect .lam declaration in your code. Closing bracket is missing.";
+        renderingWarn "Invalid `.lam` directive: missing closing `]`.";
         { stream = lines, obj =  None {}}
 end
 
@@ -262,7 +262,7 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
        if and (strStartsWith beginDelimitor sTrimmed) (strEndsWith endDelimitor sTrimmed) then
           let lines = map strTrim (tail (init (strSplit "\n" sTrimmed))) in
           if any (lam l. not (strStartsWith beginingOfLine l)) lines then
-             renderingWarn "One of the lines doesn't start with '*', the bloc will be treated as raw comment.";
+             renderingWarn "One or more lines do not start with `*`; the block will be treated as a raw comment.";
              DocObjectRaw s
           else
              let lines = map (lam l. strTrim (tail l)) lines in
@@ -280,7 +280,7 @@ lang DocRenderer = DocObjectArgLang + DocObjectBriefLang + DocObjectReturnLang
                  case DocObjectReturn { doc = doc } then
                       match acc.return with Some return then
                           match return with DocObjectReturn return in
-                          renderingWarn "You declared twice a return directive. This is probably unexpected. Docgen concatenated both descriptions.";
+                          renderingWarn "Duplicate `.return` directive detected; descriptions have been concatenated.";
                           { acc with return = Some (DocObjectReturn { return with doc = concat return.doc doc }) }
                       else 
                           { acc with return = Some obj }

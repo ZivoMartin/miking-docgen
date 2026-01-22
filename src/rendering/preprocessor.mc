@@ -15,19 +15,22 @@ let preprocess : use Objects in Object -> RenderingOptions -> () = use ObjectsRe
         match obj with ObjInclude { child = Some child } then
             preprocessRec pathMap child
         else
-            if objHasUrl obj then 
+            if objHasUrl obj then
                let path = dirname (join [opt.outputFolder, objGetMyLocation obj opt]) in
                let map = hmInsert path () pathMap in
                foldl preprocessRec map (objChildren obj)
             else pathMap            
     in
+
     let pathMap = preprocessRec (hashmapEmpty ()) obj in
     recursive let create = lam arr.
         let batchSize = 1000 in
         match arr with [] then ()
         else
             let arr = if lti (length arr) batchSize then (arr, []) else splitAt arr batchSize in
+
             let command = concat ["mkdir", "-p", join [opt.outputFolder, "/", opt.srcFolder]] arr.0 in
             let res = sysRunCommand command "" "." in
-            match res.returncode with 0 then create arr.1 else error "Failed to create folders during preprocessing"
+            match res.returncode with 0 then create arr.1
+            else error "Failed to create output directories during preprocessing." -- We fail here because otherwise we might generate files in the wrong place which could be very annoying for the user.
     in create (hmKeys pathMap)

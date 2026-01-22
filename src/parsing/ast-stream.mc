@@ -34,6 +34,16 @@ lang AstStreamInterface = MExprPrettyPrint  + Objects
     | TmDecl { decl = decl, inexpr = inexpr } -> Some (typeStreamHandleDecl decl inexpr)
     | _ -> None {}
 
+    sem extractItemFailed =
+    | ident -> lam langName.
+        parsingWarn (join
+         [ "Unable to parse item name from identifier `"
+         , ident
+         , "` using language `"
+         , langName
+         , "`."
+         ])
+
 end
 
 lang ExternalAstStream = AstStreamInterface
@@ -68,18 +78,23 @@ lang TypeAstStream = AstStreamInterface
   sem typeStreamCreateLangDatabase =
   | TmDecl { decl = DeclType { tyIdent = tyIdent, ident = ident }, inexpr = inexpr } & ctx ->
       lam langName.
-      if not (belongToTheLang langName ident.0) then { database = hashmapEmpty (), ctx = ctx } else
+      let default = { database = hashmapEmpty (), ctx = ctx } in
+      if not (belongToTheLang langName ident.0) then default else
       
-      match decomposeLangItemName ident.0 with Some (actualLangName, itemName) in
-
       let obj =
           match getOptionalType tyIdent
           with Some t then ObjType { t = Some t, datas = objDefaultDatas () } 
           else ObjSyn { langName = langName, variants = [], datas = objDefaultDatas () }
       in
 
-      let res = typeStreamCreateLangDatabase inexpr langName in
-      { res with database = hmInsert itemName obj res.database }
+      match extractItemName langName ident.0
+      with Some itemName then
+          let res = typeStreamCreateLangDatabase inexpr langName in
+          { res with database = hmInsert itemName obj res.database }
+      else
+          extractItemFailed ident.0 langName;
+          default
+      
 
   sem typeStreamHandleDecl =
   | DeclType { ident = ident, tyIdent = tyIdent, info = info } ->
@@ -99,7 +114,6 @@ lang ConAstStream = AstStreamInterface
 
       if not (belongToTheLang langName ident.0) then { database = hashmapEmpty (), ctx = ctx } else
     
-      match decomposeLangItemName ident.0 with Some (actualLangName, itemName) in
       typeStreamCreateLangDatabase inexpr langName
       
   sem typeStreamHandleDecl =
@@ -128,15 +142,17 @@ lang RecursiveAstStream = AstStreamInterface
   | TmDecl { decl = DeclRecLets { bindings = bindings, info = info }, inexpr = inexpr } & ctx ->
       lam langName.
       let ident = tail (head bindings).ident.0 in -- sem name always start with a v, so we remove it.
-
-      if not (belongToTheLang langName ident) then { database = hashmapEmpty (), ctx = ctx } else
-      match decomposeLangItemName ident with Some (actualLangName, itemName) in
-  
+      if not (belongToTheLang langName ident) then printLn ".."; { database = hashmapEmpty (), ctx = ctx } else
       let database = foldl (
           lam acc. lam binding.
-             match decomposeLangItemName binding.ident.0 with Some (_, itemName) in
-             let obj = ObjSem { langName = langName, ty = Some binding.tyBody, datas = objDefaultDatas () } in
-             hmInsert itemName obj acc
+             let ident = binding.ident.0 in
+             match extractItemName langName (tail ident)
+             with Some itemName then
+                 let obj = ObjSem { langName = langName, ty = Some binding.tyBody, datas = objDefaultDatas () } in
+                 hmInsert itemName obj acc
+             else
+                 extractItemFailed ident langName;
+                 acc
          ) (hashmapEmpty ()) bindings
       in
       { database = database, ctx = inexpr }
@@ -162,7 +178,7 @@ lang RecursiveAstStream = AstStreamInterface
       let ctx = createDecl bindings in
       optionGetOrElse
           (lam.
-              parsingWarn "Parsing the first recursive binding failed.";
+              parsingWarn "Failed to extract the first recursive binding (internal invariant violation).";
               let dummyObject = ObjUtest (objDefaultDatas ()) in
               { ctx = ctx, name = "", info = NoInfo (), obj = dummyObject })
           (typeStreamNext ctx)

@@ -8,7 +8,6 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
     lam stream. lam pos. lam database. lam longestPrefix. lam isStdlib. lam namespace.
     use AstStream in
     use TokenReader in
-
     recursive let splitStream =
         lam stream. lam acc. lam pos. lam switchCount.
         match next stream pos with { token = token, stream = stream, pos = newPos } in
@@ -24,7 +23,7 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
         case TokenWord { content = "end" } then
             if eqi switchCount 0 then return ()
             else continue (subi switchCount 1)
-        case TokenEof {} then parsingWarn "Failed to get the end of the lang."; return ()
+        case TokenEof {} then parsingWarn "Failed to find the end of the language definition."; return ()
         case _ then continue switchCount
         end
     in
@@ -33,11 +32,46 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
     let buildPosVec =
         lam tokens.
         let lastToken = last tokens in
-        let tokens =
-            filter (lam token. match token.0 with TokenWord { content = "syn" | "sem" | "type" } then true else false) tokens
+        recursive let work =
+            lam tokens. lam acc.
+            if null tokens then reverse (cons lastToken.1 acc) else
+            let token = head tokens in
+            let tokens = tail tokens in
+
+            let go =
+                lam. work tokens (cons token.1 acc)
+            in
+            let skip =
+                lam. work tokens acc
+            in
+
+            switch token.0
+            case TokenWord { content = "syn" | "sem" } then go ()
+            case TokenWord { content = "type" } then
+                recursive let isTypeDefNested =
+                    lam tokens. lam useCount.
+                    match tokens with [token] ++ tokens then
+                        switch token.0
+                        case TokenWord { content = "in" } then
+                            if eqi 0 useCount then true
+                            else isTypeDefNested tokens (subi useCount 1)
+                        case TokenWord { content = "use" } then
+                            isTypeDefNested tokens (addi useCount 1)
+                        case TokenWord { content = "syn" | "sem" | "type" | "end" } then
+                            false
+                        case _ then
+                            isTypeDefNested tokens useCount
+                        end
+                    else
+                        parsingWarn "Failed to close the type definiton.";
+                        false
+                in
+                if isTypeDefNested tokens 0 then skip ()
+                else go ()
+            case _ then skip ()
+            end
         in
-        let tokens = concat tokens [lastToken] in
-        map (lam t. t.1) tokens
+        work tokens []
     in
 
     let parseHeader =
@@ -46,7 +80,7 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
         let skipLang =
             lam stream.
             match skipString "lang" stream with Some stream then stream
-            else parsingWarn "The lang definition doesn't start with a lang keyword."; stream
+            else parsingWarn "Language definition does not start with the `lang` keyword."; stream
         in        
 
         let getName = getNextWord in
@@ -54,21 +88,19 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
 
         recursive let getParents =
             lam stream. lam acc.
-
             let skipPlus = skipString "+" in
             match next stream pos0 with { token = token, stream = stream } in -- we use pos0 because positions are not important here.
             match token with TokenWord { content = parent } then
                 let acc = cons parent acc in
                 match skipPlus stream with Some stream then getParents stream acc
                 else { parents = reverse acc, stream = stream }
-            else getParents stream acc                
+            else getParents stream acc
         in
 
         let stream = skipLang stream in
         match getName stream with Some { word = name, stream = stream } then
-
             let parents =
-                match skipEqual stream with Some stream then getParents stream []
+                match skipEqual stream with Some stream then getParents stream [] 
                 else { stream = stream, parents = [] }
             in
             match parents with { parents = parents, stream = stream } in
@@ -78,7 +110,7 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
 
             { obj = obj, stream = stream }
                 
-        else parsingWarn "Failed to reach the name of the language.";
+        else parsingWarn "Failed to parse the language name.";
              { obj = ObjLang { parents = [], datas = objDefaultDatas (), children = [] }, stream = stream }
     in
 
@@ -96,7 +128,7 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
                 match parseDoc doc with Some doc then objWithDoc obj doc else obj
             in
 
-            if isLang then parsingWarn "Detected a nested lang during lang parsing."; return () else
+            if isLang then parsingWarn "Detected a nested language definition during language parsing."; return () else
 
             match computeObjectSpanning rest pos p1 p2
             with { code = code, rest = rest, newPos = newPos } in
@@ -107,7 +139,7 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
             let fetchObj =
                 lam.
                 match hmLookup name database with Some obj then obj
-                else parsingWarn (join ["Failed to fetch ", name, " from the database"]);
+                else parsingWarn (join ["Failed to fetch `", name, "` from the language database. Location: ", namespace, "."]);
                 ObjType { t = None {}, datas = objDefaultDatas () } -- dummy node
             in
 
@@ -120,7 +152,7 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
                     ObjSyn { langName = langName, variants = variants, datas = objDefaultDatas () }
                 case "sem" then fetchObj ()
                 case _ then
-                    parsingWarn (join ["Unexpected word: ", kind, "."]); fetchObj ()
+                    parsingWarn (join ["Unexpected keyword ", kind, " in language definition."]); fetchObj ()
                 end
             in
 
@@ -137,10 +169,10 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
             -- of the next node
             collectChildren rest (tail posVec) newPos (cons obj acc) namespace langName
 
-            else parsingWarn "Failed to reach the kind word."; return ()
-            else parsingWarn "Failed to reach the name word."; return ()
+            else parsingWarn "Failed to parse the declaration kind (type/syn/sem)."; return ()
+            else parsingWarn "Failed to parse the declaration name."; return ()
         else
-            parsingWarn "Failed to reach the next word in the lang parsing."; return ()    
+            parsingWarn "Failed to locate the next declaration in the language body."; return ()    
     in
 
     match splitStream stream [] pos 0 with { stream = rest, newPos = newPos, tokens = tokens } in

@@ -24,8 +24,8 @@ let typeNamespaceInsertNewCon : TypeNamespaceSet -> use Objects in Object -> Typ
             let typedef = { typedef with constructors = concat typedef.constructors [obj] } in
             namespaceSetUpdate set (objName typedef.typeObj) typedef
         else
-            namingWarn (join ["Type ", parentType, " is not registered in the type nameset."]); set
-    else namingWarn "typeNamespaceInsertNewCon only takes in parameter Con arguments."; set
+            namingWarn (join ["Type ", parentType, " is not registered in the type namespace."]); set
+    else namingWarn "Invalid object passed to typeNamespaceInsertNewCon (expected constructor)."; set
 
 let typeNamespaceGetTypeConstructors : use Objects in TypeNamespaceSet -> Object -> Option [Object] =
     use Objects in
@@ -39,7 +39,7 @@ let typeNamespaceGetTypeConstructors : use Objects in TypeNamespaceSet -> Object
                 if eqi (objId obj) (objId typedef.typeObj) then
                      Some typedef.constructors
                 else None {}
-            else namingWarn (join ["Failed to fetch ", int2string id, " from the id map."]); None {}
+            else namingWarn (join ["Failed to retrieve type namespace entry with id ", int2string id, "."]); None {}
         ) ids
-    else namingWarn (join ["Failed to fetch the constructors of ", name, "."]); None {}
-    else namingWarn "typeNamespaceGetTypeConstructors only takes type in parameter."; None {}
+    else namingWarn (join ["Failed to retrieve constructors for type ", name, "."]); None {}
+    else namingWarn "typeNamespaceGetTypeConstructors expects a type object."; None {}

@@ -163,7 +163,7 @@ let separatorMap =
     foldl
         (lam m. lam k. hmInsert k () m)
         (hashmapEmpty ())
-        ["=", "++", "|", "{", "}", "[", "]", ":", ";", ".", ",", "(", ")", "->", " ", "\n", "\t"] 
+        ["=", "++", "+", "|", "{", "}", "[", "]", ":", ";", ".", ",", "(", ")", "->", " ", "\n", "\t"]
 
 -- Predicate to check if a string is a separator
 let isSep = lam s. hmMem s separatorMap
@@ -294,7 +294,7 @@ lang IncludeTokenReader = CommAndSepSkiper
                 let token = TokenInclude { content = subsequence str 1 (subi (length str) 2), lit = join ["include", join (map lit skiped), str], skiped = skiped } in
                 buildResult token pos stream
             else
-                parsingWarn "During lexing, was waiting for an Str after `include `.";
+                parsingWarn "Expected a string literal after `include` directive during lexing.";
                 buildResult (TokenWord { content = concat "include" firstSep }) pos str
 
     sem next =

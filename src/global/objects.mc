@@ -1,6 +1,6 @@
 include "mexpr/ast.mc"
 include "./logger.mc"
-include "./source-code/source-code.mc"
+include "./source-code.mc"
 
 -- Interface declaring all semantics for Objects
 lang ObjectInterface = MExprAst
@@ -74,7 +74,7 @@ lang ObjectInterface = MExprAst
     sem objMergeFailed : Object -> Object -> Object
     sem objMergeFailed =
     | obj1 -> lam obj2.
-            warn (join ["You cannot merge ", objToString obj1, " and ", objToString obj2, "."]);
+            warn (join ["Cannot merge ", objToString obj1, " and ", objToString obj2, "(incompatibles kinds)."]);
             obj1
 
     sem objMerge : Object -> Object -> Object
@@ -114,35 +114,34 @@ lang ObjectInterface = MExprAst
     -- Warns if the namespace does not start with the given prefix.
     sem objWithPrefix =
     | obj -> lam prefix.
-        let process = lam.
-            let basePrefix = objNamespace obj in
-            let lengthBasePrefix = length basePrefix in
-            let lengthPrefix = length prefix in
+        let namespace = objNamespace obj in
+        let lengthNamespace = length namespace in
+        let lengthPrefix = length prefix in
 
-            if objIsStdlib obj then basePrefix
-            else if strStartsWith prefix basePrefix then
-                subsequence basePrefix lengthPrefix lengthBasePrefix
+        let prefixSize = 
+            if null namespace then
+                warn (join ["The object", objName obj, " does not have a namespace yet. "]);
+                lengthNamespace
+            else if pathIsInStdlib prefix then
+                lengthPrefix
+            else if objIsStdlib obj then
+                length stdlibLoc
+            else if strStartsWith prefix namespace then
+                lengthPrefix
             else
-                error (join ["The namespace ", basePrefix, " does not start with the prefix ", prefix, "."])
-        in
-        let namespace = match prefix with "" then objNamespace obj else process () in
-        let namespace =
-            if strStartsWith "/" namespace then namespace
-            else cons '/' namespace
+                warn (join ["Namespace ", namespace, " does not start with expected prefix ", prefix, "."]);
+                lengthNamespace
         in
 
-        objSetField obj (lam d. { d with namespace = namespace })
+        let newNamespace = subsequence namespace prefixSize lengthNamespace in
+        let newNamespace = if strStartsWith "/" newNamespace then newNamespace else cons '/' newNamespace in
+
+        objWithNamespace obj newNamespace
+
 
     -- Replaces namespace; strips stdlib prefix if present; re-applies stored `prefix`.
     sem objWithNamespace =
     | obj -> lam namespace.
-        let namespace =
-            if strStartsWith stdlibLoc namespace then
-                subsequence namespace (length stdlibLoc) (length namespace)
-            else
-                namespace
-        in
-        
         objSetField obj (lam d. { d with namespace = namespace })
 
     -- Returns true if the object has a meaningful id.
@@ -252,7 +251,7 @@ lang ObjInclude = ObjectInterface
       switch l
       case 0 then ObjInclude { f with child = None {} }
       case 1 then ObjInclude { f with child = Some (head children) }
-      case _ then warn (join ["Inlude nodes should only have one or 0 children, received ", int2string l]) ; obj
+      case _ then warn (join ["Include nodes must have zero or one child; received ", int2string l, "."]) ; obj
       end
 
     sem objChildren =
@@ -264,7 +263,7 @@ lang ObjInclude = ObjectInterface
 
     sem objToString =
     | ObjInclude { pathInFile = p } -> join ["ObjInclude, path = ", p]
-
+    
     sem objGetFirstWord =
     | ObjInclude {} -> "include"
 

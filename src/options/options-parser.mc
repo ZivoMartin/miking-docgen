@@ -10,6 +10,7 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
 
         case ["--debug"] ++ rest then parse rest { opts with debug = true } 
         case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
+        case ["--scan-only"] ++ rest then parse rest { opts with scanOnly = true }
 
         case ["--javascript"] ++ rest then parse rest { opts with fmtLang = Js {} }
         case ["--typescript"] ++ rest then parse rest { opts with fmtLang = Ts {} }
@@ -37,7 +38,7 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
            if sysFileExists s then
               parse rest { opts with files = cons s opts.files }
            else
-              error (join ["While parsing options: file", s, " does not exist."])
+              error (join ["File not found: ", s, "."])
         case [] then opts
         end
     in

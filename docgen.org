@@ -1,3 +1,5 @@
+* Features
+** TODO Support the --no-warn flag
 * DONE Simplification
 ** DONE Define a data structure weaker than the DocTree
 This structure is not recursive and represents the new version of the code,
@@ -53,6 +55,9 @@ output folder using url prefix relative to the actual root.
 ** DONE Remove the longest output prefix mechanism inside the actual processing (since we now do it beforehand)
 ** DONE Smoothly integrate the new prefix inside the processing using the prefix fields of the object
 ** DONE Integrate the scanning phase in the execution context
+** DONE Add a scan-only flag to see the files that are going to be processed, and the ignored ones.
+** DONE Add folder support in docgen-ignore
+** DONE Add a .docgen-ignore feature allowing you to give some file you don't want to process
 * Project health
 ** DONE See if we can remove the isRootStdlib flag.
 ** DONE Factorise renderedMap logic inside the rendered map module and use custom functions
@@ -60,9 +65,9 @@ output folder using url prefix relative to the actual root.
 ** DONE Remove the dead code
 ** DONE Put all the shared api in global: objects, file-opener, ...
 ** DONE Rename ObjectKinds familiy of items
-** TODO Clean all error/warning messages
-** TODO If a link is incorrect in a comment, display a proper warning or error message
+** DONE Clean all error/warning messages
 ** TODO Refresh the whole documentation of the project
+** TODO Remove all the TODO in the code
 ** DONE Replace row by raw everywhere
 ** DONE Use strictly-lower instead of lower-or-equal in the name map (for correctness)
 ** DONE Clean “use in process” of the namer (for correctness)
@@ -128,6 +133,12 @@ Push/pop the current language usage. When pushing, fetch the language (guarantee
 * TOFIX
 ** DONE Doc not appears on double elements
 ** TODO The order of the declaration is incorrect.
+** DONE type declared in sem are breaking the pos vector.
+** DONE Warning while processing /home/martin/.local/lib/mcore/stdlib/mexpr/cps.mc...
+[WARN] from Parsing: Unexpected keyword FloatStringConversionAstin language defi
+[WARN] from Parsing: Failed to fetch `sem` from the language database.
+[WARN] from Naming: Parent language does not exist.
+[WARN] from Naming: Failed to retrieve parent language namespace.
 ** DONE From is not rendering a link
 ** DONE Bad come back link
 ** DONE Cannot provide a nested file
@@ -136,7 +147,7 @@ Push/pop the current language usage. When pushing, fetch the language (guarantee
 ** DONE Handle the case where the documentation of the first object is the one of the program.
 The first object should be prioritary.
 ** DONE Fix the type constructor shadowing
-** TODO When a nested stdlib file is provided we get incorrect output folder.
+** DONE When a nested stdlib file is provided we get incorrect output folder.
 ** DONE Make sure that if we give an stdlib file in input the output is not considered as inStdlib.
 ** DONE We cannot alias a file because . is banned
 ** DONE Parent link is down
@@ -147,13 +158,14 @@ The first object should be prioritary.
 ** DONE Recover doc-renderer
 ** DONE Fix folder input of outer files (covered by rewrite)
 ** DONE Fix the urlPrefix issue 
-* Optimization
+* DONE Optimization
 ** DONE Simplify the mast-gen step, and optimise the labeling step.
 ** DONE Skip mexpr and utest in labeling
 ** DONE Try to remove the prefix from the objects.
 ** DONE In rendering, keep track of what files we already rendered during previous steps
 ** DONE During naming, stop when the object should not be rendered anymore
-** TODO Do not inject children from a SINGLE parent lang IF you don't already have it
+** DONE Check if we are not injecting n square during naming
+** DONE Do not inject children from a SINGLE parent lang IF you don't already have it
 The idea is that if it comes from more than one parent then it is an assembling
 and so generate new information, but if it comes from a single parent
 and you don't add anything on it then you just duplicate informations then

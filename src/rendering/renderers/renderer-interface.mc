@@ -24,7 +24,7 @@
 include "../../global/objects.mc"
 include "../../global/format.mc"
 include "../../global/format-language.mc"
-include "../../global/source-code/source-code-word.mc"
+include "../../global/source-code.mc"
 
 include "../rendering-data.mc"
 include "../rendering-options.mc"

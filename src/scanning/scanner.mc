@@ -2,6 +2,7 @@ include "../global/file-opener.mc"
 include "../global/util.mc"
 
 include "./scanning-options.mc"
+include "./docgen-ignore.mc"
 include "./scanning-output.mc"
 
 let scan : ScanningOptions -> ScanningOutput =
@@ -15,12 +16,17 @@ let scan : ScanningOptions -> ScanningOutput =
             if isFolder file then
                match folderFetchMcFiles file
                with Some newFiles then concat newFiles files
-               else error (join ["Failed to get access to ", file, "."])
+               else error (join ["Cannot read directory ", file, " (permission denied or not accessible)."])
             else if sysFileExists file then cons file files
-            else error (join ["The file ", file, "doesn't exist."])
+            else error (join ["File not found: '", file, "'."])
         ) [] opt.files
     in
 
+    -- Always include string.mc, because we
+    -- need a definition for the builtin type
+    -- such as Int, Char, and String, so we use
+    -- pages of the stdlib string.mc int.mc char.mc,
+    -- all included by string.mc.
     let files = cons "string.mc" files in
     
     let normalizeFiles : String -> [String] -> [String] = lam pos.
@@ -57,7 +63,7 @@ let scan : ScanningOptions -> ScanningOutput =
             let set = foldl (lam set. lam i. hmRemove i set) ctx.set includes in
             go { ctx with set = set } includes
         else
-            error (join ["Failed to open ", pos])
+            error (join ["Failed to open file: '", pos, "'."])
     in                           
 
     let filesSet = foldl (lam acc. lam f. hmInsert f () acc) (hashmapEmpty ()) files in
@@ -103,4 +109,14 @@ let scan : ScanningOptions -> ScanningOutput =
             { path = path, outputFolder = dirname outputFolder }
         ) files
     in
-    { inputs = files, longestPrefix = commonPrefix, onlyStdlib = onlyStdlib }
+
+    let output = { defaultScanningOutput () with
+        inputs = files,
+        longestPrefix = commonPrefix,
+        onlyStdlib = onlyStdlib
+    } in
+    let output = ignoreFilesToIgnore output in
+    
+    (if opt.scanOnly then logScanningOutput output else ());
+
+    output

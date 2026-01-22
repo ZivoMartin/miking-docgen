@@ -114,8 +114,7 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
 
                 syns = filterIt (lam k. match k with ObjSyn {} then true else false),
                 sems = filterIt (lam k. match k with ObjSem {} then true else false),
-                types = filterIt (lam k. match k with ObjType {} then true else false),
-                cons = filterIt (lam k. match k with ObjCon {} then true else false)
+                types = filterIt (lam k. match k with ObjType {} then true else false)
            } in
 
            let name = objName obj in
@@ -136,27 +135,26 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
 
                let syns = createChildren namespace.syns in
                let sems = createChildren namespace.sems in
-               let cons = createChildren namespace.cons in
                let types = createChildren namespace.types in
 
-               join [children, syns, sems, cons, types]
+               join [children, syns, sems, types]
            in
 
 
            let explicit = match langNamespaceGetExplicitChildren langNamespaceSet name with Some explicit then explicit else
-                       namingWarn (join ["Failed to fetch the explicit lang namespace of ", name, "."]); langNamespaceDefault
+                       namingWarn (join ["Failed to retrieve explicit namespace for language ", name, "."]); langNamespaceDefault
            in
            
            let implicit = match langNamespaceGetImplicitChildren langNamespaceSet name with Some implicit then implicit else
-                       namingWarn (join ["Failed to fetch the implicit lang namespace of ", name, "."]); langNamespaceDefault
+                       namingWarn (join ["Failed to retrieve implicit namespace for language ", name, "."]); langNamespaceDefault
            in
 
-           -- TODO: Check if we are not injecting n square children here.
+           -- Assigning to each merged object there source code and children.
            let children = updateChildren [] (
                    lam obj.
                    let filtered = filter (lam original. eqString (objName original) (objName obj)) originalChildren in
                    if null filtered then
-                        namingWarn (join ["Explicit children of the lang namespace and actual children doesn't match for ", objName obj, "."]);
+                        namingWarn (join ["Explicit language namespace children do not match actual children for ", objName obj, ".."]);
                         [objWithoutChildren obj]                        
                    else
                         let filtered = reverse filtered in

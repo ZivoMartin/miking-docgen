@@ -44,7 +44,7 @@ type DocGenOptions = use Formats in use FormatLanguages in {
     noOpen: Bool,              -- Whether to skip opening the result in a web browser.
     fmt: Format,               -- Output format (HTML, Markdown, MDX).
     fmtLang: FormatLanguage,   -- Output language for generated React components (JS/TS).
-    files: [String],             -- Path to the input files.
+    files: [String],           -- Path to the input files.
     debug: Bool,               -- Enable debug mode.
     noWarn: Bool,              -- Suppress warnings.
     outputFolder: String,      -- Destination folder for generated output.
@@ -52,7 +52,8 @@ type DocGenOptions = use Formats in use FormatLanguages in {
     urlPrefix: String,         -- Prefix for generated URLs.
     letDepth: Option Int,      -- Maximum nesting depth of let-bindings.
     stdlibFolder: String,      -- Name of the folder in which we should store stdlib files.
-    noCode: Bool               -- If true, implementations will not appears on the output.
+    noCode: Bool,              -- If true, implementations will not appears on the output.
+    scanOnly: Bool             -- If true, we only do a scan and pretty print it.
 }
 
 -- ## optionsDefault
@@ -69,7 +70,8 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     urlPrefix = "",
     letDepth = Some 1,
     stdlibFolder = "Stdlib",
-    noCode = false
+    noCode = false,
+    scanOnly = false
 }
 
 -- ## usage
@@ -99,6 +101,7 @@ let usage = lam.
     "Debugging Options:\n",
     "  --debug                                Enable all debug modes.\n",
     "  --no-warn                              Disable all warnings.\n",
+    "  --scan-only                            Only process the scan of the project and print it.\n",    
  
     "Help:\n",
     "  --help | --h                           Show this help message.\n"

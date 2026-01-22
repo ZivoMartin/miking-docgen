@@ -124,7 +124,7 @@ let readOrNever : String -> String = lam fileName.
         fileReadClose rc;
         s
     else
-        error (join ["Failed to read a file: file ", fileName, " doesn't exists."])
+        error (join ["Failed to read a file ", fileName, " does not exist."])
 
 -- Concatenates two lists if the first one does not satisfy the given predicate.
 let concatIfNot : all a. [a] -> ([a] -> Bool) -> [a] -> [a] =
@@ -139,7 +139,7 @@ let strFullTrim = lam s.
   recursive
   let trim = lam s.
     if null s then s
-    else match head s with '\n' | ' ' | '\t' then trim (tail s)
+    else match head s with '\r' | '\n' | ' ' | '\t' then trim (tail s)
     else s
   in
   trim (reverse (trim (reverse s)))
@@ -151,7 +151,7 @@ let isFolder : String -> Bool = lam path.
   if eqi (_commandList ["test", "-d", path]) 0 then true else false
 
 let folderFetchMcFiles : String -> Option [String] = lam dir.
-  let res = sysRunCommand ["find", dir, "-type", "f", "-name", "'*.mc*'"] "" "." in
+  let res = sysRunCommand ["find", dir, "-type", "f", "-name", "'*.mc'"] "" "." in
   if neqi res.returncode 0 then None {} else
   let out = strTrim res.stdout in
   Some (if null out then [] else strSplit "\n" out)
@@ -281,6 +281,22 @@ let strWalkTo : String -> Int -> Int -> (String, String) =
             Some (concat skiped skiped2, rest)
         else None {}))
 
+let sysGetHome : () -> Option String = lam. sysGetEnv "HOME"
+
 let hashmapWithCapacity : all k. all v. Int -> HashMap k v = lam n.
   {buckets = make n [],
    nelems = 0}
+
+let pathConcat : String -> String -> String =
+    lam p1. lam p2.
+    normalizePath (join [p1, "/", p2])
+
+let pathIsAbsolute : String -> Bool = strStartsWith "/"
+
+let pathRemoveHome : String -> String =
+    lam p.
+    if strStartsWith "~/" p then
+        match sysGetHome ()
+        with Some h then pathConcat h (tail p)
+        else p
+    else p

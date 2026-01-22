@@ -60,7 +60,6 @@ let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
 
     recursive let work : Arg -> String -> Arg = lam arg. lam file.
         log (join ["Assembling ast for the file ", file, "."]);
-
         match arg with { acc = acc, includeSet = includeSet } in
 
         let removeMexpr : String -> String = lam s.
@@ -68,7 +67,7 @@ let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
                 match next s pos0 with { stream = stream, token = token } in
                 switch token
                 case TokenEof {} then acc
-                case TokenWord { content = "mexpr"} then removeMexpr stream (concat (reverse (join ["let #var\"\" = "])) acc)
+                case TokenWord { content = "mexpr"} then removeMexpr stream (concat (reverse (join ["let #var\"mexpr\" = "])) acc)
                 case _ then removeMexpr stream (concat (reverse (lit token)) acc)
                 end
             in
@@ -111,6 +110,5 @@ let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
 
         log "Type checking final ast";
         let ast = typeCheckExpr { typcheckEnvDefault with disableConstructorTypes = true} ast in
-
         ast
     else error "Failed to create temporary file."

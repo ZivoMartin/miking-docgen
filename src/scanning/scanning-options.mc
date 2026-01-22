@@ -1,5 +1,6 @@
 type ScanningOptions = {
     files: [String],
     outputFolder: String,
-    stdlibFolder: String
+    stdlibFolder: String,
+    scanOnly: Bool
 }

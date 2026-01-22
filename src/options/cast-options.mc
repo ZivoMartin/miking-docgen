@@ -19,7 +19,8 @@ let getScanningOptions : DocGenOptions -> ScanningOptions = lam opt.
     {
        files = opt.files,
        outputFolder = opt.outputFolder,
-       stdlibFolder = opt.stdlibFolder
+       stdlibFolder = opt.stdlibFolder,
+       scanOnly = opt.scanOnly
     }
 
 let getParsingOptions : Logger -> String -> String -> ParsingOptions =

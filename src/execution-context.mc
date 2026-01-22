@@ -8,7 +8,8 @@ include "./rendering/renderer.mc"
 include "./server/server.mc"
 
 type ExecutionContext =
-    use TokenReader in use Objects in {
+    use TokenReader in
+    use Objects in {
     opt: DocGenOptions,
     userOutputFolder: String,
     currentFile: String,
@@ -25,7 +26,7 @@ type ExecutionContext =
 
 let buildLogger : ExecutionContext -> String -> Logger =
     lam ctx. lam step.
-    if ctx.opt.debug then message "INFO" step else lam. ()
+    if ctx.opt.debug then message "[INFO]" step else lam. ()
 
 let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in lam ctx.
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
@@ -52,14 +53,22 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
         None {}
         
 let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
-    
     let scanningOptions = getScanningOptions opt in
+
+    if opt.scanOnly then
+        let scanRes = scan scanningOptions in
+        None {}
+    else
+
     match scan scanningOptions with {
         inputs = files,
         longestPrefix = longestPrefix,
         onlyStdlib = onlyStdlib
     } in
+    
 
+    let lengthFile = length files in
+    printLn (join ["About to process ", int2string lengthFile, " file", if eqi lengthFile 1 then "" else "s", "."]);
     let opt = if onlyStdlib then { opt with stdlibFolder = "" } else opt in
 
     let ctx = {
@@ -79,7 +88,10 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     execCtxNext ctx
 
 let crash = lam miss. lam func. lam should.
-    error (join ["Execution context: ", miss, " is missing in the exection context, ", func, " function should be called after having call the ", should, " function."])
+    error (join [
+        "Internal error: missing `", miss, "` in execution context.\n",
+        "`", func, "` must be called after `", should, "`."
+    ])
     
 type Step = ExecutionContext -> ExecutionContext
 
@@ -120,15 +132,16 @@ let render : Step =  lam ctx.
     ) ctx.searchDatas renderingRes.searchDatas in
     
     (if neqString ctx.opt.outputFolder ctx.userOutputFolder then    
+        let code = sysRemoveSrcFiles ctx.opt.outputFolder in
+        (if neqi code 0 then renderingWarn "Failed to clean temporary source files." else ());
+
+        if pathIsInStdlib ctx.longestPrefix then () else
         let newStdlibPath = normalizePath (join [ctx.opt.outputFolder, "/", ctx.opt.stdlibFolder]) in
         let actualStdlibPath = normalizePath (join [ctx.userOutputFolder, "/", ctx.opt.stdlibFolder]) in
 
-        let code = sysRemoveSrcFiles ctx.opt.outputFolder in
-        (if neqi code 0 then renderingWarn "Failed to clean source files." else ());
-
         if isFolder newStdlibPath then
             let code = sysMoveDirContents actualStdlibPath newStdlibPath in
-            if neqi code 0 then renderingWarn "Failed to move Stdlib contents." else ()
+            if neqi code 0 then renderingWarn "Failed to move standard library contents." else ()
         else ()
     else ());
 
