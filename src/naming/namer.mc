@@ -49,7 +49,9 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
                     let kind = objGetFirstWord obj in
 
                     let url = buildUrl isStdlib namespace kind in
-                    let value = { url = url, obj = objWithSourceCode obj (sourceCodeEmpty ()) } in
+                    let entryObj = objWithSourceCode obj (sourceCodeEmpty ()) in
+                    let entryObj = objWithoutChildren obj in
+                    let value = { url = url, obj = entryObj } in
                     let entry = { entry = value, id = objId obj, namespace = namespace } in
 
                     let nameMap =

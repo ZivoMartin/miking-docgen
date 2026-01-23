@@ -25,7 +25,9 @@ let docgen : DocGenOptions -> () = lam opt.
             let execCtx = parse execCtx in
             let execCtx = name execCtx in        
             let execCtx = render execCtx in
-            optionMapOr execCtx process (execCtxNext execCtx)
+            match execCtxNext execCtx
+            with Some newExecCtx then process newExecCtx
+            else execCtx
         in
 
         let execCtx = process execCtx in

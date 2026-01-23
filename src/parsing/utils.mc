@@ -53,7 +53,7 @@ let computeObjectSpanning : use TokenReader in String -> Pos -> Pos -> Pos -> { 
 
 let isValidBlockOpener : String -> Bool =
     lam s.
-    match s with "syn" | "sem" | "let" | "type" | "con" | "utest" | "mexpr" then true else false
+    match s with "lang" | "external" | "syn" | "sem" | "let" | "type" | "con" | "utest" | "mexpr" then true else false
 
 type GotoFirstWordRes = { doc: String, doc: [use TokenReader in Token], pos: Pos, rest: String, isLang: Bool }
 recursive let gotoFirstWord : use TokenReader in String -> [Token] -> Pos -> Option GotoFirstWordRes =
@@ -62,12 +62,12 @@ recursive let gotoFirstWord : use TokenReader in String -> [Token] -> Pos -> Opt
     switch next rest pos
     case { token = TokenEof {} } then None {}
     case { token = TokenWord { content = !("recursive" | "end") & content } } then
-        Some { doc = reverse acc, pos = pos, rest = rest, isLang = eqString "lang" content }
-    case { token = TokenWord { content = content }, pos = pos, stream = rest } then
         (if (not (isValidBlockOpener content)) then
             parsingWarn (join ["Wrong block opener detected: ", content, "."])            
         else ());
 
+        Some { doc = reverse acc, pos = pos, rest = rest, isLang = eqString "lang" content }
+    case { token = TokenWord {}, pos = pos, stream = rest } then
         let rest = if null rest then rest else tail rest in -- We consume the separator before the let.
         gotoFirstWord rest acc pos
     case { token = token, pos = pos, stream = rest } then gotoFirstWord rest (cons token acc) pos
@@ -96,7 +96,7 @@ let concatInfos : Info -> Info -> Info =
 recursive let strGetLastPos : String -> Pos -> Pos =
     lam s. lam pos.
     switch s
-    case "" | [_] then pos
+    case "" then pos
     case ['\n'] ++ s then strGetLastPos s { pos0 with y = addi pos.y 1 }
     case [_] ++ s then strGetLastPos s { pos with x = addi pos.x 1 }
     end

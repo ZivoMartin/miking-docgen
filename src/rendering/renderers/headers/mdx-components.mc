@@ -111,10 +111,13 @@ let mdxCss =
 "
 
 let mdxJsComponents =
-join ["import React, { useMemo, useRef, useState, useCallback, createContext, useContext } from 'react';
+join(["import React, { useMemo, useRef, useState, createContext, useContext } from 'react';
 
 ", mdxCss, "
 
+/** ------------------------------------------------------------------------------------
+ *  Utils
+ *  ---------------------------------------------------------------------------------- */
 function slugify(input) {
   return input
     .toLowerCase()
@@ -131,6 +134,9 @@ function useId(prefix) {
   return ref.current;
 }
 
+/** ------------------------------------------------------------------------------------
+ *  Context : Panels gestion
+ *  ---------------------------------------------------------------------------------- */
 const Ctx = createContext(null);
 
 function useDocBlockCtx() {
@@ -139,10 +145,18 @@ function useDocBlockCtx() {
   return ctx;
 }
 
+/** ------------------------------------------------------------------------------------
+ *  Badge
+ *  ---------------------------------------------------------------------------------- */
+
 export const Badge = ({ form }) => {
   if (!form) return null;
   return <span style={S.badge(form)}>{form}</span>;
 };
+
+/** ------------------------------------------------------------------------------------
+ *  DocBlock
+ *  ---------------------------------------------------------------------------------- */
 
 export const DocBlock = ({ title, form, link, compact = false, children }) => {
   const [open, setOpen] = useState({});
@@ -150,21 +164,21 @@ export const DocBlock = ({ title, form, link, compact = false, children }) => {
 
   return (
     <Ctx.Provider value={{ open, setOpen, compact }}>
-    <section id={anchorId} style={S.card(compact)} aria-labelledby={`${anchorId}-title`}>
-      <div style={S.header}>
-        <h3 style={S.title} id={`${anchorId}-title`}>
-          <a href={`#${anchorId}`} style={S.anchor}>
-            {title}
-          </a>
-        </h3>
-        <Badge form={form} />
-        <div style={S.spacer} />
-        {link && (
-          <a href={link} style={S.link}>→</a>
-        )}
-      </div>
-      {children}
-    </section>
+      <section id={anchorId} style={S.card(compact)} aria-labelledby={`${anchorId}-title`}>
+        <div style={S.header}>
+          <h3 style={S.title} id={`${anchorId}-title`}>
+            <a href={`#${anchorId}`} style={S.anchor}>
+              {title}
+            </a>
+          </h3>
+          <Badge form={form} />
+          <div style={S.spacer} />
+          {link && (
+            <a href={link} style={S.link}>→</a>
+          )}
+        </div>
+        {children}
+      </section>
     </Ctx.Provider>
   );
 };
@@ -174,7 +188,7 @@ export const Description = ({ children }) => {
   return <div style={S.desc}>{children}</div>;
 };
 
-export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenText, shownText }) => {
+export const ToggleWrapper = ({ children, hiddenText, shownText }) => {
   const [visible, setVisible] = useState(false);
 
   return (
@@ -190,10 +204,11 @@ export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenTe
     </div>
   );
 };
-"]
+"])
+
 
 let mdxTsComponents =
-join ["import React, { useMemo, useRef, useState, useCallback, createContext, useContext } from 'react';
+join ["import React, { useMemo, useRef, useState, createContext, useContext } from 'react';
 
 ", mdxCss, "
 

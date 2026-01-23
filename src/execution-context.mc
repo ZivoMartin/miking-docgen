@@ -15,12 +15,13 @@ type ExecutionContext =
     currentFile: String,
     files: [FileToProcess],
     longestPrefix: String,
-    renderedMap: RenderedMap,
 
     tokens: [Token],
     ast: Option MAst,
     object: Option Object,
     nameContext: Option NameContext,
+
+    renderedMap: RenderedMap,
     searchDatas: HashMap String String
 }
 
@@ -32,13 +33,15 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
           printLn (join ["Processing file ", path, "..."]);
           Some { ctx with
-              opt = { ctx.opt with outputFolder = outputFolder },
-              currentFile = path,
-              files = files,
               tokens = [],
               ast = None {},
               object = None {},
-              nameContext = None {}
+              nameContext = None {},
+
+              opt = { ctx.opt with outputFolder = outputFolder },
+              currentFile = path,
+              files = files
+              
           }
     else
 

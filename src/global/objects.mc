@@ -56,10 +56,14 @@ lang ObjectInterface = MExprAst
     sem objToString : Object -> String
     sem objGetFirstWord : Object -> String
     
-    -- TODO: See if we can remove one of them
+    -- Returns true if the object can represents an URL
     sem objHasUrl  : Object -> Bool
+    
+    -- Returns true if the object can represents a link.
+    -- Objects such as Includes represent a link without having an URL.
     sem objHasLink : Object -> Bool
-    sem objHasTests : Object -> Bool    
+
+    sem objHasTests : Object -> Bool
     sem objHasTests =
     | _ -> false
 

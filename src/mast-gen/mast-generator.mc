@@ -67,7 +67,7 @@ let buildMAstFromFile: Logger -> String -> MAst = lam log. lam file.
                 match next s pos0 with { stream = stream, token = token } in
                 switch token
                 case TokenEof {} then acc
-                case TokenWord { content = "mexpr"} then removeMexpr stream (concat (reverse (join ["let #var\"mexpr\" = "])) acc)
+                case TokenWord { content = "mexpr"} then removeMexpr stream (concat (reverse (join ["let #var\"\" = "])) acc)
                 case _ then removeMexpr stream (concat (reverse (lit token)) acc)
                 end
             in

@@ -1,5 +1,14 @@
 * Features
 ** TODO Support the --no-warn flag
+** TODO Rewrite the logic of the search engine
+I just got a brilliant idea, right now we accumulate the search engine datas into an hashmap,
+name -> url throughout the executions of all the files, so a very big problem is that you cannot
+ generate the documentation in two steps since it needs to be generated once 
+with the datas of all the files at the end.
+So the idea is, to get the hashmap, instead of accumulating the hashmap in the execution,
+once we need the datas, we walk through the output folder, get all the pages path, from the path we can deduce
+the name and the url of the page and create the search engine create the search engines data without global
+accumulator.
 * DONE Simplification
 ** DONE Define a data structure weaker than the DocTree
 This structure is not recursive and represents the new version of the code,
@@ -67,7 +76,7 @@ output folder using url prefix relative to the actual root.
 ** DONE Rename ObjectKinds familiy of items
 ** DONE Clean all error/warning messages
 ** TODO Refresh the whole documentation of the project
-** TODO Remove all the TODO in the code
+** DONE Remove all the TODO in the code
 ** DONE Replace row by raw everywhere
 ** DONE Use strictly-lower instead of lower-or-equal in the name map (for correctness)
 ** DONE Clean “use in process” of the namer (for correctness)
@@ -128,7 +137,7 @@ Push/pop the current language usage. When pushing, fetch the language (guarantee
 ** TODO Tooltip support.
 ** TODO Support for syntax variants visualisation
 ** TODO Render doc signatures without pure code to be able to put link.
-** TODO Check that the JS version is still working
+** DONE Check that the JS version is still working
 ** TODO Parent link support
 * TOFIX
 ** DONE Doc not appears on double elements
