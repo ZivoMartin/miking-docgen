@@ -76,6 +76,7 @@ output folder using url prefix relative to the actual root.
 ** DONE Rename ObjectKinds familiy of items
 ** DONE Clean all error/warning messages
 ** TODO Refresh the whole documentation of the project
+** TODO Write a docgen.md summarising the logic of docgen
 ** DONE Remove all the TODO in the code
 ** DONE Replace row by raw everywhere
 ** DONE Use strictly-lower instead of lower-or-equal in the name map (for correctness)
@@ -139,9 +140,9 @@ Push/pop the current language usage. When pushing, fetch the language (guarantee
 ** TODO Render doc signatures without pure code to be able to put link.
 ** DONE Check that the JS version is still working
 ** TODO Parent link support
-* TOFIX
+* DONE TOFIX
 ** DONE Doc not appears on double elements
-** TODO The order of the declaration is incorrect.
+** DONE The order of the declaration is incorrect.
 ** DONE type declared in sem are breaking the pos vector.
 ** DONE Warning while processing /home/martin/.local/lib/mcore/stdlib/mexpr/cps.mc...
 [WARN] from Parsing: Unexpected keyword FloatStringConversionAstin language defi

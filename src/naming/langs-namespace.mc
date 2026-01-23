@@ -39,7 +39,7 @@ type LangNamespaceDatas = {
 }
 
 type LangNamespaceSet = NamespaceSet LangNamespaceDatas
- 
+
 let langNamespaceGetById : LangNamespaceSet -> Id -> Option LangNamespace =
     lam set. lam id.
     optionMap (lam d. d.full) (namespaceSetGetById set id)
@@ -55,8 +55,12 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
     lam set. lam name. lam namespace.
     use Objects in
 
+    let synGetter = (lam namespace. namespace.syns) in
+    let semGetter = (lam namespace. namespace.sems) in
+    let typeGetter = (lam namespace. namespace.types) in
+
     -- Contains all the parents items.
-    let parents = map
+    let rawParents = map
         (lam parent.
              match langNamespaceGetById set parent with Some namespace then
                  namespace
@@ -71,31 +75,35 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
         (lam parent.
          let otherParents =
              filter
-             (lam other. not (eqString parent.objNamespace other.objNamespace)) parents
+             (lam other. not (eqString parent.objNamespace other.objNamespace)) rawParents
          in
+         
          let prune =
              lam getter.
-             filter (
-                 lam item.
-                 let shareWith =
-                     lam namespace.
-                     any (lam candidate. eqString (objName candidate) (objName item))
-                         (getter namespace)
-                         
-                 in
-                 
-                 or
-                   (shareWith namespace)
-                   (any shareWith otherParents)
-             ) (getter parent)
-         in
+               filter
+               (lam item.
+                    let shareWith =
+                      lam namespace.
+                      any
+                        (lam candidate.
+                           eqString
+                             (objName candidate)
+                             (objName item))
+                        (getter namespace)
+                    in
+                    or
+                      (shareWith namespace)
+                      (any shareWith otherParents)
+                 )
+                 (getter parent)
+           in
              
-         let syns = prune (lam namespace. namespace.syns) in
-         let sems = prune (lam namespace. namespace.sems) in
-         let types = prune (lam namespace. namespace.types) in
+         let syns = prune synGetter in
+         let sems = prune semGetter in
+         let types = prune typeGetter in
          
          { parent with syns = syns, sems = sems, types = types }
-        ) parents
+        ) rawParents
     in
 
     let unite : (LangNamespace -> [Object]) -> [Object] = lam getter.
@@ -150,21 +158,21 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
     in
     
     let full = { namespace with 
-         syns = unite (lam namespace. namespace.syns),
-         sems = unite (lam namespace. namespace.sems),
-         types = unite (lam namespace. namespace.types)
+         syns = unite synGetter,
+         sems = unite semGetter,
+         types = unite typeGetter
     } in
 
     let explicit = { namespace with 
-         syns = intersect (lam namespace. namespace.syns),
-         sems = intersect (lam namespace. namespace.sems),
-         types = intersect (lam namespace. namespace.types)
+         syns = intersect synGetter,
+         sems = intersect semGetter,
+         types = intersect typeGetter
     } in
 
     let implicit = { namespace with 
-         syns = diff (lam namespace. namespace.syns),
-         sems = diff (lam namespace. namespace.sems),
-         types = diff (lam namespace. namespace.types)
+         syns = diff synGetter,
+         sems = diff semGetter,
+         types = diff typeGetter
     } in
 
     let datas = {

@@ -142,13 +142,39 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
                join [children, syns, sems, types]
            in
 
-
-           let explicit = match langNamespaceGetExplicitChildren langNamespaceSet name with Some explicit then explicit else
-                       namingWarn (join ["Failed to retrieve explicit namespace for language ", name, "."]); langNamespaceDefault
+           let explicit =
+               match langNamespaceGetExplicitChildren langNamespaceSet name
+               with Some explicit then explicit
+               else namingWarn (join ["Failed to retrieve explicit namespace for language ", name, "."]); langNamespaceDefault
            in
-           
-           let implicit = match langNamespaceGetImplicitChildren langNamespaceSet name with Some implicit then implicit else
-                       namingWarn (join ["Failed to retrieve implicit namespace for language ", name, "."]); langNamespaceDefault
+
+           -- Recovering the original order
+           -- O(n^2) with n the amount of children (n is never big enough to make it problematic)
+           let explicit =
+               let update =
+                   lam mergedChildren.
+                   let updated = foldl (lam acc. lam originalChild.
+                       match find (lam newChild.
+                           and
+                             (eqString (objName newChild) (objName originalChild))
+                             (eqString (objGetFirstWord newChild) (objGetFirstWord originalChild))
+                       ) mergedChildren
+                       with Some child then cons child acc
+                       else acc
+                   ) [] (objChildren obj) in
+                   reverse updated
+               in
+               { explicit with
+                   syns = update explicit.syns,
+                   sems = update explicit.sems,
+                   types = update explicit.types
+               }
+           in
+
+           let implicit =
+               match langNamespaceGetImplicitChildren langNamespaceSet name
+               with Some implicit then implicit
+               else namingWarn (join ["Failed to retrieve implicit namespace for language ", name, "."]); langNamespaceDefault
            in
 
            -- Assigning to each merged object there source code and children.
@@ -175,7 +201,7 @@ let name : use Objects in Logger -> NamingOptions -> Object -> NamingRes =
 
            -- Not really necessary by the way
            let children = updateChildren children (lam obj. [objWithoutChildren obj] ) implicit in
-
+           
            let obj = objSetChildren obj children in
 
            nameDirectChildrenAndProcess obj ctx nextId
