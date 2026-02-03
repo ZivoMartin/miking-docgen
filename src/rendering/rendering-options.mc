@@ -24,7 +24,8 @@ type RenderingOptions = use Formats in use FormatLanguages in
         nameContext: NameContext,
         noCode: Bool,
         renderedMap: RenderedMap,
-        log: Logger
+        log: Logger,
+        keepMd: Bool
     }
 
 let renderingOptionsSrcPath : RenderingOptions -> String =

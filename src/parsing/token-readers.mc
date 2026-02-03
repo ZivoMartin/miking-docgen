@@ -163,7 +163,7 @@ let separatorMap =
     foldl
         (lam m. lam k. hmInsert k () m)
         (hashmapEmpty ())
-        ["=", "++", "+", "|", "{", "}", "[", "]", ":", ";", ".", ",", "(", ")", "->", " ", "\n", "\t"]
+        ["=", "++", "+", "|", "{", "}", "[", "]", ":", ";", ".", ",", "(", ")", "->", " ", "\n", "\t", "\\", "&"]
 
 -- Predicate to check if a string is a separator
 let isSep = lam s. hmMem s separatorMap
@@ -184,7 +184,7 @@ lang WordTokenReader = TokenReaderInterface
             match str with [x] then
                 let token = TokenWord { content = [x] } in
                 { token = token, stream = "", pos = actualisePos pos token }
-            else if isSep [head str] then
+            else if and (not (eqChar '\\' (head str))) (isSep [head str]) then
                 let token = TokenWord { content = [head str] } in
                 { token = token, stream = tail str, pos = actualisePos pos token }
             else let arr = [head str, head (tail str)] in if isSep arr then
@@ -193,22 +193,20 @@ lang WordTokenReader = TokenReaderInterface
             else
                 recursive
                 let extract =
-                lam str. lam previous.
+                lam str. lam previous. lam first.
                     switch str 
                     case (("--" ++ x) | ("++" ++ x))
                         then ("", str)
                     case [x] ++ xs then
-                        if isSep [x] then
-                            ("", str)
-                        else if and (eqc x '\"') (not (eqc previous '\\')) then
+                        if and (not (and first (eqChar '\\' x))) (isSep [x]) then
                             ("", str)
                         else
-                            let extracted = extract xs x in
+                            let extracted = extract xs x false in
                             (cons x extracted.0, extracted.1)
                     case _ then ("", "")
                     end
                 in
-                let extracted =  extract str '-' in
+                let extracted =  extract str '-' true in
                 buildResult (TokenWord { content = extracted.0 }) pos extracted.1
 end
 

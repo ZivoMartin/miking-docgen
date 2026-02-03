@@ -75,7 +75,7 @@ lang DocContentObjHookLang = DocContentInterface
     sem renderDocContent (obj: Object) (renderHooks: Bool) =
     | DocContentObjHook s -> lam opt.
       let doc = renderRemoveDocForbidenChars s opt in
-      let hook = if renderHooks then renderHook obj doc opt else doc in
+      let hook = if renderHooks then renderHook obj doc true opt else doc in
       renderBold hook opt
 
     sem docContentIsHook =
@@ -83,8 +83,13 @@ lang DocContentObjHookLang = DocContentInterface
 
     sem docContentNext =
     | ['#'] ++ s ->
-      match splitOnR (lam c. not (or (isAlpha c) (eqChar '.' c))) s with (hook, stream)  in
-      { stream = stream, content = Some (DocContentObjHook hook)}
+      -- We want to keep file names (i.e test.mc) but don't consider ending dots.
+      match splitOnR (lam c. not (or (isAlpha c) (eqChar '.' c))) s with (hook, stream) in
+      if strEndsWith "." hook then
+          { stream = cons '.' stream, content = Some (DocContentObjHook (subsequence hook 0 (subi (length hook) 1)))}
+      else
+          { stream = stream, content = Some (DocContentObjHook hook)}
+          
 
 end
 

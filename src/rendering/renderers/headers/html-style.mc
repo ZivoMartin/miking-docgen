@@ -185,6 +185,16 @@ a:visited {
   opacity: 0.85;
 }
 
+.hookLink--highlight {
+  background-color: var(--hookLinkHighlightBG);
+  padding: 0.12em 0.3em 0.05em 0.3em;
+  border-radius: 0.25em;
+}
+
+.hookLink--highlight:hover {
+  background-color: var(--hookLinkHighlightBGHover);
+}
+
 ", searchCss, "
 
 .kw      { color: var(--keywordColor); font-weight: 500; }

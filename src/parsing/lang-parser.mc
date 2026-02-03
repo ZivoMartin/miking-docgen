@@ -181,7 +181,8 @@ let parseLang : use AstStream in String -> Pos -> LangDatabase -> String -> Bool
     match parseHeader stream with { obj = obj, stream = stream } in
     let langName = objName obj in
 
-    let namespace = namespaceAdd namespace langName in
+
+    let namespace = namespaceAdd namespace (concat langName "-lang") in
     let children = collectChildren stream posVec pos [] namespace langName in
     let code = tokensToSourceCode (map (lam t. t.0) tokens) in
 

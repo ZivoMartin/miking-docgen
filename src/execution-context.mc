@@ -41,7 +41,6 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
               opt = { ctx.opt with outputFolder = outputFolder },
               currentFile = path,
               files = files
-              
           }
     else
 

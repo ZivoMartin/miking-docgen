@@ -27,13 +27,22 @@ lang MarkdownRenderer = RendererInterface
         let nl = renderNewLine opt in    
         join [make size '#', " ", s, nl, nl]
 
+
+    sem mdRenderItem : String -> String -> String
+    sem mdRenderItem =
+    | guard -> lam s.
+        -- We avoid putting the ending guards on the newline
+        match splitOnR (neqChar '\n') (reverse s) with (newlines, content) in
+        let content = reverse content in
+        join [guard, content, guard, newlines]
+
     -- Bold text
     sem renderBold (text : String) =
-    | { fmt = Md {} } & opt -> join ["**", text, "**"]
+    | { fmt = Md {} } & opt -> mdRenderItem "**" text
     
     -- Italic text
     sem renderItalic (text : String) =
-    | { fmt = Md {} } & opt -> join ["*", text, "*"]
+    | { fmt = Md {} } & opt -> mdRenderItem "*" text
 
     -- New line (Markdown convention: 2 spaces before newline)
     sem renderNewLine =
@@ -42,6 +51,7 @@ lang MarkdownRenderer = RendererInterface
     -- Escape forbidden characters in docstrings
     sem renderRemoveDocForbidenChars (s: String) =
     | { fmt = Md {} } & opt ->
+        if opt.keepMd then s else
         switch s
         case "*" ++ r | "_" ++ r | "`" ++ r | "[" ++ r | "]" ++ r | "(" ++ r | ")" ++ r | "#" ++ r | "+" ++ r | "-" ++ r | "!" ++ r | "\\" ++ r | "<" ++ r | ">" ++ r | "`" ++ r | "{" ++ r | "}" ++ r then
              concat ['\\', head s] (renderRemoveDocForbidenChars r opt)

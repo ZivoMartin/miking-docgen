@@ -20,17 +20,46 @@ lang ObjectsRenderer = Objects + Formats
           "    id: ", int2string (objId obj), "\n"
       ])
 
+
+    sem objBuildUrl : Object -> RenderingOptions -> String
+    sem objBuildUrl =
+    | obj -> lam opt.
+      buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objHasChildren obj) (objIsStdlib obj) (objNamespace obj) (objGetFirstWord obj)
+
+    -- Edge case for the mdx renderer, bad practice, feel free to make it better.
+    sem objPreprocessLink : String -> Format -> String
+    sem objPreprocessLink (link: String) =
+    | Mdx {} ->
+      let index = "/index.md" in
+      if strEndsWith index link then
+          subsequence link 0 (subi (length link) (length index))
+      else link
+    | _ -> link
+
     sem objGetMyLink : Object -> RenderingOptions -> String
     sem objGetMyLink =
     | obj -> lam opt.
-      buildUrl opt.stdlibFolder opt.urlPrefix opt.fmt (objIsStdlib obj) (objNamespace obj) (objGetFirstWord obj)
+      let url =
+          buildUrl
+              opt.stdlibFolder
+              opt.urlPrefix
+              opt.fmt
+              (objHasChildren obj)
+              (objIsStdlib obj)
+              (objNamespace obj)
+              (objGetFirstWord obj)
+      in
+      objPreprocessLink url opt.fmt
 
     sem objGetLink : Object -> RenderingOptions -> String -> String
     sem objGetLink =
     | obj -> lam opt. lam name.
-      if not (objHasLink obj) then ""
-      else match nameContextFetch opt.nameContext obj name with Some res then res.url
-      else objUrlFetchFailed obj name false; ""
+      let link =
+          if not (objHasLink obj) then ""
+          else match nameContextFetch opt.nameContext obj name with Some res then res.url
+          else objUrlFetchFailed obj name false; ""
+      in
+      objPreprocessLink link opt.fmt
 
     sem objTryFetch : Object -> RenderingOptions -> String -> Option NameMapValue
     sem objTryFetch =
@@ -42,9 +71,10 @@ lang ObjectsRenderer = Objects + Formats
     sem objGetMyLocation =
     | obj -> lam opt.
       let name = objName obj in
-      let link = objGetMyLink obj opt in
+      let link = objBuildUrl obj opt in
       let prefixLength = length opt.urlPrefix in
-      subsequence link prefixLength (length link)
+      let link = subsequence link prefixLength (length link) in
+      pathConcat "/" link
             
     -- Human-friendly display title; special-cases include/utest.
     sem objTitle : Object -> String

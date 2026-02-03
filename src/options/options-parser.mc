@@ -9,8 +9,8 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
         case ["--help" | "--h"] then usage ()
 
         case ["--debug"] ++ rest then parse rest { opts with debug = true } 
-        case ["--no-warn"] ++ rest then parse rest { opts with noWarn = true }
         case ["--scan-only"] ++ rest then parse rest { opts with scanOnly = true }
+        case ["--keep-md"] ++ rest then parse rest { opts with keepMd = true }
 
         case ["--javascript"] ++ rest then parse rest { opts with fmtLang = Js {} }
         case ["--typescript"] ++ rest then parse rest { opts with fmtLang = Ts {} }

@@ -46,17 +46,16 @@ type DocGenOptions = use Formats in use FormatLanguages in {
     fmtLang: FormatLanguage,   -- Output language for generated React components (JS/TS).
     files: [String],           -- Path to the input files.
     debug: Bool,               -- Enable debug mode.
-    noWarn: Bool,              -- Suppress warnings.
     outputFolder: String,      -- Destination folder for generated output.
     srcFolder: String,         -- Destination folder for src files relative to outputFolder.
     urlPrefix: String,         -- Prefix for generated URLs.
     letDepth: Option Int,      -- Maximum nesting depth of let-bindings.
     stdlibFolder: String,      -- Name of the folder in which we should store stdlib files.
     noCode: Bool,              -- If true, implementations will not appears on the output.
-    scanOnly: Bool             -- If true, we only do a scan and pretty print it.
+    scanOnly: Bool,            -- If true, we only do a scan and pretty print it.
+    keepMd: Bool
 }
 
--- ## optionsDefault
 -- Default values for the command-line options.
 let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in {
     noOpen = false,
@@ -66,15 +65,14 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     debug = false,
     outputFolder = "doc-gen-output",
     srcFolder = "/",
-    noWarn = false,
     urlPrefix = "",
     letDepth = Some 1,
     stdlibFolder = "Stdlib",
     noCode = false,
-    scanOnly = false
+    scanOnly = false,
+    keepMd = false
 }
 
--- ## usage
 -- Print usage instructions and terminate with an error.
 let usage = lam.
   error (join [
@@ -93,6 +91,7 @@ let usage = lam.
     "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
     "  --no-code                              If true, implementations will not appears on the output",
     "  --stdlib-loc <loc>                     Name of the folder in which we should store stdlib files.",
+    "  --keep-md                              Will not escape the md characters during rendering.",
 
     "Language Formatting:\n",
     "  --javascript                           Use JavaScript for the React components\n",

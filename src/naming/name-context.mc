@@ -3,17 +3,22 @@ include "./name-map.mc"
 include "./types-namespace.mc"
 include "../global/objects.mc"
 
-let buildUrl : use Formats in String -> String -> Format -> Bool -> String -> String -> String =
+let buildUrl : use Formats in String -> String -> Format -> Bool -> Bool -> String -> String -> String =
     use Formats in
-    lam stdlibFolder. lam urlPrefix. lam fmt. lam isStdlib. lam namespace. lam kind.
+    lam stdlibFolder. lam urlPrefix. lam fmt. lam hasChildren. lam isStdlib. lam namespace. lam kind.
     let ext = concat "." (formatGetExtension fmt) in
     let prefix = if isStdlib then stdlibFolder  else "" in
-    let name = join [namespace, if null kind then "" else concat "-" kind, ext] in
-    let link =  strJoin "/" [urlPrefix, prefix, name] in
+
+    let name = join [namespace, if null kind then "" else concat "-" kind] in
+
+    let name =
+        if hasChildren then join [name, "/index", ext]
+        else concat name ext
+    in
+
+    let link = strJoin "/" [urlPrefix, prefix, name] in
     normalizePath link
 
-
--- TODO: Make sure that we do not copy children here
 type NameMapValue = use Objects in {
     url: String,
     obj: Object

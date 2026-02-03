@@ -269,7 +269,7 @@ lang ObjInclude = ObjectInterface
     | ObjInclude { pathInFile = p } -> join ["ObjInclude, path = ", p]
     
     sem objGetFirstWord =
-    | ObjInclude {} -> "include"
+    | ObjInclude {} -> ""
 
     sem objHasUrl =
     | ObjInclude {} -> false

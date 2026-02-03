@@ -106,13 +106,12 @@ lang HtmlRenderer = RendererInterface
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"syn-variants\">" (renderSynVariants obj) variants "</div>"
     
     -- Doc block wrapper; the Bool controls the goto-link inclusion
-    sem renderDocBloc (data : RenderingData) =
-    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"doc-block\">\n<pre>" renderDocBloc data "</pre>\n</div>"
+    sem renderDocBloc (data : RenderingData) (asChildren: Bool) =
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"doc-block\">\n<pre>" (renderDocBloc data) asChildren "</pre>\n</div>"
 
     -- Object description wrapper
     sem renderDocDescription (desc: String) =
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class = \"doc-description\"><pre>" renderDocDescription desc "</pre></div>"
-
     -- Object signature wrapper
     sem renderDocSignature (obj: Object) =
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"doc-signature\">" renderDocSignature obj "</div>"
@@ -122,15 +121,15 @@ lang HtmlRenderer = RendererInterface
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"code-block\"><pre>" renderCodeWithoutPreview data "</pre></div>"
 
     -- Tests block wrapper (without preview toggle)
-    sem renderDocTests (data: RenderingData) =
-    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"code-block\"><pre>" renderDocTests data "</pre></div>"
+    sem renderDocTests (data: RenderingData) (hide: Bool) =
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"code-block\"><pre>" (renderDocTests data) hide "</pre></div>"
 
     -- Plain anchor for “goto” links
     sem renderGotoLink (link: String) =
     | { fmt = Html {} } & opt -> join ["<a class=\"gotoLink\" href=\"", link, "\">[→]</a>"]
     
-    sem renderHookLink (title: String) (link: String) =
-    | { fmt = Html {} } & opt -> join ["<a class=\"hookLink\" href=\"", link, "\">", title,"</a>"]    
+    sem renderHookLink (title: String) (link: String) (highlight: Bool) =
+    | { fmt = Html {} } & opt -> join ["<a class=\"hookLink", if highlight then " hookLink--highlight" else "", "\" href=\"", link, "\">", title,"</a>"]
 
     sem renderPageLink (title: String) (link: String) =
     | { fmt = Html {} } & opt -> join ["<a class=\"pageLink\" href=\"", link, "\">", title, "</a>"]

@@ -131,7 +131,7 @@ let openIfShouldBeRendered : use Objects in Object -> RenderingOptions -> Option
                 path = path
             }
         else
-            renderingWarn (join ["Failed to open output file ", path, "."]); None {}
+            renderingWarn (join ["Failed to open output file ", path, " (openIfShouldBeRendered)."]); None {}
 
     else
         Some {

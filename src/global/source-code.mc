@@ -69,3 +69,8 @@ end
 let sourceCodeIsEmpty : SourceCode -> Bool = null
 
 let sourceCodeEmpty : () -> SourceCode = lam . []
+
+let sourceCodeToStr : SourceCode -> String =
+    lam code.
+    use TokenReader in
+    foldr concat "" (map (lam w. lit w.word) code)

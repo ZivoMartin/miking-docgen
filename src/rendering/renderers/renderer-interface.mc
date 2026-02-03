@@ -63,16 +63,23 @@ lang RendererInterface =
 
     -- Renders a documentation block for an object.
     -- Includes title, goto link, code toggle, top doc, and signature.
-    sem renderDocBloc : RenderingData -> RenderingOptions -> String
+    sem renderDocBloc : RenderingData -> Bool -> RenderingOptions -> String
 
     -- Renders the signature of an object.
     sem renderDocSignature : Object -> RenderingOptions -> String
+
+    sem renderVariants : Object -> RenderingOptions -> String
+
+    sem renderOneVariant : Object -> SynVariant -> RenderingOptions -> String
+
+    -- Renders the raw string of the signature without colorising it
+    sem renderPureDocSignature : Object -> RenderingOptions -> String
 
     -- Renders the documentation string of an object (from its `doc` field).
     sem renderDocDescription : String -> RenderingOptions -> String
 
     -- Renders the unit tests associated with an object.
-    sem renderDocTests : RenderingData -> RenderingOptions -> String
+    sem renderDocTests : RenderingData -> Bool -> RenderingOptions -> String
 
     syn DocObjectParsed =
 
@@ -95,7 +102,7 @@ lang RendererInterface =
     sem renderPageLink : String -> String -> RenderingOptions -> String
 
     -- Render a hook link.
-    sem renderHookLink : String -> String -> RenderingOptions -> String
+    sem renderHookLink : String -> String -> Bool -> RenderingOptions -> String
 
     -- Renders the "parent" link to another documentation page.
     sem renderParentLink : Object -> RenderingOptions -> String
@@ -104,11 +111,13 @@ lang RendererInterface =
     sem renderLink : String -> String -> RenderingOptions -> String
 
     -- Render a link toward another object page.
-    sem renderHook : Object -> String -> RenderingOptions -> String 
+    sem renderHook : Object -> String -> Bool -> RenderingOptions -> String 
 
     -- Render a tooltip, which is a popup containing text,
     -- activated on mouseover.
     sem renderTooltip : String -> String -> RenderingOptions -> String 
+
+    sem renderTooltipSign : Object -> RenderingOptions -> String
 
     -- ## Code Rendering
 
@@ -137,6 +146,9 @@ lang RendererInterface =
     -- Renders a single token word.
     -- If an object is provided, the types will be clickable
     sem renderWord : SourceCodeWord -> Option Object -> RenderingOptions -> String
+
+
+    sem renderCreateTests : [RenderingData] -> RenderingOptions -> String
 
     -- Create The rendering data for the given object.
     -- The list of rendering data are supposed to be the associated tests.
@@ -204,6 +216,8 @@ lang RendererInterface =
 
     -- Renders a single newline.
     sem renderNewLine : RenderingOptions -> String
+
+    sem renderStdlibConstLink : String -> RenderingOptions -> String
 
     -- Shared helpers
 

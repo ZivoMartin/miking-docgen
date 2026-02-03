@@ -92,7 +92,7 @@ let render : use Objects in RenderingOptions -> Object -> RenderingResult = use 
                     -- Order objects into a set
                     let set = buildSet children in
 
-                     -- Display uses and includes
+                     -- Display includes
                     let displayIncludes = lam title. lam arr.
                         let title = match arr with [] then "" else match title with "" then "" else
                                 renderSectionTitle title opt in
@@ -102,10 +102,11 @@ let render : use Objects in RenderingOptions -> Object -> RenderingResult = use 
 
                     -- Display types and constructors
                     let displayDefault = lam title. lam arr.
+                        let opt = { opt with noCode = true } in
                         let title = match arr with [] then "" else match title with "" then "" else
                                 renderSectionTitle title opt in
                         write title;
-                        iter (lam u. write (renderDocBloc u opt)) arr
+                        iter (lam u. write (renderDocBloc u true opt)) arr
                     in
 
                     iter (lam a. displayIncludes a.0 a.1)
