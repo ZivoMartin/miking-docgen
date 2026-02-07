@@ -1,13 +1,5 @@
--- # Renderer Interface
---
 -- This file defines the interface for a renderer.
--- 
--- ## General Overview
--- - At startup, the application reads the format option (see ../../global/format.mc).
--- - Based on this format, the renderer dispatches function calls to the correct implementation.
--- - All functions return `String`, which will be written to the output file.
 --
--- ## Adding a New Format
 -- To add a new format:
 -- 1. Implement this interface for your format.
 -- 2. Add the new format in ../../global/format.mc.
@@ -16,10 +8,6 @@
 -- 
 -- It is strongly recommended to inspect `raw-renderer.mc` first.
 -- The default implementation is well-structured, so you rarely need to redefine everything.
---
--- ## Dispatch
--- Functions here are called by ../renderer.mc. They form the contract for rendering
--- headers, footers, documentation, code, links, and text formatting.
 
 include "../../global/objects.mc"
 include "../../global/format.mc"
@@ -38,7 +26,7 @@ lang RendererInterface =
     Formats + ObjectsRenderer + TokenReader + SourceCodeWordKinds + 
     MExprPrettyPrint + MetaVarTypePrettyPrint + FormatLanguages
 
-    -- ## Setup and File Wrappers
+    -------------------- Setup --------------------
 
     -- Called before rendering starts for all files.
     -- Typically used to generate global headers.
@@ -52,10 +40,18 @@ lang RendererInterface =
     -- Can be used to push file footers.
     sem renderFooter : Object -> RenderingOptions -> String
 
+
+    -------------------- Search File --------------------
+
+    -- Build the path to the search file.
+    -- The first parameter is the path to the search file folder.
+    sem renderSearchPath : String -> RenderingOptions -> String
+
     -- Write the final version of the search engine.
     sem renderSearchFile : [SearchDictObj] -> RenderingOptions -> ()
 
-    -- ## Documentation Blocks
+
+    ----------------- Page Items -----------------
 
     -- Renders the top section of a page.
     -- Includes code toggle, and top documentation.
@@ -65,15 +61,15 @@ lang RendererInterface =
     -- Includes title, goto link, code toggle, top doc, and signature.
     sem renderDocBloc : RenderingData -> Bool -> RenderingOptions -> String
 
+    -- Renders the raw string of the signature without colorising it
+    sem renderPureDocSignature : Object -> RenderingOptions -> String
+
     -- Renders the signature of an object.
     sem renderDocSignature : Object -> RenderingOptions -> String
 
     sem renderVariants : Object -> RenderingOptions -> String
 
     sem renderOneVariant : Object -> SynVariant -> RenderingOptions -> String
-
-    -- Renders the raw string of the signature without colorising it
-    sem renderPureDocSignature : Object -> RenderingOptions -> String
 
     -- Renders the documentation string of an object (from its `doc` field).
     sem renderDocDescription : String -> RenderingOptions -> String
@@ -89,7 +85,13 @@ lang RendererInterface =
     -- Render the output of renderDocObjectParse into a string well formatted.
     sem renderFormattedDoc : Object -> DocObjectParsed -> Bool -> RenderingOptions -> String
 
-    -- ## Navigation / Linking
+    -- Render a tooltip, which is a popup containing text,
+    -- activated on mouseover.
+    sem renderTooltip : String -> String -> RenderingOptions -> String 
+
+    sem renderTooltipSign : Object -> RenderingOptions -> String
+
+    ----------------- Linking -----------------
 
     -- Renders a list of links for a list of objects.
     sem renderLinkList : [Object] -> RenderingOptions -> String
@@ -113,23 +115,15 @@ lang RendererInterface =
     -- Render a link toward another object page.
     sem renderHook : Object -> String -> Bool -> RenderingOptions -> String 
 
-    -- Render a tooltip, which is a popup containing text,
-    -- activated on mouseover.
-    sem renderTooltip : String -> String -> RenderingOptions -> String 
+    sem renderStdlibConstLink : String -> RenderingOptions -> String
 
-    sem renderTooltipSign : Object -> RenderingOptions -> String
-
-    -- ## Code Rendering
+    ----------------- Code Rendering -----------------
 
     -- Renders a block of code wrapped in a toggleable hidden section.
     -- Bool argument decides whether it starts hidden.
     sem renderHidenCode : String -> String -> String -> Bool -> RenderingOptions -> String
 
-    -- Renders code with preview:
-    -- - Left part (raw code)
-    -- - Right part (hidden code via renderHidenCode)
-    -- - Trimmed part (raw, always visible)
-    -- If the right part is empty, no toggle is shown.
+
     sem renderCodeWithPreview : RenderingData -> RenderingOptions -> String
 
     -- Renders code directly, without preview/toggling.
@@ -148,6 +142,8 @@ lang RendererInterface =
     sem renderWord : SourceCodeWord -> Option Object -> RenderingOptions -> String
 
 
+    ----------------- Rendering Objects Creation -----------------
+
     sem renderCreateTests : [RenderingData] -> RenderingOptions -> String
 
     -- Create The rendering data for the given object.
@@ -160,7 +156,7 @@ lang RendererInterface =
     -- Render the constructors of a given type (using the name context API)
     sem renderTypeConstructors : Object -> RenderingOptions -> String
 
-    -- ## Formatting Helpers
+    ----------------- Basic Formatting Helpers -----------------
 
     -- Renders a section title (e.g., "Variables", "Types").
     sem renderSectionTitle : String -> RenderingOptions -> String
@@ -170,12 +166,6 @@ lang RendererInterface =
 
     -- Renders a string in italic.
     sem renderItalic : String -> RenderingOptions -> String
-
-    -- Sanitizes a string for safe inclusion in documentation.
-    sem renderRemoveDocForbidenChars : String -> RenderingOptions -> String
-
-    -- Sanitizes a string for safe inclusion in code.
-    sem renderRemoveCodeForbidenChars : String -> RenderingOptions -> String    
 
     -- Renders a page title, size determines heading level
     -- (larger size -> smaller title).
@@ -187,8 +177,18 @@ lang RendererInterface =
     -- Renders a block of text.
     sem renderText : String -> RenderingOptions -> String
 
+    sem renderNewLine : RenderingOptions -> String
 
-    -- ## Syntax Coloring
+    ----------------- Escaping -----------------
+
+    -- Sanitizes a string for safe inclusion in documentation.
+    sem renderRemoveDocForbidenChars : String -> RenderingOptions -> String
+
+    -- Sanitizes a string for safe inclusion in code.
+    sem renderRemoveCodeForbidenChars : String -> RenderingOptions -> String    
+
+
+    ----------------- Syntax Coloring -----------------
 
     -- Renders a type word.
     sem renderType : String -> RenderingOptions -> String
@@ -214,12 +214,8 @@ lang RendererInterface =
     -- Renders a multi-line comment.
     sem renderMultiLineComment : String -> RenderingOptions -> String
 
-    -- Renders a single newline.
-    sem renderNewLine : RenderingOptions -> String
 
-    sem renderStdlibConstLink : String -> RenderingOptions -> String
-
-    -- Shared helpers
+    ----------------- Shared helpers -----------------
 
     -- Wrapper that renders inner content via raw renderer, then wraps it with HTML
     sem renderWithRaw : all a. RenderingOptions -> String -> (a -> RenderingOptions -> String) -> a -> String -> String

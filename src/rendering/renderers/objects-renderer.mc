@@ -1,5 +1,3 @@
--- # ObjectsRenderer utilities
---
 -- Helpers to compute rendering-related data derived from extracted objects.
 -- Provides link building, display titles, and optional name handling.
 
@@ -64,8 +62,11 @@ lang ObjectsRenderer = Objects + Formats
     sem objTryFetch : Object -> RenderingOptions -> String -> Option NameMapValue
     sem objTryFetch =
     | obj -> lam opt. lam name.
-      if not (objHasLink obj) then None {}
-      else nameContextFetch opt.nameContext obj name
+      let link =
+          if not (objHasLink obj) then None {}
+          else nameContextFetch opt.nameContext obj name
+      in
+      optionMap (lam v. { v with url = objPreprocessLink v.url opt.fmt }) link
 
     sem objGetMyLocation : Object -> RenderingOptions -> String
     sem objGetMyLocation =

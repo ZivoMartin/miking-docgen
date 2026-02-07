@@ -1,12 +1,10 @@
--- # Raw renderer
---
 -- This file implements the raw renderer based on the raw format.
 -- The raw format wraps another format. The wrapped format should be the
 -- actual rendering target (though nothing prevents you from wrapping a
 -- different format on purpose, resulting in hybrid outputs).
 --
 -- The core idea: implement general behavior here that always delegates by
--- passing the **wrapped** format as the argument—never the raw format itself.
+-- passing the wrapped format as the argument—never the raw format itself.
 -- This way, dispatch automatically reaches the correct implementation.
 
 include "../source-code-spliter.mc"
@@ -14,26 +12,30 @@ include "./renderer-interface.mc"
 
 lang RawRenderer = RendererInterface
 
-    -- Runs before rendering all files (e.g., to generate global headers).
     sem renderSetup =
     | opt -> ()
+
+    -- We just render the parent link.
+    sem renderHeader (obj : Object) =
+    | opt -> let opt = fixOptFormat opt in
+      renderParentLink obj opt
+
+    sem renderFooter (obj : Object) =
+    | _ -> ""
+
+    sem renderSearchPath (path: String) =
+    | opt -> pathConcat path (searchPath "")
+
+    sem renderSearchFile (searchDatas: [SearchDictObj]) =
+    | opt -> let opt = fixOptFormat opt in
+        let path = renderGetSearchPath opt in
+        match fileWriteOpen path with Some wc then
+              fileWriteString wc (searchReact searchDatas);
+              fileWriteClose wc
+        else
+              renderingWarn (join ["Failed to write file: ", path, "."])
+
     
-    -- Default block renderer: composes signature, description, code, and tests.
-    sem renderBlocDefault : RenderingData -> Bool -> RenderingOptions -> String -> String -> String -> String -> String
-    sem renderBlocDefault =
-    | { obj = obj } & data -> lam asChildren. lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
-        let opt = fixOptFormat opt in
-        let signature = renderDocSignature obj opt in
-
-        let doc = objDoc obj in
-        let doc = renderDocObjectParse doc opt in
-        let doc = renderFormattedDoc obj doc true opt in
-        let doc = renderDocDescription doc opt in
-
-        let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
-        let tests = renderDocTests data asChildren opt in
-        join [bonusTopDoc, signature, bonusSignDescDoc, doc, bonusDescCodeDoc, code, bonusBottomDoc, tests]
-            
     -- Top page section: title + details (e.g., parent langs) + default block.
     sem renderTopPageDoc (data: RenderingData) =
     | opt -> let opt = fixOptFormat opt in
@@ -61,16 +63,25 @@ lang RawRenderer = RendererInterface
             ""
         end in
         renderBlocDefault data false opt "" "" details ""
-
-    sem renderSearchFile (searchDatas: [SearchDictObj]) =
-    | opt -> let opt = fixOptFormat opt in
-        let path = renderGetSearchPath opt in
-        match fileWriteOpen path with Some wc then
-              fileWriteString wc (searchReact searchDatas);
-              fileWriteClose wc
-        else
-              renderingWarn (join ["Failed to write file: ", path, "."])
     
+
+
+    -- Default block renderer: composes signature, description, code, and tests.
+    sem renderBlocDefault : RenderingData -> Bool -> RenderingOptions -> String -> String -> String -> String -> String
+    sem renderBlocDefault =
+    | { obj = obj } & data -> lam asChildren. lam opt. lam bonusTopDoc. lam bonusSignDescDoc. lam bonusDescCodeDoc. lam bonusBottomDoc.
+        let opt = fixOptFormat opt in
+        let signature = renderDocSignature obj opt in
+
+        let doc = objDoc obj in
+        let doc = renderDocObjectParse doc opt in
+        let doc = renderFormattedDoc obj doc true opt in
+        let doc = renderDocDescription doc opt in
+
+        let code = if opt.noCode then "" else renderCodeWithoutPreview data opt in
+        let tests = renderDocTests data asChildren opt in
+        join [bonusTopDoc, signature, bonusSignDescDoc, doc, bonusDescCodeDoc, code, bonusBottomDoc, tests]
+            
     sem renderGetSearchPath =
     | opt -> ""
 
@@ -171,7 +182,8 @@ lang RawRenderer = RendererInterface
         let right = join [v.name, " ", v.vtype] in
         let right = strToSourceCode right in
         let right = renderSourceCode right (Some obj) opt in
-        if null v.doc then right else join [right, ": ", v.doc]
+        let doc = renderRemoveDocForbidenChars v.doc opt in
+        if null v.doc then right else join [right, ": ", doc]
 
     sem renderSynVariants (obj: Object) (variants: [SynVariant]) =
     | opt -> let opt = fixOptFormat opt in
@@ -310,14 +322,6 @@ lang RawRenderer = RendererInterface
         let tests = renderCreateTests tests opt in
 
         renderingDataNew obj code split tests
-
-    -- File-level wrappers
-    sem renderHeader (obj : Object) =
-    | opt -> let opt = fixOptFormat opt in
-      renderParentLink obj opt
-
-    sem renderFooter (obj : Object) =
-    | _ -> ""
 
     -- Section titles and basic text formatting.
     sem renderSectionTitle (title: String) =

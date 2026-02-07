@@ -2,12 +2,6 @@ let mdxCssFileName = "style.css"
 
 let mdxCss = 
 "
-
-.body {
-  display: grid;
-  gap: 0.75rem;
-}
-
 .card {
   border: 1px solid var(--docgen-border, #e5e7eb);
   border-radius: 10px;
@@ -17,10 +11,6 @@ let mdxCss =
   box-shadow: 0 1px 2px rgba(0,0,0,.04);
   transition: box-shadow .15s ease, transform .15s ease, border-color .15s ease;
   will-change: transform;
-}
-
-.card.compact {
-  padding: 0.4rem 0.6rem;
 }
 
 .header {
@@ -57,6 +47,7 @@ let mdxCss =
 }
 
 .desc {
+  padding-left: 0.8em;
   color: var(--docgen-muted, #6b7280);
   white-space: pre-wrap;
   line-height: 1.65;
@@ -100,9 +91,9 @@ let mdxCss =
 }
 
 .toggler {
-  display: inline-flex;          /* key change */
-  align-items: baseline;         /* align with text */
-  vertical-align: baseline;      /* inline formatting alignment */
+  display: inline-flex;
+  align-items: baseline;
+  vertical-align: baseline;
 
   font-size: 0.7em;
   background: transparent;

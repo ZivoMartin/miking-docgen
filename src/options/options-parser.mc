@@ -1,6 +1,5 @@
 include "./docgen-options.mc"
 
--- ## parseDocGenOptions
 -- Parse the list of command-line arguments into an `DocGenOptions` record.
 -- Exits with an error if the arguments are invalid.
 let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
@@ -10,7 +9,6 @@ let parseDocGenOptions : [String] -> DocGenOptions = lam argv.
 
         case ["--debug"] ++ rest then parse rest { opts with debug = true } 
         case ["--scan-only"] ++ rest then parse rest { opts with scanOnly = true }
-        case ["--keep-md"] ++ rest then parse rest { opts with keepMd = true }
 
         case ["--javascript"] ++ rest then parse rest { opts with fmtLang = Js {} }
         case ["--typescript"] ++ rest then parse rest { opts with fmtLang = Ts {} }

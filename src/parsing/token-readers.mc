@@ -1,5 +1,3 @@
--- # Token Readers Library
---
 -- All token readers implement a common interface: `TokenReaderInterface`.
 -- The module ends by composing all token readers into one combined `TokenReader`.
 

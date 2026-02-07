@@ -7,6 +7,11 @@ include "./naming/namer.mc"
 include "./rendering/renderer.mc"
 include "./server/server.mc"
 
+-- ExecutionContext is a mutable pipeline context.
+-- Fields are progressively filled in the following order:
+-- ast -> object -> nameContext -> renderedMap/searchDatas
+-- Missing fields indicate that the corresponding pipeline step
+-- has not been executed yet.
 type ExecutionContext =
     use TokenReader in
     use Objects in {
@@ -16,7 +21,6 @@ type ExecutionContext =
     files: [FileToProcess],
     longestPrefix: String,
 
-    tokens: [Token],
     ast: Option MAst,
     object: Option Object,
     nameContext: Option NameContext,
@@ -29,11 +33,22 @@ let buildLogger : ExecutionContext -> String -> Logger =
     lam ctx. lam step.
     if ctx.opt.debug then message "[INFO]" step else lam. ()
 
-let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in lam ctx.
+-- Finalization step executed once after all files are processed.
+let finalizeSearchIndex : ExecutionContext -> () =
+    lam ctx.
+    use Renderer in 
+    let log = buildLogger ctx "Rendering" in 
+    let ropt = getRenderingOption ctx.opt log (nameContextEmpty ()) (hashmapEmpty ()) in
+    let ropt = { ropt with outputFolder = ctx.userOutputFolder } in
+    let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
+                      (hashmap2seq ctx.searchDatas) in
+    renderSearchFile searchDatas ropt
+
+let execCtxNext : ExecutionContext -> Option ExecutionContext =
+    lam ctx.
     match ctx.files with [{ path = path, outputFolder = outputFolder }] ++ files then
           printLn (join ["Processing file ", path, "..."]);
           Some { ctx with
-              tokens = [],
               ast = None {},
               object = None {},
               nameContext = None {},
@@ -43,14 +58,7 @@ let execCtxNext : ExecutionContext -> Option ExecutionContext = use Renderer in 
               files = files
           }
     else
-
-        -- Creating search engine
-        let log = buildLogger ctx "Rendering" in 
-        let ropt = getRenderingOption ctx.opt log (nameContextEmpty ()) (hashmapEmpty ()) in
-        let ropt = { ropt with outputFolder = ctx.userOutputFolder } in
-        let searchDatas = map (lam entry. { name = entry.0, link = entry.1 })
-                          (hashmap2seq ctx.searchDatas) in
-        renderSearchFile searchDatas ropt;
+        finalizeSearchIndex ctx;
         printLn "Done!";
         None {}
         
@@ -58,7 +66,7 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     let scanningOptions = getScanningOptions opt in
 
     if opt.scanOnly then
-        let scanRes = scan scanningOptions in
+        let scanRes = scan scanningOptions in -- Side effect only
         None {}
     else
 
@@ -81,7 +89,6 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
         files = files,
         renderedMap = renderedMapEmpty (),
 
-        tokens = [],
         object = None {},
         ast = None {},
         nameContext = None {},
@@ -89,6 +96,8 @@ let execContextNew : DocGenOptions -> Option ExecutionContext = lam opt.
     } in
     execCtxNext ctx
 
+-- Pipeline steps must be executed in the following order:
+-- gen -> parse -> name -> render -> serve
 let crash = lam miss. lam func. lam should.
     error (join [
         "Internal error: missing `", miss, "` in execution context.\n",
@@ -121,6 +130,10 @@ let name : Step =  lam ctx.
     { ctx with nameContext = Some nameContext, object = Some annotatedObj }
     else crash "object" "name" "extract"
 
+-- After rendering a file, we may need to:
+-- 1. Clean temporary source outputs
+-- 2. Relocate stdlib files when rendering outside the user output folder
+-- This is intentionally handled here to keep rendering side effects localized.
 let render : Step =  lam ctx.
     match ctx.object with Some obj then
     match ctx.nameContext with Some nameContext then
@@ -155,7 +168,7 @@ let serve : Step = use ObjectsRenderer in lam ctx.
     match ctx.object with Some obj then
     match ctx.nameContext with Some nameContext then
     let log = buildLogger ctx "Serving" in
-    let opt = getRenderingOption ctx.opt log nameContext (hashmapEmpty ()) in
+    let opt = getRenderingOption ctx.opt log nameContext (hashmapEmpty ()) in -- Serving does not reuse renderedMap, so we give an empty one
     let link = objGetMyLink obj opt in
 
     let opt = getServeOption { ctx.opt with outputFolder = ctx.userOutputFolder } link in    

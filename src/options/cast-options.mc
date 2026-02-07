@@ -54,8 +54,7 @@ let getRenderingOption : DocGenOptions -> Logger -> NameContext -> RenderedMap -
         nameContext = nameContext,
         log = log,
         noCode = opt.noCode,
-        renderedMap = renderedMap,
-        keepMd = opt.keepMd
+        renderedMap = renderedMap
     }
 
 -- Convert a global `DocGenOptions` record and a link string representing the URL of the opening file.

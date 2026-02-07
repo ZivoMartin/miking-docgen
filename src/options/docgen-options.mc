@@ -9,24 +9,25 @@
 -- my-doc-gen [options] <file>
 --
 -- Required:
---   <file>                                 Path to the Miking source file to document.
+--   <file>                                 List of files/folders to document.
 --
 -- General DocGenOptions:
 --   --no-open                              Do not open the result in a web browser.
+--   --no-code                              If true, implementations will not appears on the output
 --   --output-folder <name>                 Set the output folder (default: doc-gen-output).
 --   --src-folder <name>                    Destination folder for src files relative to outputFolder
 --   --format <html|md|mdx>                 Choose output format (default: html).
 --   --url-prefix <prefix>                  Prefix for all generated URLs.
 --   --depth <n|none>                       Limit nesting depth of `let` bindings.
---   --md-doc                               Generate Markdown documentation from inline comments.
+--   --stdlib-loc <loc>                     Name of the folder in which we should store stdlib files.
 --
 -- language Formatting:
 --   --javascript                           Use JavaScript for the React components.
 --   --typescript                           Use TypeScript for the React components.
 --
 -- Debugging Options:
+--   --scan-only                            Only process the scan of the project and print it.
 --   --debug                                Enable all debug modes.
---   --no-warn                              Disable all warnings.
 --
 -- Help:
 --   --help | --h                           Show this help message.
@@ -38,7 +39,6 @@ include "../global/format-language.mc"
 include "string.mc"
 include "sys.mc"
 
--- ## DocGenOptions
 -- Data type representing the command-line options that can be passed to `my-doc-gen`.
 type DocGenOptions = use Formats in use FormatLanguages in {
     noOpen: Bool,              -- Whether to skip opening the result in a web browser.
@@ -52,8 +52,7 @@ type DocGenOptions = use Formats in use FormatLanguages in {
     letDepth: Option Int,      -- Maximum nesting depth of let-bindings.
     stdlibFolder: String,      -- Name of the folder in which we should store stdlib files.
     noCode: Bool,              -- If true, implementations will not appears on the output.
-    scanOnly: Bool,            -- If true, we only do a scan and pretty print it.
-    keepMd: Bool
+    scanOnly: Bool             -- If true, we only do a scan and pretty print it.
 }
 
 -- Default values for the command-line options.
@@ -69,8 +68,7 @@ let docGenOptionsDefault : DocGenOptions = use Formats in use FormatLanguages in
     letDepth = Some 1,
     stdlibFolder = "Stdlib",
     noCode = false,
-    scanOnly = false,
-    keepMd = false
+    scanOnly = false
 }
 
 -- Print usage instructions and terminate with an error.
@@ -88,10 +86,8 @@ let usage = lam.
     "  --src-folder <name>                    Destination folder for src files relative to outputFolder.\n",
     "  --format <html|md|mdx>                 Choose output format (default: html).\n",
     "  --url-prefix <prefix>                  Prefix for all generated URLs.\n",
-    "  --depth <n|none>                       Limit nesting depth of `let` bindings.\n",
-    "  --no-code                              If true, implementations will not appears on the output",
-    "  --stdlib-loc <loc>                     Name of the folder in which we should store stdlib files.",
-    "  --keep-md                              Will not escape the md characters during rendering.",
+    "  --no-code                              If true, implementations will not appears on the output\n",
+    "  --stdlib-loc <loc>                     Name of the folder in which we should store stdlib files.\n\n",
 
     "Language Formatting:\n",
     "  --javascript                           Use JavaScript for the React components\n",
@@ -99,8 +95,7 @@ let usage = lam.
 
     "Debugging Options:\n",
     "  --debug                                Enable all debug modes.\n",
-    "  --no-warn                              Disable all warnings.\n",
-    "  --scan-only                            Only process the scan of the project and print it.\n",    
+    "  --scan-only                            Only process the scan of the project and print it.\n",
  
     "Help:\n",
     "  --help | --h                           Show this help message.\n"

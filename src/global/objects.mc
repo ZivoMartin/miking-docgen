@@ -3,17 +3,23 @@ include "./logger.mc"
 include "./source-code.mc"
 
 -- Interface declaring all semantics for Objects
+-- NOTE: Object does not represent the syntax AST.
+-- It represents documentation entities derived from the AST
+-- after parsing/naming.
 lang ObjectInterface = MExprAst
 
     type ObjectDatas = {
         name: String,
         doc : String,
-        namespace: String,
+        -- namespace is a logical path used for URLs, hierarchy, and file layout.
+        namespace: String, 
         sourceCode: SourceCode,
         isStdlib: Bool,
         id: Int
     }
 
+    -- By default, objects are leaf nodes.
+    -- Only specific object kinds override child semantics.
     type ObjectChildren = [Object]
 
     syn Object =
@@ -24,6 +30,8 @@ lang ObjectInterface = MExprAst
     sem objChildren =
     | obj -> []
 
+    -- Returns true if the object currently has children,
+    -- if the object can't have children, it returns false.
     sem objHasChildren : Object -> Bool
     sem objHasChildren =
     | obj -> not (null (objChildren obj))
@@ -32,7 +40,9 @@ lang ObjectInterface = MExprAst
 
     sem objSetChildren : Object -> ObjectChildren -> Object
     sem objSetChildren =
-    | obj -> lam. obj
+    | obj -> lam.
+        warn "You tried to assign children to an object which should not have children.";
+        obj
 
     sem objMapChildren : Object -> (ObjectChildren -> ObjectChildren) -> Object
     sem objMapChildren =
@@ -114,8 +124,9 @@ lang ObjectInterface = MExprAst
     sem objWithId =
     | obj -> lam id. objSetField obj (lam d. { d with id = id })
 
-    -- Sets a shorter namespace by removing `prefix`; stores the prefix for recovery.
-    -- Warns if the namespace does not start with the given prefix.
+    -- Shortens the namespace by removing the given prefix.
+    -- This transformation is destructive and not reversible.
+    -- This is used to remove the common prefix of all objects.
     sem objWithPrefix =
     | obj -> lam prefix.
         let namespace = objNamespace obj in

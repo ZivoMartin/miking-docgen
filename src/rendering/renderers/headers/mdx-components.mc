@@ -14,25 +14,7 @@ function slugify(input) {
     .replace(/(^-|-$)/g, '');
 }
 
-function useId(prefix) {
-  const ref = useRef();
-  if (!ref.current) {
-    const rnd = Math.random().toString(36).slice(2, 8);
-    ref.current = `${prefix ?? 'docgen'}-${rnd}`;
-  }
-  return ref.current;
-}
-
-/** ------------------------------------------------------------------------------------
- *  Context : Panels gestion
- *  ---------------------------------------------------------------------------------- */
-const Ctx = createContext(null);
-
-function useDocBlockCtx() {
-  const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('DocBlock context missing. Place Action/Panel inside <DocBlock>.');
-  return ctx;
-}
+/** ---------------------------------------------------------------------------------const Ctx = createContext(null);
 
 /** ------------------------------------------------------------------------------------
  *  Badge
@@ -47,12 +29,12 @@ export const Badge = ({ form }) => {
  *  DocBlock
  *  ---------------------------------------------------------------------------------- */
 
-export const DocBlock = ({ title, form, link, compact = false, children }) => {
+export const DocBlock = ({ title, form, link, children }) => {
   const [open, setOpen] = useState({});
   const anchorId = useMemo(() => slugify(title), [title]);
 
   return (
-    <Ctx.Provider value={{ open, setOpen, compact }}>
+    <Ctx.Provider value={{ open, setOpen }}>
       <section id={anchorId} className=\"card\" aria-labelledby={`${anchorId}-title`}>
         <div className=\"header\">
           <h3 className=\"title\" id={`${anchorId}-title`}>
@@ -119,25 +101,15 @@ function useId(prefix?: string) {
   return ref.current;
 }
 
-/** ------------------------------------------------------------------------------------
- *  Context : Pannels gestion
- *  ---------------------------------------------------------------------------------- */
 type PanelState = Record<string, boolean>;
 
 type DocBlockCtx = {
   open: PanelState;
   setOpen: React.Dispatch<React.SetStateAction<PanelState>>;
-  compact: boolean;
 };
 
 const Ctx = createContext<DocBlockCtx | null>(null);
-
-function useDocBlockCtx() {
-  const ctx = useContext(Ctx);
-  if (!ctx) throw new Error('DocBlock context missing. Place Action/Panel inside <DocBlock>.');
-  return ctx;
-}
-
+ 
 /** ------------------------------------------------------------------------------------
  *  Badge
  *  ---------------------------------------------------------------------------------- */
@@ -154,16 +126,15 @@ type DocBlockProps = {
   title: string;
   form?: string;
   link?: string;
-  compact?: boolean;
   children: React.ReactNode;
 };
 
-export const DocBlock: React.FC<DocBlockProps> = ({ title, form, link, compact = false, children }) => {
+export const DocBlock: React.FC<DocBlockProps> = ({ title, form, link, children }) => {
   const [open, setOpen] = useState<PanelState>({});
   const anchorId = useMemo(() => slugify(title), [title]);
 
   return (
-    <Ctx.Provider value={{ open, setOpen, compact }}>
+    <Ctx.Provider value={{ open, setOpen }}>
     <section id={anchorId} className=\"card\" aria-labelledby={`${anchorId}-title`}>
       <div className=\"header\">
         <h3 className=\"title\" id={`${anchorId}-title`}>
@@ -206,9 +177,5 @@ export const ToggleWrapper: React.FC<ToggleWrapperProps> = ({ children, hiddenTe
     </div>
   );
 };
-
-export function Span({ className, children }) {
-  return <span className={className}>{children}</span>;
-}
 
 "]

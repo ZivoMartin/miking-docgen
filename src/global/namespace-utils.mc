@@ -1,3 +1,7 @@
+-- Small helper functions for namespace manipulation.
+-- NOTE: This API is currently lightly used and could be refactored into the
+-- util module if it grows or becomes more generally useful.
+
 include "./util.mc"
 
 type Namespace = String
@@ -44,33 +48,9 @@ utest namespaceSeparate "/home/user/.local/lib/mcore/stdlib/bool.mc" with
 utest namespaceSeparate "a/b/c" with
   None {}
 
-
 let namespaceAdd : Namespace -> String -> Namespace =
     lam namespace. lam last.
     join [namespace, "/", last]
-
-let namespaceGetDomain : Namespace -> Namespace =
-    lam namespace.
-    let split = namespaceSplit namespace in
-    match split with [] then namespace else
-    let rev = reverse split in
-    let split = cons "" (tail rev) in
-    namespaceRebuild (reverse split)
-
-utest namespaceGetDomain "" with ""
-utest namespaceGetDomain "/a" with "/"
-utest namespaceGetDomain "/a/b" with "/a/"
-utest namespaceGetDomain "/a/b/c" with "/a/b/"
-
-utest namespaceGetDomain "/file.mc" with "/"
-utest namespaceGetDomain "/a/b/c.mc" with "/a/b/"
-utest namespaceGetDomain "/a/b/c.mc/d" with "/a/b/c.mc/"
-
-utest namespaceGetDomain "/home/user/.local/lib/mcore/stdlib/bool.mc"
-  with "/home/user/.local/lib/mcore/stdlib/"
-
-utest namespaceGetDomain "/leading/slash/test"
-  with "/leading/slash/"
 
 let namespaceLast : Namespace -> Option String =
     lam namespace.
@@ -78,15 +58,7 @@ let namespaceLast : Namespace -> Option String =
         Some (last s)
     else None {}
 
-let namespaceGetName : Namespace -> Option String =
-    lam namespace.
-    match namespaceLast namespace with Some name then
-        if strEndsWith ".mc" name then Some name
-        else match strSplitOnce name '-' with Some (_, right) then Some right
-        else None {}
-    else None {}
-
-    let namespaceGetSubNamespace : Namespace -> Namespace =
+let namespaceGetSubNamespace : Namespace -> Namespace =
     lam namespace.
     let split = namespaceSplit namespace in
     match split with [] then namespace else

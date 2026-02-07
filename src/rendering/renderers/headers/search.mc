@@ -135,7 +135,7 @@ import React, { useState, useEffect, useRef } from 'react';
 const results = [", dict, "];
 
 const searchCss = `
-", themeVariables, "
+", mdxSearchVariables, "
 ", searchCss, "
 `;
 

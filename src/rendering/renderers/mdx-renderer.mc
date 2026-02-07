@@ -1,16 +1,6 @@
--- # MDX Renderer for mi-doc-gen
---
--- This module implements the **MdxRenderer**, an instance of `RendererInterface`.
+-- This module implements the MdxRenderer, an instance of `RendererInterface`.
 -- It outputs MDX pages compatible with Docusaurus, delegating text formatting to
 -- the Markdown renderer where appropriate, and using shared MDX components.
---
--- ## Design
--- - Writes a reusable MDX components file (`MikingDocGen.tsx/.jsx`) at setup.
--- - Renders headings/markdown via the Markdown renderer to keep escaping consistent.
--- - Builds semantic blocks (`DocBlock`, `ToggleWrapper`, etc.) in MDX.
--- - Trims trailing comment/blank lines from raw code when rendering code blocks.
--- - Removes `.md` from links so Docusaurus routes match clean URLs.
--- - Search bar here is still in todo.
 
 include "./renderer-interface.mc"
 include "./headers/mdx-components.mc"
@@ -24,64 +14,80 @@ let searchFileName = searchPath ""
 -- Provides the MDX renderer implementation and its dispatch rules.
 lang MdxRenderer = RendererInterface
 
-    -- Build an absolute path "<folder>/<name>.<ext>" for the components file.
-    sem getComponentPath : FormatLanguage -> String -> String -> String
-    sem getComponentPath =
-    | fmtLang -> lam path. lam name.
-        let path = if not (strEndsWith "/" path) then concat path "/" else path in
-        let ext = concat "." (formatLanguageGetExt fmtLang) in
-        let name = concatIfNot name (strEndsWith ext) ext in
-        concat path name
+    ----------------- MDX helpers -----------------
 
-    sem renderSearchFile (searchDatas: [SearchDictObj]) = 
-    | { fmt = Mdx {} } & opt ->
-        let path = getComponentPath (Js {}) (renderingOptionsSrcPath opt) searchFileName in
-        let content = searchReact searchDatas in
+    -- Build an absolute path "<folder>/<name>.<ext>" for the components file.
+    sem mdxGetComponentPath : FormatLanguage -> String -> String -> String
+    sem mdxGetComponentPath =
+    | fmtLang -> lam path. lam name.
+        let ext = formatLanguageGetExtWithDot fmtLang in
+        let name = if strEndsWith ext name then name else concat name ext in
+        pathConcat path name
+
+    sem mdxCreateCategoryFile =
+    | opt -> lam dir. lam name.
+        let path = pathConcat dir "_category_.yaml" in
+        let path = pathConcat opt.outputFolder path in
+        let content = concat "label: " name in
         renderFileOrWarn path content
+
+    ----------------- Renderer Implementation -----------------
 
     -- Create the MDX components file (TSX/JSX) in the output folder.
     sem renderSetup =
     | { fmt = Mdx {} } & opt ->
         let srcPath = renderingOptionsSrcPath opt in
-        let path = getComponentPath opt.fmtLang srcPath componentFileName in
+        let path = mdxGetComponentPath opt.fmtLang srcPath componentFileName in
+
         let components = match opt.fmtLang with Ts {} then mdxTsComponents else mdxJsComponents in
         renderFileOrWarn path components;
+
         let path = pathConcat srcPath mdxCssFileName in
         renderFileOrWarn path mdxCss
+
 
     -- Emit import line for MDX components used by the page.
     sem renderHeader obj =
     | { fmt = Mdx {} } & opt ->
-        let formatPath = lam full.
-            let importPath = if strStartsWith "/" full
-                             then subsequence full 1 (length full)
-                             else full in
-            --  strip .tsx/.js extension from the import path if present
-            let path = if strEndsWith ".tsx" importPath
-            then subsequence importPath 0 (subi (length importPath) 4)
-            else if strEndsWith ".jsx" importPath
-            then subsequence importPath 0 (subi (length importPath) 4)
-            else importPath in
+        let formatPath = lam path.
+            --  strip .tsx/.jsx extension from the import path if present
+            let path = 
+                if or (strEndsWith ".tsx" path) (strEndsWith ".jsx" path)
+                    then subsequence path 0 (subi (length path) 4)
+                else path
+            in
             normalizePath path
         in
 
-        (if objHasChildren obj then
-            let path = pathConcat (dirname (objGetMyLocation obj opt)) "_category_.yaml" in
-            let path = pathConcat opt.outputFolder path in
-            let content = concat "label: " (objName obj) in
-            renderFileOrWarn path content
-        else ());
-            
-        let path = normalizePath (join [opt.urlPrefix, "/", opt.srcFolder]) in
-        let import = formatPath (getComponentPath opt.fmtLang path componentFileName) in
-        let search = formatPath (getComponentPath (Js {}) path searchFileName) in
+        let loc = objGetMyLocation obj opt in
+        let name = objName obj in
+
+        -- We only create category.yml if the object has children.
+        (if objHasChildren obj then mdxCreateCategoryFile opt (dirname loc) name else ());
+
+        let componentsPath = mdxGetComponentPath opt.fmtLang opt.urlPrefix componentFileName in
+        let searchPath = renderSearchPath opt.urlPrefix opt in
+
+        let imports = formatPath componentsPath in
+        let search = formatPath searchPath in
         
         join [
-          "import { DocBlock, Span, Signature, Description, ToggleWrapper} from '@site/", import, "';\n",
+          "import { DocBlock, Span, Signature, Description, ToggleWrapper} from '@site/", imports, "';\n",
           "import Search from '@site/", search, "';\n\n",
 
-          "<Search />\n"
+          "<Search />\n\n"
         ]
+
+    sem renderSearchPath (path: String) =
+    | { fmt = Mdx {} } & opt ->
+        mdxGetComponentPath (Js {}) path searchFileName
+
+    sem renderSearchFile (searchDatas: [SearchDictObj]) = 
+    | { fmt = Mdx {} } & opt ->
+        let path = renderSearchPath (renderingOptionsSrcPath opt) opt in
+        let content = searchReact searchDatas in
+        renderFileOrWarn path content
+
 
     -- Reuse Markdown escaping for code.
     sem renderRemoveCodeForbidenChars (s: String) =
@@ -89,7 +95,7 @@ lang MdxRenderer = RendererInterface
 
     -- Reuse Markdown escaping for docs.
     sem renderRemoveDocForbidenChars (s: String) =
-    | { fmt = Mdx {} } & opt -> renderRemoveDocForbidenChars s { opt with fmt = Md {} }
+    | { fmt = Mdx {} } & opt -> mdxEscape s
 
     -- Delegate headings to Markdown renderer.
     sem renderTitle size s =
@@ -133,13 +139,23 @@ lang MdxRenderer = RendererInterface
     | { fmt = Mdx {} } & opt ->
         renderWithRaw opt "" renderLinkList objects (renderNewLine opt)
 
-        -- Escape forbidden characters in docstrings
+    -- Escape characters unsafe for MDX / JSX / Markdown text
     sem mdxEscape =
     | s ->
         if null s then "" else
         match switch s
+        case "&" ++ r then ("&#38;",  r)
+        case "<" ++ r then ("&#60;",  r)
+        case ">" ++ r then ("&#62;",  r)
         case "{" ++ r then ("&#123;", r)
         case "}" ++ r then ("&#125;", r)
+        case "\"" ++ r then ("&#34;", r)
+        case "'" ++ r then ("&#39;", r)
+        case "`" ++ r then ("&#96;",  r)
+        case "=" ++ r then ("&#61;",  r)
+        case "/" ++ r then ("&#47;",  r)
+        case "*" ++ r then ("&#42;",  r)
+        case "_" ++ r then ("&#95;",  r)
         case [x] ++ r then ([x], r)
         end with (prefix, rest) in
         concat prefix (mdxEscape rest)
@@ -150,6 +166,7 @@ lang MdxRenderer = RendererInterface
     | { fmt = Mdx {} } & opt ->
         if optionIsNone obj then
             let code = sourceCodeToStr code in
+            let code = renderRemoveCodeForbidenChars code opt in
             if null code then ""
             else join ["\n```mc\n", code, "\n```\n"]
         else
@@ -191,7 +208,7 @@ lang MdxRenderer = RendererInterface
     | { fmt = Mdx {} } & opt ->
         let link = objGetMyLink data.obj opt in
         let linkLength = length link in
-        let link = subsequence link 0 (subi linkLength 3) in -- remove extension for Docusaurus
+        let link = if strEndsWith ".md" link then subsequence link 0 (subi linkLength 3) else link in -- remove extension for Docusaurus
         let link = if objHasUrl data.obj then join [" link=\"", link, "\""] else "" in 
         
         let title = objTitle data.obj in

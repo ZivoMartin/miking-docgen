@@ -5,35 +5,34 @@ include "../util.mc"
 -- The HTML renderer implementation 
 lang HtmlRenderer = RendererInterface
 
-    -- Create the scripts and stylesheet in the output folder.
     sem renderSetup =
     | { fmt = Html {} } & opt ->
         let srcPath = renderingOptionsSrcPath opt in
-        let openAndWrite = lam s. lam path.
-            let path = normalizePath (join [srcPath, "/", path]) in
-            renderFileOrWarn path s 
-        in
-        
-        openAndWrite htmlStyle htmlStylePath;
-        openAndWrite htmlScript htmlScriptPath
-        
+        renderFileOrWarn htmlStyle (pathConcat srcPath htmlStylePath);
+        renderFileOrWarn htmlScript (pathConcat srcPath htmlScriptPath)
 
-    sem renderSearchFile (searchDatas: [SearchDictObj]) = 
-    | { fmt = Html {} } & opt ->
-      let srcPath = renderingOptionsSrcPath opt in
-      let path = normalizePath (join [srcPath, "/", searchPath ".js"]) in
-      let content = searchJs searchDatas in
-      renderFileOrWarn path content
-      
-
-    -- Page/file header: injects theme header and object name into the HTML head/body.
     sem renderHeader obj =
     | { fmt = Html {} } & opt ->
-      let header = getHeader (objName obj) opt.srcFolder in
-      let rawHeader = renderWithRaw opt "" renderHeader obj "" in
+      let header = getHeader (objName obj) (renderingOptionsSrcPath opt) in
+      let rawHeader = renderWithRaw opt "" renderHeader obj "" in -- Render the parent link
       join [header, "\n", rawHeader]
 
-    -- HTML heading: delegates inner text to raw title rendering, then wraps as <hN>.
+    sem renderFooter obj =
+    | { fmt = Html {} } & opt -> "</div></body>\n</html>"   
+
+    sem renderSearchPath (path: String) =
+    | { fmt = Html {} } & opt ->
+       pathConcat path (searchPath ".js")
+
+    sem renderSearchFile (searchDatas: [SearchDictObj]) =
+    | { fmt = Html {} } & opt ->
+      let path = pathConcat (renderingOptionsSrcPath opt) (searchPath ".js") in
+      let content = searchJs searchDatas in
+      renderFileOrWarn path content
+
+    sem renderTopPageDoc (data: RenderingData) =
+    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"
+
     sem renderTitle size s =
     | { fmt = Html {} } & opt ->
         let sizeStr = int2string (if gti size 6 then 6 else size) in
@@ -46,10 +45,6 @@ lang HtmlRenderer = RendererInterface
     -- Italic text
     sem renderItalic (text : String) =
     | { fmt = Html {} } & opt -> join ["<em>", text, "</em>"]
-
-    -- Page/file footer
-    sem renderFooter obj =
-    | { fmt = Html {} } & opt -> "</div></body>\n</html>"   
 
     -- New line for inline contexts
     sem renderNewLine =
@@ -98,9 +93,6 @@ lang HtmlRenderer = RendererInterface
     sem renderNumber (content : String) =
     | { fmt = Html {} } & opt -> htmlRenderSpan content "number"
 
-    -- Top-of-page documentation wrapper
-    sem renderTopPageDoc (data: RenderingData) =
-    | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"top-doc\">\n<pre>" renderTopPageDoc data "</pre>\n</div>"
 
     sem renderSynVariants (obj: Object) (variants: [SynVariant]) =
     | { fmt = Html {} } & opt -> renderWithRaw opt "<div class=\"syn-variants\">" (renderSynVariants obj) variants "</div>"

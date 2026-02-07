@@ -1,8 +1,4 @@
--- # Small string & hashmap utilities
---
--- A collection of helper functions:
---
--- These utilities simplify common operations used across other modules.
+-- A collection of helper functions
 
 include "string.mc"
 include "hashmap.mc"
@@ -22,7 +18,7 @@ let changeExt : (String -> String -> String) = lam fileName. lam ext.
 
 utest changeExt "file.txt" "md" with "file.md"
 utest changeExt "noext" "md" with "noext.md"
-      
+
 -- Splits an array `seq` into (left, right) at the first element matching predicate `f`.
 -- The matched element goes in `left`.
 -- If nothing matches, the function returns ('seq', []).
@@ -48,6 +44,7 @@ utest splitOnR (lam x. eqi x 3) [1,2,3,4,5] with ([1,2], [3,4,5])
 utest splitOnR (lam x. eqi x 9) [1,2,3] with ([1,2,3], [])
 utest splitOnR (lam x. eqi x 3) [1,2,3] with ([1,2], [3])
 utest splitOnR (lam x. true) [1,2,3] with ([], [1,2,3])
+      
 
 let hmTraits = hashmapStrTraits
 let hmInsert = lam x. hashmapInsert hmTraits x
@@ -72,6 +69,8 @@ let hmIntLen = lam x. hashmapCount hmIntTraits x
 
 -- Normalizes a file path by resolving '.', '..', and redundant slashes.
 -- Supports both absolute and relative paths.
+-- normalizePath preserves leading '..' in relative paths
+-- and never removes path components past the root.
 let normalizePath = lam path.
     let isAbsolute = match path with "/" ++ s then true else false in
     let components = strSplit "/" path in
@@ -97,7 +96,6 @@ utest normalizePath "../../repo2" with "../../repo2"
 utest normalizePath "./a/./b/../c" with "a/c"
 utest normalizePath "/a/b/../../c" with "/c"
 
-
 -- Resolves a path based on current location and target.
 -- If the target is absolute, it is returned normalized.
 -- If the file exists at the concatenated location, it s returned.
@@ -117,6 +115,7 @@ let goHere : String -> String -> { path: String, isStdlib: Bool } = lam currentL
     else
         { path = join [stdlibLoc, "/", target], isStdlib = true }
 
+
 -- Try to open a file in a String, panic if it fails
 let readOrNever : String -> String = lam fileName.
     match fileReadOpen fileName with Some rc then
@@ -125,10 +124,6 @@ let readOrNever : String -> String = lam fileName.
         s
     else
         error (join ["Failed to read a file ", fileName, " does not exist."])
-
--- Concatenates two lists if the first one does not satisfy the given predicate.
-let concatIfNot : all a. [a] -> ([a] -> Bool) -> [a] -> [a] =
-    lam x1. lam f. lam x2. if not (f x1) then concat x1 x2 else x1
 
 -- Counts how many elements of a list satisfy the given predicate.
 let count : all a. (a -> Bool) -> [a] -> Int = lam f. lam arr.
@@ -156,31 +151,6 @@ let folderFetchMcFiles : String -> Option [String] = lam dir.
   let out = strTrim res.stdout in
   Some (if null out then [] else strSplit "\n" out)
 
-
-let sysMoveDirContents : String -> String -> ReturnCode = lam p1. lam p2.
-  _commandList [
-    "bash", "-c",
-    join [
-        "\"",
-        "set -e;",
-        "mkdir -p \"", p1, "\" && ",
-        "mv -f \"", p2, "\"/* \"", p1, "\"/ 2>/dev/null || true", " && ",
-        "rm -rf \"", p2, "\"",
-        "\""]
-  ]
-
-let sysRemoveSrcFiles : String -> ReturnCode = lam dir.
-  _commandList [
-    "bash", "-c",
-    join [
-        "\"",
-        "set -e;",
-        "rm -f ", dir, "/*.js ", dir, "/*.css ",
-        dir, "/*.tsx ", dir, "/*.jsx ",
-        "2>/dev/null",
-        "\""
-    ]
-  ]
     
 
 let strSplitOnce : all a. String -> Char -> Option (String, String)  = lam s. lam mid.
@@ -300,3 +270,30 @@ let pathRemoveHome : String -> String =
         with Some h then pathConcat h (tail p)
         else p
     else p
+
+-- Here are some function relying on the shell.
+-- TODO: Replace those functions with real miking code.
+let sysMoveDirContents : String -> String -> ReturnCode = lam p1. lam p2.
+  _commandList [
+    "bash", "-c",
+    join [
+        "\"",
+        "set -e;",
+        "mkdir -p \"", p1, "\" && ",
+        "mv -f \"", p2, "\"/* \"", p1, "\"/ 2>/dev/null || true", " && ",
+        "rm -rf \"", p2, "\"",
+        "\""]
+  ]
+
+let sysRemoveSrcFiles : String -> ReturnCode = lam dir.
+  _commandList [
+    "bash", "-c",
+    join [
+        "\"",
+        "set -e;",
+        "rm -f ", dir, "/*.js ", dir, "/*.css ",
+        dir, "/*.tsx ", dir, "/*.jsx ",
+        "2>/dev/null",
+        "\""
+    ]
+  ]

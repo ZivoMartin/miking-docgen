@@ -1,16 +1,9 @@
--- # Rendering Options
---
--- Throughout the rendering process, we keep track of a `RenderingOptions` object.  
--- This structure stores essential information that controls how documentation is generated.  
-
 include "./../global/format-language.mc"
 include "./../global/format.mc"
 include "../naming/name-context.mc"
 
 include "./rendered-map.mc"
 
--- ## RenderingOptions
---
 -- The configuration object passed around during rendering.
 type RenderingOptions = use Formats in use FormatLanguages in
     {
@@ -24,12 +17,11 @@ type RenderingOptions = use Formats in use FormatLanguages in
         nameContext: NameContext,
         noCode: Bool,
         renderedMap: RenderedMap,
-        log: Logger,
-        keepMd: Bool
+        log: Logger
     }
 
 let renderingOptionsSrcPath : RenderingOptions -> String =
-    lam opt. normalizePath (join [opt.outputFolder, "/", opt.srcFolder])
+    lam opt. pathConcat opt.outputFolder opt.srcFolder
 
 
 -- Ensure RenderingOptions uses the wrapped (non-raw) format.

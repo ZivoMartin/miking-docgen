@@ -11,7 +11,9 @@ lang AstStreamInterface = MExprPrettyPrint  + Objects
     type AstStreamContext = Expr 
     type LangDatabase = HashMap String Object
 
+
     type AstStreamNextResult = {
+        -- ctx is the remaining AST to be processed after this item.
         ctx: AstStreamContext,
         name: String,
         info: Info,
@@ -142,7 +144,7 @@ lang RecursiveAstStream = AstStreamInterface
   | TmDecl { decl = DeclRecLets { bindings = bindings, info = info }, inexpr = inexpr } & ctx ->
       lam langName.
       let ident = tail (head bindings).ident.0 in -- sem name always start with a v, so we remove it.
-      if not (belongToTheLang langName ident) then printLn ".."; { database = hashmapEmpty (), ctx = ctx } else
+      if not (belongToTheLang langName ident) then { database = hashmapEmpty (), ctx = ctx } else
       let database = foldl (
           lam acc. lam binding.
              let ident = binding.ident.0 in

@@ -183,4 +183,3 @@ recursive let correctSpanning : String -> Pos -> Pos -> Pos =
     case _ then correctSpanning s newPos p2
     end
 end
-

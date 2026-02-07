@@ -1,21 +1,3 @@
--- # Markdown Renderer for mi-doc-gen
---
--- This module implements the **MarkdownRenderer**, an instance of `RendererInterface`.
--- It generates Markdown (`.md`) documentation files from the extracted ObjectTree.
---
--- ## Design
--- - Titles are rendered as Markdown headings (`#`, `##`, … up to 6 levels).
--- - Bold text is wrapped in `**`.
--- - Newlines use the Markdown convention `"  \n"` (two spaces + newline).
--- - Documentation and code require escaping of Markdown special characters
---   (done in `renderRemoveDocForbidenChars` and `renderRemoveCodeForbidenChars`).
--- - Signatures are wrapped in fenced code blocks ```mc.
--- - Links and goto links are rendered as `[title](url)`.
--- - `renderLinkList` generates a comma-separated list of object links.
---
--- Like other renderers, it sometimes delegates to the **RawRenderer**
--- to ensure base rendering logic is reused consistently.
-
 include "./renderer-interface.mc"
 
 lang MarkdownRenderer = RendererInterface
@@ -51,7 +33,6 @@ lang MarkdownRenderer = RendererInterface
     -- Escape forbidden characters in docstrings
     sem renderRemoveDocForbidenChars (s: String) =
     | { fmt = Md {} } & opt ->
-        if opt.keepMd then s else
         switch s
         case "*" ++ r | "_" ++ r | "`" ++ r | "[" ++ r | "]" ++ r | "(" ++ r | ")" ++ r | "#" ++ r | "+" ++ r | "-" ++ r | "!" ++ r | "\\" ++ r | "<" ++ r | ">" ++ r | "`" ++ r | "{" ++ r | "}" ++ r then
              concat ['\\', head s] (renderRemoveDocForbidenChars r opt)
@@ -63,8 +44,8 @@ lang MarkdownRenderer = RendererInterface
     sem renderRemoveCodeForbidenChars (s: String) =
     | { fmt = Md {} } & opt ->
         switch s
-        case "`" ++ r then
-             concat ['\\', head s] (renderRemoveCodeForbidenChars r opt)
+        case "```" ++ r then
+             concat "'''" (renderRemoveCodeForbidenChars r opt)
         case [x] ++ r then cons x (renderRemoveCodeForbidenChars r opt)
         case "" then ""
         end

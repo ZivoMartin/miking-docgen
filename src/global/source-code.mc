@@ -1,7 +1,15 @@
-include "../parsing/token-readers.mc"
+-- Core source-code representation and lexical classification for tooling.
+-- This module defines visual word categories, wraps lexer tokens with
+-- display metadata, and provides utilities to convert between strings,
+-- tokens, and classified source code. It is a central component used by
+-- the colorizer and other source-level tooling.
 
+include "../parsing/token-readers.mc"
+include "./logger.mc"
 
 -- Visual categories used by the colorizer.
+-- These kinds are purely for display / syntax highlighting,
+-- not for semantic analysis.
 lang SourceCodeWordKinds
 
     syn SourceCodeWordKind =
@@ -19,9 +27,14 @@ type SourceCodeWord = use SourceCodeWordKinds in use TokenReader in  {
     kind: SourceCodeWordKind
 }
 
--- Builds a `SourceCodeWord` from a `Token` and a `SourceCodeWordKind`.
-let buildCodeWord : use SourceCodeWordKinds in use TokenReader in Token -> SourceCodeWordKind -> SourceCodeWord =
-    use SourceCodeWordKinds in lam word. lam kind. {
+-- Builds a single SourceCodeWord
+let buildCodeWord :
+    use SourceCodeWordKinds in
+    use TokenReader in
+    Token -> SourceCodeWordKind -> SourceCodeWord =
+
+    use SourceCodeWordKinds in
+    lam word. lam kind. {
         word = word,
         kind = kind    
     }
@@ -53,10 +66,12 @@ let sourceCodeWordFormat : use TokenReader in Token -> SourceCodeWord =
     case _ then build (CodeDefault {})
     end
 
--- A linear buffer of words where `None` denotes a child-boundary placeholder.
+-- A linear buffer of words
 type SourceCode = [SourceCodeWord]
 
-let tokensToSourceCode : use TokenReader in [Token] -> SourceCode = map sourceCodeWordFormat
+-- Cast a tokens array to a SourceCode.
+let tokensToSourceCode : use TokenReader in [Token] -> SourceCode =
+    map sourceCodeWordFormat
 
 -- Cast a string to a SourceCode by tokenizing the string until eof.
 recursive let strToSourceCode : String -> SourceCode = use TokenReader in lam s.
@@ -70,6 +85,7 @@ let sourceCodeIsEmpty : SourceCode -> Bool = null
 
 let sourceCodeEmpty : () -> SourceCode = lam . []
 
+-- Cast a SourceCode to the original string.
 let sourceCodeToStr : SourceCode -> String =
     lam code.
     use TokenReader in

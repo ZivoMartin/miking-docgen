@@ -250,3 +250,25 @@ let themeVariables = "
 }
 
 "
+
+-- Used in the react search engine.
+let mdxSearchVariables =
+"
+:root {
+  --searchBarBGColor: #f2f2f2;
+  --searchBarTextColor: #1a1a1a;
+  --searchBarPlaceholderColor: #777777;
+  --searchBarShadowColor: rgba(0,0,0,0.1);
+  --searchResultsBGColor: #ffffff;
+  --searchResultsShadowColor: rgba(0,0,0,0.15);
+  --searchResultItemBGColor: #fafafa;
+  --searchResultItemTextColor: #333333;
+  --searchResultItemHoverBGColor: #f0f0f0;
+  --searchResultItemActiveBGColor: #d9d9d9;
+  --searchResultItemBorderColor: rgba(0,0,0,0.08);
+  --searchHighlightColor: #0066cc;
+  --searchResultBGColor: #ffffff;
+  --hookLinkHighlightBG: rgba(59, 130, 246, 0.12);
+  --hookLinkHighlightBGHover: rgba(59, 130, 246, 0.22);
+}
+"
