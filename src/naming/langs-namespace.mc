@@ -15,6 +15,10 @@ type LangNamespace = use Objects in {
      syns: [Object],
      sems: [Object],
      types: [Object]
+
+     fullSyns: [Object],
+     fullSems: [Object],
+     fullTypes: [Object]
 }
 
 
@@ -69,7 +73,7 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
                  langNamespaceDefault
         ) namespace.parents in
 
-    -- We prune the items only appearing in a single parent but not in the current object.
+    -- We prune items from parents when no informations are added.
     -- Such an item is generally irelevant to document.
     let parents = map
         (lam parent.
@@ -82,20 +86,27 @@ let langNamespaceSetInsert : LangNamespaceSet -> String -> LangNamespace -> Lang
              lam getter.
                filter
                (lam item.
-                    let shareWith =
-                      lam namespace.
+                    let testIf =
+                      lam f. lam namespace.
                       any
                         (lam candidate.
-                           eqString
-                             (objName candidate)
-                             (objName item))
+                           and
+                               (eqString (objName candidate) (objName item))
+                               (f (item, candidate))
+                           )
                         (getter namespace)
                     in
-                    or
-                      (shareWith namespace)
-                      (any shareWith otherParents)
-                 )
-                 (getter parent)
+
+                    let mergeIsRelevant = testIf objMergeIsRelevant in
+                    let variantsAreCoveredBy = testIf objVariantsAreCoveredBy in
+
+                    and
+                      (not (any variantsAreCoveredBy otherParents)) -- If true, we don't keep because another parent already covers this one.
+                      (or
+                        (mergeIsRelevant namespace)
+                        (any mergeIsRelevant otherParents))
+               )
+               (getter parent)
            in
              
          let syns = prune synGetter in

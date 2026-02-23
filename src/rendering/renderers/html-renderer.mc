@@ -1,5 +1,6 @@
 include "./renderer-interface.mc"
 include "./headers/html-header.mc"
+include "../../global/ext-utils.mc"
 include "../util.mc"
 
 -- The HTML renderer implementation 
@@ -8,12 +9,12 @@ lang HtmlRenderer = RendererInterface
     sem renderSetup =
     | { fmt = Html {} } & opt ->
         let srcPath = renderingOptionsSrcPath opt in
-        renderFileOrWarn htmlStyle (pathConcat srcPath htmlStylePath);
-        renderFileOrWarn htmlScript (pathConcat srcPath htmlScriptPath)
+        renderFileOrWarn (pathConcat srcPath htmlStylePath) htmlStyle;
+        renderFileOrWarn (pathConcat srcPath htmlScriptPath) htmlScript
 
     sem renderHeader obj =
     | { fmt = Html {} } & opt ->
-      let header = getHeader (objName obj) (renderingOptionsSrcPath opt) in
+      let header = getHeader (objName obj) opt.srcFolder in
       let rawHeader = renderWithRaw opt "" renderHeader obj "" in -- Render the parent link
       join [header, "\n", rawHeader]
 

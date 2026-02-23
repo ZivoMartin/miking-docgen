@@ -1,3 +1,5 @@
+include "bool.mc"
+
 type Pos = { x: Int, y: Int }
 
 let pos0 = { x = 0, y = 0 }

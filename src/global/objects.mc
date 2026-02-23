@@ -41,7 +41,6 @@ lang ObjectInterface = MExprAst
     sem objSetChildren : Object -> ObjectChildren -> Object
     sem objSetChildren =
     | obj -> lam.
-        warn "You tried to assign children to an object which should not have children.";
         obj
 
     sem objMapChildren : Object -> (ObjectChildren -> ObjectChildren) -> Object
@@ -209,7 +208,15 @@ lang ObjectInterface = MExprAst
     sem objCountChildren =
     | obj -> foldl addi 0 (map (lam obj. if objHasChildren obj then objCountChildren obj else 1) (objChildren obj))
     
-    
+    sem objMergeIsRelevant : (Object, Object) -> Bool
+    sem objMergeIsRelevant =
+    | _ -> false
+
+    sem objVariantsAreCoveredBy : (Object, Object) -> Bool
+    sem objVariantsAreCoveredBy =
+    | _ -> false
+
+
 end
 
 ----------------------------------------------------------------------
@@ -404,6 +411,14 @@ lang ObjSem = ObjectInterface
     syn Object =
     | ObjSem { langName: String, ty: Option Type, datas: ObjectDatas }
 
+
+    -- TODO: Add variants in sems so we can complete this function.
+    -- This will for now create some useless informations, but it's fine.
+    -- It would require to get the patterns inside the datas of the sem, which
+    -- is quite annoying to implement.
+    sem objMergeIsRelevant =
+    | (ObjSem {}, ObjSem {}) -> true
+
     sem objToString =
     | ObjSem { langName = langName } ->
             join ["ObjSem, langName = ", langName]
@@ -448,6 +463,19 @@ lang ObjSyn = ObjectInterface
     syn Object =
     | ObjSyn { langName: String, variants: [SynVariant], datas: ObjectDatas }    
 
+    sem objMergeIsRelevant =
+    | (ObjSyn { variants = v1 } & o1, ObjSyn { variants = v2 } & o2) ->
+        let v = if lti (length v1) (length v2) then v2 else v1 in
+        match objMerge o1 o2 with ObjSyn { variants = v3 } in
+        gti (length v3) (length v)
+
+    sem objVariantsAreCoveredBy =
+    | (ObjSyn { variants = v1 } & o1, ObjSyn { variants = v2 } & o2) ->
+        if lti (length v2) (length v1) then false else
+        match objMerge o1 o2 with ObjSyn { variants = v3 } in
+        lti (length v3) (length v2)
+
+
     sem objDatas =
     | ObjSyn { datas = datas } -> datas
 
@@ -473,7 +501,12 @@ lang ObjSyn = ObjectInterface
     sem objMerge =
     | (ObjSyn d1) & obj1 -> lam obj2.
             match obj2 with ObjSyn d2 then
-                ObjSyn { d1 with variants = concat d1.variants d2.variants }
+                let variants = foldl
+                    (lam acc. lam v. hmInsert v.name v acc)
+                    (hashmapEmpty ())
+                    (concat d1.variants d2.variants)
+                in
+                ObjSyn { d1 with variants = hmValues variants }
             else objMergeFailed obj1 obj2
 
 end

@@ -1,4 +1,4 @@
-include "mexpr/ast.mc"
+include "mexpr/pprint.mc"
 include "./token-readers.mc"
 
 recursive let lex : use TokenReader in String -> Pos -> [(Token, Pos)] =

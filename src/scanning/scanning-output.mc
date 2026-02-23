@@ -1,4 +1,7 @@
-type FileToProcess = { path: String, outputFolder: String }
+include "common.mc"
+include "string.mc"
+
+type FileToProcess = { path: String, outDir: String }
 
 type ScanningOutput = {
     inputs: [FileToProcess],
